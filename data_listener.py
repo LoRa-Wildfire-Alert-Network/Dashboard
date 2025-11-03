@@ -1,7 +1,6 @@
 import os, datetime, requests, psycopg2, time
 from psycopg2.extras import execute_values
 from dotenv import load_dotenv
-import os
 
 load_dotenv()
 DB_DSN = os.getenv("DB_DSN")
@@ -22,7 +21,6 @@ def fetch_live():
     r = requests.get(API_URL, timeout=10)
     r.raise_for_status()
     data = r.json()
-    # normalize to list
     return data if isinstance(data, list) else [data]
 
 def extract_rows(objs):
@@ -121,7 +119,6 @@ def main():
         except Exception as e:
             print("Error:", e)
 
-        # wait 3 seconds before next check
         time.sleep(3)
 
 if __name__ == "__main__":
