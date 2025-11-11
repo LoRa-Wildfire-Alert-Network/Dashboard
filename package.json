@@ -7,14 +7,25 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "server": "node server.js"
   },
   "dependencies": {
+    "@tailwindcss/postcss": "^4.1.17",
     "@types/leaflet": "^1.9.21",
+    "@types/pg": "^8.15.6",
+    "autoprefixer": "^10.4.22",
+    "cors": "^2.8.5",
+    "dotenv": "^17.2.3",
+    "express": "^5.1.0",
     "leaflet": "^1.9.4",
+    "pg": "^8.16.3",
+    "postcss": "^8.5.6",
     "react": "^19.0.0-rc.1",
     "react-dom": "^19.0.0-rc.1",
-    "react-leaflet": "^5.0.0-rc.2"
+    "react-leaflet": "^5.0.0-rc.2",
+    "recharts": "^3.4.1",
+    "tailwindcss": "^4.1.17"
   },
   "devDependencies": {
     "@eslint/js": "^9.36.0",
