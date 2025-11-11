@@ -1,6 +1,6 @@
 import * as L from "leaflet";
 import "leaflet/dist/leaflet.css";
-import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
+import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
 
 import icon from "leaflet/dist/images/marker-icon.png";
 import iconShadow from "leaflet/dist/images/marker-shadow.png";
@@ -18,7 +18,7 @@ function Map() {
   return (
     <MapContainer
       center={[44.5646, -123.262]}
-      zoom={13}
+      zoom={12}
       scrollWheelZoom={true}
       style={{ height: "100vh", width: "100vw" }}
     >
@@ -26,10 +26,13 @@ function Map() {
         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
       />
-      <Marker position={[44.5646, -123.262]}>
+      <Marker position={[44.48, -123.41]}>
         <Popup>
-          // TODO: <br />
-          Insert Node Data Here
+          Node Position: [44.48, -123.41] <br />
+          Health: Good <br />
+          Temp: 72°F <br />
+          Humidity: 45% <br />
+          AQI: 38 (Good)
         </Popup>
       </Marker>
     </MapContainer>
