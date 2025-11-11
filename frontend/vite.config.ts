@@ -10,4 +10,20 @@ export default defineConfig({
       },
     }),
   ],
+<<<<<<< HEAD
+=======
+  server: {
+    host: '0.0.0.0',
+    port: 5173,
+    allowedHosts: [
+      'lora-gs.derekrgreene.com',
+    ],
+    proxy: {
+      '/api/live': {
+        target: 'http://192.168.1.100:5500',
+        changeOrigin: true,
+      },
+    },
+  },
+>>>>>>> 9a3597e (updated vite server config for production/demo)
 })
