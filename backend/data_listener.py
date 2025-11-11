@@ -56,6 +56,7 @@ def extract_rows(objs):
             "humidity_pct": humidity,
             "battery_level": battery_level,
             "rssi": rssi, "snr": snr,
+            "smoke_detected": True if obj.get("smoke_detected") else False,
         })
     return rows
 
@@ -88,7 +89,7 @@ def upsert(conn, rows):
                 r["node_id"], r["gateway_id"], r["timestamp"], r["device_timestamp"],
                 r["lat"], r["lon"], r["alt"],
                 r["temperature_c"], r["humidity_pct"], r["battery_level"],
-                r["rssi"], r["snr"]
+                r["rssi"], r["snr"], r["smoke_detected"]
             ))
         if tel_values:
             execute_values(cur, """
@@ -96,7 +97,7 @@ def upsert(conn, rows):
                   (node_id, gateway_id, timestamp, device_timestamp,
                    latitude, longitude, altitude,
                    temperature_c, humidity_pct, battery_level,
-                   rssi, snr)
+                   rssi, snr, smoke_detected)
                 VALUES %s
             """, tel_values)
 
