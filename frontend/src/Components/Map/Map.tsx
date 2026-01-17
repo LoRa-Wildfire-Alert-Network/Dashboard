@@ -20,7 +20,7 @@ function Map() {
       center={[44.5646, -123.262]}
       zoom={12}
       scrollWheelZoom={true}
-      className="w-screen h-fill shadow-lg rounded-md p-4"
+      className="shadow-lg rounded-md p-4 flex-1"
     >
       <TileLayer
         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
