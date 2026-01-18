@@ -1,18 +1,10 @@
 import * as L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
+import type { NodeData } from "../../types/nodeTypes";
 
 import icon from "leaflet/dist/images/marker-icon.png";
 import iconShadow from "leaflet/dist/images/marker-shadow.png";
-
-type NodeData = {
-  id: string | number;
-  temperature: number;
-  airquality: number;
-  humidity: number;
-  latitude: number;
-  longitude: number;
-};
 
 interface MapProps {
   nodeData: NodeData[];

@@ -1,13 +1,5 @@
 import React from "react";
-
-type NodeData = {
-  id: string | number;
-  temperature: number;
-  airquality: number;
-  humidity: number;
-  latitude: number;
-  longitude: number;
-};
+import type { NodeData } from "../../types/nodeTypes";
 
 interface NodeButtonProps {
   nodeData: NodeData;
