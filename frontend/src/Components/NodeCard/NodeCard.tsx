@@ -7,7 +7,7 @@ interface NodeCardProps {
 
 const NodeCard: React.FC<NodeCardProps> = ({ nodeData }) => {
   return (
-    <div className="flex flex-col w-full h-36 bg-slate-700 text-white rounded-md my-4 p-4">
+    <div className="flex flex-col w-full h-36 bg-slate-700 text-white rounded-md my-2 p-4">
       <h3 className="text-sm mb-2">ID: {nodeData.id}</h3>
       <p className="text-sm">Temperature: {nodeData.temperature} °C</p>
       <p className="text-sm">Air Quality: {nodeData.airquality}</p>

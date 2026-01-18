@@ -1,6 +1,6 @@
 import Map from "./Components/Map/Map";
 import Navbar from "./Components/Navbar/Navbar";
-import NodeCard from "./Components/NodeButton/NodeCard";
+import NodeCard from "./Components/NodeCard/NodeCard";
 import "./App.css";
 
 const testData = [
@@ -44,6 +44,46 @@ const testData = [
     airquality: 48,
     humidity: 59,
   },
+  {
+    id: "f6a7b8c9-1d2e-4f3a-9b8c-5d6e7f8a9b0c",
+    latitude: 44.5659,
+    longitude: -123.2615,
+    temperature: 16.2,
+    airquality: 45,
+    humidity: 60,
+  },
+  {
+    id: "a7b8c9d0-2e3f-4a5b-8c9d-6e7f8a9b0c1d",
+    latitude: 44.5694,
+    longitude: -123.2678,
+    temperature: 19.0,
+    airquality: 50,
+    humidity: 52,
+  },
+  {
+    id: "b8c9d0e1-3f4a-5b6c-9d0e-7f8a9b0c1d2e",
+    latitude: 44.5598,
+    longitude: -123.255,
+    temperature: 13.5,
+    airquality: 38,
+    humidity: 57,
+  },
+  {
+    id: "c9d0e1f2-4a5b-6c7d-0e1f-8a9b0c1d2e3f",
+    latitude: 44.5762,
+    longitude: -123.2734,
+    temperature: 21.4,
+    airquality: 55,
+    humidity: 49,
+  },
+  {
+    id: "d0e1f2a3-5b6c-7d8e-1f2a-9b0c1d2e3f4a",
+    latitude: 44.5623,
+    longitude: -123.269,
+    temperature: 11.9,
+    airquality: 33,
+    humidity: 65,
+  },
 ];
 
 function App() {
@@ -57,7 +97,7 @@ function App() {
             <p>First Column</p>
           </div>
           <Map nodeData={testData} />
-          <div className="flex-none lg:w-100 md:w-60 bg-slate-400 rounded-md p-4">
+          <div className="flex-none overflow-y-auto lg:w-100 md:w-60 bg-slate-400 rounded-md py-2 px-4">
             {testData.map((nodeData, i) => (
               <NodeCard key={i} nodeData={nodeData} />
             ))}
