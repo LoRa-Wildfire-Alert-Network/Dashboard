@@ -5,6 +5,19 @@ import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
 import icon from "leaflet/dist/images/marker-icon.png";
 import iconShadow from "leaflet/dist/images/marker-shadow.png";
 
+type NodeData = {
+  id: string | number;
+  temperature: number;
+  airquality: number;
+  humidity: number;
+  latitude: number;
+  longitude: number;
+};
+
+interface MapProps {
+  nodeData: NodeData[];
+}
+
 const DefaultIcon = L.icon({
   iconUrl: icon,
   shadowUrl: iconShadow,
@@ -14,7 +27,7 @@ const DefaultIcon = L.icon({
 
 L.Marker.prototype.options.icon = DefaultIcon;
 
-function Map() {
+function Map({ nodeData }: MapProps) {
   return (
     <MapContainer
       center={[44.5646, -123.262]}
@@ -26,15 +39,16 @@ function Map() {
         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
       />
-      <Marker position={[44.48, -123.41]}>
-        <Popup>
-          Node Position: [44.48, -123.41] <br />
-          Health: Good <br />
-          Temp: 72°F <br />
-          Humidity: 45% <br />
-          AQI: 38 (Good)
-        </Popup>
-      </Marker>
+      {nodeData.map((node, i) => (
+        <Marker key={i} position={[node.latitude, node.longitude]}>
+          <Popup>
+            Node ID: {node.id} <br />
+            Temp: {node.temperature} °C <br />
+            Humidity: {node.humidity} % <br />
+            AQI: {node.airquality}
+          </Popup>
+        </Marker>
+      ))}
     </MapContainer>
   );
 }
