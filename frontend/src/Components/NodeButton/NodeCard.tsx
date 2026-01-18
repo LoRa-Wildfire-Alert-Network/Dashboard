@@ -1,11 +1,11 @@
 import React from "react";
 import type { NodeData } from "../../types/nodeTypes";
 
-interface NodeButtonProps {
+interface NodeCardProps {
   nodeData: NodeData;
 }
 
-const NodeButton: React.FC<NodeButtonProps> = ({ nodeData }) => {
+const NodeCard: React.FC<NodeCardProps> = ({ nodeData }) => {
   return (
     <div className="flex flex-col w-full h-36 bg-slate-700 text-white rounded-md my-4 p-4">
       <h3 className="text-sm mb-2">ID: {nodeData.id}</h3>
@@ -16,4 +16,4 @@ const NodeButton: React.FC<NodeButtonProps> = ({ nodeData }) => {
   );
 };
 
-export default NodeButton;
+export default NodeCard;

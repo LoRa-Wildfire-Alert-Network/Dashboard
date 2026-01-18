@@ -1,6 +1,6 @@
 import Map from "./Components/Map/Map";
 import Navbar from "./Components/Navbar/Navbar";
-import NodeButton from "./Components/NodeButton/NodeButton";
+import NodeCard from "./Components/NodeButton/NodeCard";
 import "./App.css";
 
 const testData = [
@@ -59,7 +59,7 @@ function App() {
           <Map nodeData={testData} />
           <div className="flex-none lg:w-100 md:w-60 bg-slate-400 rounded-md p-4">
             {testData.map((nodeData, i) => (
-              <NodeButton key={i} nodeData={nodeData} />
+              <NodeCard key={i} nodeData={nodeData} />
             ))}
           </div>
         </div>
