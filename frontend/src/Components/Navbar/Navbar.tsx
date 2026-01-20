@@ -4,7 +4,7 @@ const Navbar = () => {
       <p className="text-white text-lg font-semibold p-6">
         LoRa Wildfire Dashboard
       </p>
-      <p className="text-white text-lg font-semibold p-6">Login</p>
+      <button className="text-white text-lg font-semibold p-6">Login</button>
     </div>
   );
 };
