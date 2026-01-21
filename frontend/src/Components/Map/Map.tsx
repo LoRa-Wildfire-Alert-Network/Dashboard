@@ -34,10 +34,10 @@ function Map({ nodeData }: MapProps) {
       {nodeData.map((node, i) => (
         <Marker key={i} position={[node.latitude, node.longitude]}>
           <Popup>
-            Node ID: {node.id} <br />
-            Temp: {node.temperature} °C <br />
-            Humidity: {node.humidity} % <br />
-            AQI: {node.airquality}
+            Node ID: {node.node_id} <br />
+            Temp: {node.temperature_c} °C <br />
+            Humidity: {node.humidity_pct} % <br />
+            Smoke Detected?: {node.smoke_detected ? "Yes" : "No"}
           </Popup>
         </Marker>
       ))}
