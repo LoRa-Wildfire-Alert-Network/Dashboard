@@ -1,8 +1,8 @@
 export type NodeData = {
-  id: string | number;
-  temperature: number;
-  airquality: number;
-  humidity: number;
+  node_id: string | number;
+  temperature_c: number;
+  smoke_detected: boolean;
+  humidity_pct: number;
   latitude: number;
   longitude: number;
 };

@@ -7,7 +7,8 @@ import icon from "leaflet/dist/images/marker-icon.png";
 import iconShadow from "leaflet/dist/images/marker-shadow.png";
 
 interface MapProps {
-  nodeData: NodeData[];
+  alertNodes: NodeData[];
+  normalNodes: NodeData[];
 }
 
 const DefaultIcon = L.icon({
@@ -19,7 +20,7 @@ const DefaultIcon = L.icon({
 
 L.Marker.prototype.options.icon = DefaultIcon;
 
-function Map({ nodeData }: MapProps) {
+function Map({ alertNodes, normalNodes }: MapProps) {
   return (
     <MapContainer
       center={[44.5646, -123.262]}
@@ -31,13 +32,23 @@ function Map({ nodeData }: MapProps) {
         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
       />
-      {nodeData.map((node, i) => (
+      {alertNodes.map((node: NodeData, i) => (
         <Marker key={i} position={[node.latitude, node.longitude]}>
           <Popup>
-            Node ID: {node.id} <br />
-            Temp: {node.temperature} °C <br />
-            Humidity: {node.humidity} % <br />
-            AQI: {node.airquality}
+            Node ID: {node.node_id} <br />
+            Temp: {node.temperature_c} °C <br />
+            Humidity: {node.humidity_pct} % <br />
+            Smoke Detected?: {node.smoke_detected ? "Yes" : "No"}
+          </Popup>
+        </Marker>
+      ))}
+      {normalNodes.map((node: NodeData, i) => (
+        <Marker key={i} position={[node.latitude, node.longitude]}>
+          <Popup>
+            Node ID: {node.node_id} <br />
+            Temp: {node.temperature_c} °C <br />
+            Humidity: {node.humidity_pct} % <br />
+            Smoke Detected?: {node.smoke_detected ? "Yes" : "No"}
           </Popup>
         </Marker>
       ))}
