@@ -21,8 +21,8 @@ const CardShortData: React.FC<NodeCardProps> = ({ nodeData }) => {
       <span
         className={`block w-3 h-3 rounded-full p-2 m-2 ${decideIndicatorColor(nodeData.smoke_detected, nodeData.battery_level)}`}
       ></span>
-      <div className="flex flex-col w-full justify-center">
-        <h3 className="text-sm mb-2">ID: {nodeData.node_id}</h3>
+      <div className="flex flex-col w-full justify-center my-2">
+        <h3 className="text-sm">ID: {nodeData.node_id}</h3>
       </div>
     </>
   );
