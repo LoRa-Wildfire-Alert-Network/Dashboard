@@ -18,7 +18,7 @@ const NodeCard: React.FC<NodeCardProps> = ({ nodeData }) => {
   return (
     <div
       onClick={toggleExpand}
-      className="flex flex-row items-center justify-center bg-slate-700 text-white rounded-md my-2 p-2"
+      className="flex flex-row items-center justify-center bg-slate-700 text-white rounded-md my-2 p-2 hover:cursor-pointer"
     >
       {isExpanded ? (
         <CardLongData nodeData={nodeData} />
