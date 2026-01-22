@@ -5,4 +5,5 @@ export type NodeData = {
   humidity_pct: number;
   latitude: number;
   longitude: number;
+  battery_level: number;
 };

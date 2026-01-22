@@ -40,7 +40,7 @@ const testData = [
     temperature_c: 9.4,
     humidity_pct: 71,
     smoke_detected: false,
-    battery_level: 100,
+    battery_level: 15,
   },
   {
     node_id: "e5f3a4b6-0d2c-4e8f-9b1a-4d6c8e9f0a1b",
@@ -76,7 +76,7 @@ const testData = [
     temperature_c: 13.5,
     humidity_pct: 57,
     smoke_detected: false,
-    battery_level: 100,
+    battery_level: 15,
   },
   {
     node_id: "c9d0e1f2-4a5b-6c7d-0e1f-8a9b0c1d2e3f",
@@ -117,7 +117,10 @@ function App() {
   */
 
   let alertNodes = testData.filter((node) => node.smoke_detected);
-  let normalNodes = testData.filter((node) => !node.smoke_detected);
+  let normalNodes = testData.filter(
+    (node) => !node.smoke_detected && node.battery_level >= 20,
+  );
+  let warningNodes = testData.filter((node) => node.battery_level < 20);
 
   return (
     <>
@@ -128,15 +131,19 @@ function App() {
             <h2 className="text-xl font-semibold mb-2">Column 1</h2>
             <p>First Column</p>
           </div>
-          <Map alertNodes={alertNodes} normalNodes={normalNodes} />
+          <Map nodeData={testData} />
           <div className="flex-none overflow-y-auto lg:w-100 md:w-60 bg-slate-400 rounded-md py-2 px-4">
             <h2>Alert Nodes</h2>
             {alertNodes.map((nodeData, i) => (
-              <NodeCard key={i} nodeData={nodeData} alertNodes={true} />
+              <NodeCard key={i} nodeData={nodeData} />
+            ))}
+            <h2>Warning Nodes</h2>
+            {warningNodes.map((nodeData, i) => (
+              <NodeCard key={i} nodeData={nodeData} />
             ))}
             <h2>Nodes</h2>
             {normalNodes.map((nodeData, i) => (
-              <NodeCard key={i} nodeData={nodeData} alertNodes={false} />
+              <NodeCard key={i} nodeData={nodeData} />
             ))}
           </div>
         </div>
