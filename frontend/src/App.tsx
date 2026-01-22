@@ -132,7 +132,7 @@ function App() {
             <p>First Column</p>
           </div>
           <Map nodeData={testData} />
-          <div className="flex-none overflow-y-auto lg:w-100 md:w-60 bg-slate-400 rounded-md py-2 px-4">
+          <div className="flex flex-col overflow-y-auto lg:w-100 md:w-60 bg-slate-400 rounded-md py-2 px-4">
             <h2>Alert Nodes</h2>
             {alertNodes.map((nodeData, i) => (
               <NodeCard key={i} nodeData={nodeData} />
