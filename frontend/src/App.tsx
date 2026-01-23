@@ -112,8 +112,6 @@ function App() {
         console.error("Error fetching node data:", error);
       }
     }
-    
-    
   */
 
   let alertNodes = testData.filter((node) => node.smoke_detected);
