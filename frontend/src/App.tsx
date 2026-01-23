@@ -1,3 +1,4 @@
+import { SignedIn, SignedOut } from "@clerk/clerk-react";
 import Map from "./Components/Map/Map";
 import Navbar from "./Components/Navbar/Navbar";
 import NodeCard from "./Components/NodeCard/NodeCard";
@@ -123,29 +124,43 @@ function App() {
   return (
     <>
       <Navbar />
-      <div className="bg-slate-300 h-[calc(100vh-4rem)]">
-        <div className="flex space-x-4 w-full h-full p-4">
-          <div className="flex-none lg:w-80 md:w-48 bg-slate-100 rounded-md p-4">
-            <h2 className="text-xl font-semibold mb-2">Column 1</h2>
-            <p>First Column</p>
-          </div>
-          <Map nodeData={testData} />
-          <div className="flex flex-col overflow-y-auto lg:w-100 md:w-60 bg-slate-400 rounded-md py-2 px-4">
-            <h2>Alert Nodes</h2>
-            {alertNodes.map((nodeData, i) => (
-              <NodeCard key={i} nodeData={nodeData} />
-            ))}
-            <h2>Warning Nodes</h2>
-            {warningNodes.map((nodeData, i) => (
-              <NodeCard key={i} nodeData={nodeData} />
-            ))}
-            <h2>Nodes</h2>
-            {normalNodes.map((nodeData, i) => (
-              <NodeCard key={i} nodeData={nodeData} />
-            ))}
+      <SignedIn>
+        <div className="bg-slate-300 h-[calc(100vh-4rem)]">
+          <div className="flex space-x-4 w-full h-full p-4">
+            <div className="flex-none lg:w-80 md:w-48 bg-slate-100 rounded-md p-4">
+              <h2 className="text-xl font-semibold mb-2">Column 1</h2>
+              <p>First Column</p>
+            </div>
+            <Map nodeData={testData} />
+            <div className="flex flex-col overflow-y-auto lg:w-100 md:w-60 bg-slate-400 rounded-md py-2 px-4">
+              <h2>Alert Nodes</h2>
+              {alertNodes.map((nodeData, i) => (
+                <NodeCard key={i} nodeData={nodeData} />
+              ))}
+              <h2>Warning Nodes</h2>
+              {warningNodes.map((nodeData, i) => (
+                <NodeCard key={i} nodeData={nodeData} />
+              ))}
+              <h2>Nodes</h2>
+              {normalNodes.map((nodeData, i) => (
+                <NodeCard key={i} nodeData={nodeData} />
+              ))}
+            </div>
           </div>
         </div>
-      </div>
+      </SignedIn>
+      <SignedOut>
+        <div className="bg-slate-300 h-[calc(100vh-4rem)] flex items-center justify-center">
+          <div className="text-center">
+            <h1 className="text-2xl font-semibold mb-4">
+              Welcome to LoRa Wildfire Dashboard
+            </h1>
+            <p className="text-lg mb-4">
+              Please sign in to access the dashboard
+            </p>
+          </div>
+        </div>
+      </SignedOut>
     </>
   );
 }
