@@ -9,12 +9,12 @@ const Navbar = () => {
       <div className="flex items-center gap-4 p-6">
         <SignedOut>
           <SignInButton mode="modal">
-            <button className="text-white text-lg font-semibold hover:underline">
+            <button className="text-white text-lg font-semibold hover:underline hover:cursor-pointer">
               Sign In
             </button>
           </SignInButton>
           <SignUpButton mode="modal">
-            <button className="text-white text-lg font-semibold hover:underline">
+            <button className="text-white text-lg font-semibold hover:underline hover:cursor-pointer">
               Sign Up
             </button>
           </SignUpButton>
