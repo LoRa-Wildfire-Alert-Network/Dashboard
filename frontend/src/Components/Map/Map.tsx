@@ -46,7 +46,7 @@ var orangeIcon = new L.Icon({
 
 L.Marker.prototype.options.icon = redIcon;
 
-function selectIcon(smoke_detected: boolean, battery_level: number) {
+function selectIconColor(smoke_detected: boolean, battery_level: number) {
   if (smoke_detected) {
     return redIcon;
   } else if (battery_level < 20) {
@@ -72,7 +72,7 @@ function Map({ nodeData }: MapProps) {
         <Marker
           key={i}
           position={[node.latitude, node.longitude]}
-          icon={selectIcon(node.smoke_detected, node.battery_level)}
+          icon={selectIconColor(node.smoke_detected, node.battery_level)}
         >
           <Popup>
             Node ID: {node.node_id} <br />

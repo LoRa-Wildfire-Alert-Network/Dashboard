@@ -142,8 +142,8 @@ function App() {
                 <NodeCard key={i} nodeData={nodeData} />
               ))}
               <h2>Nodes</h2>
-              {normalNodes.map((nodeData, i) => (
-                <NodeCard key={i} nodeData={nodeData} />
+              {normalNodes.map((nodeData) => (
+                <NodeCard key={nodeData.node_id} nodeData={nodeData} />
               ))}
             </div>
           </div>
