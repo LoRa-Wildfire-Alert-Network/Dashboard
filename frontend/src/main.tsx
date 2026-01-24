@@ -1,6 +1,7 @@
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { ClerkProvider } from "@clerk/clerk-react";
+import { dark } from "@clerk/themes";
 import "./index.css";
 import App from "./App.tsx";
 
@@ -38,7 +39,30 @@ if (!PUBLISHABLE_KEY) {
 } else {
   createRoot(document.getElementById("root")!).render(
     <StrictMode>
-      <ClerkProvider publishableKey={PUBLISHABLE_KEY}>
+      <ClerkProvider publishableKey={PUBLISHABLE_KEY}
+        appearance={{
+          layout: {
+            unsafe_disableDevelopmentModeWarnings: true,
+          },
+          baseTheme: dark,
+          variables: {
+            colorPrimary: "#f97316",
+            colorBackground: "#0b0f0e",
+            colorText: "#e5e7eb",
+            colorInputBackground: "#020617",
+            borderRadius: "0.75rem",
+            fontFamily: "Inter, system-ui, sans-serif",
+          },
+          elements: {
+            card: "shadow-xl border border-neutral-800",
+            headerTitle: "text-2xl font-bold tracking-tight",
+            headerSubtitle: "text-neutral-400",
+            formButtonPrimary:
+              "bg-gradient-to-r from-orange-500 to-red-600 hover:opacity-90",
+            footerActionLink: "text-orange-400 hover:text-orange-300",
+          },
+        }}
+      >
         <App />
       </ClerkProvider>
     </StrictMode>,
