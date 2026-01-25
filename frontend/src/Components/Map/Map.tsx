@@ -5,6 +5,8 @@ import type { NodeData } from "../../types/nodeTypes";
 
 interface MapProps {
   nodeData: NodeData[];
+  expandedNodeIds: string[];
+  onClick: (nodeId: string) => void;
 }
 
 // Source: https://github.com/pointhi/leaflet-color-markers /////////////
@@ -46,6 +48,25 @@ var orangeIcon = new L.Icon({
 
 L.Marker.prototype.options.icon = redIcon;
 
+function selectIcon(
+  smoke_detected: boolean,
+  battery_level: number,
+  expandedNodeIds: string[],
+  nodeId: string,
+) {
+  const baseIcon = selectIconColor(smoke_detected, battery_level);
+  if (expandedNodeIds.includes(nodeId)) {
+    baseIcon.options.iconSize = [35, 55];
+    baseIcon.options.iconAnchor = [17, 55];
+    baseIcon.options.popupAnchor = [1, -44];
+  } else {
+    baseIcon.options.iconSize = [25, 41];
+    baseIcon.options.iconAnchor = [12, 41];
+    baseIcon.options.popupAnchor = [1, -34];
+  }
+  return baseIcon;
+}
+
 function selectIconColor(smoke_detected: boolean, battery_level: number) {
   if (smoke_detected) {
     return redIcon;
@@ -56,7 +77,7 @@ function selectIconColor(smoke_detected: boolean, battery_level: number) {
   }
 }
 
-function Map({ nodeData }: MapProps) {
+function Map({ nodeData, expandedNodeIds, onClick }: MapProps) {
   return (
     <MapContainer
       center={[44.5646, -123.262]}
@@ -68,11 +89,19 @@ function Map({ nodeData }: MapProps) {
         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
       />
-      {nodeData.map((node: NodeData, i) => (
+      {nodeData.map((node: NodeData) => (
         <Marker
-          key={i}
+          key={node.node_id}
           position={[node.latitude, node.longitude]}
-          icon={selectIconColor(node.smoke_detected, node.battery_level)}
+          icon={selectIcon(
+            node.smoke_detected,
+            node.battery_level,
+            expandedNodeIds,
+            node.node_id,
+          )}
+          eventHandlers={{
+            click: () => onClick(node.node_id),
+          }}
         >
           <Popup>
             Node ID: {node.node_id} <br />

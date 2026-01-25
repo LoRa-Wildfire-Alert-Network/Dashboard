@@ -1,5 +1,5 @@
 export type NodeData = {
-  node_id: string | number;
+  node_id: string;
   temperature_c: number;
   smoke_detected: boolean;
   humidity_pct: number;
