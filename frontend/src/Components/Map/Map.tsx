@@ -7,6 +7,7 @@ interface MapProps {
   nodeData: NodeData[];
   expandedNodeIds: string[];
   onClick: (nodeId: string) => void;
+  mostRecentExpandedNodeId: string | null;
 }
 
 // Source: https://github.com/pointhi/leaflet-color-markers /////////////
@@ -44,6 +45,39 @@ var orangeIcon = new L.Icon({
   shadowSize: [41, 41],
 });
 
+var expandedGreenIcon = new L.Icon({
+  iconUrl:
+    "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-green.png",
+  shadowUrl:
+    "https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png",
+  iconSize: [35, 55],
+  iconAnchor: [17, 55],
+  popupAnchor: [1, -44],
+  shadowSize: [41, 41],
+});
+
+var expandedRedIcon = new L.Icon({
+  iconUrl:
+    "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png",
+  shadowUrl:
+    "https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png",
+  iconSize: [35, 55],
+  iconAnchor: [17, 55],
+  popupAnchor: [1, -44],
+  shadowSize: [41, 41],
+});
+
+var expandedOrangeIcon = new L.Icon({
+  iconUrl:
+    "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-orange.png",
+  shadowUrl:
+    "https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png",
+  iconSize: [35, 55],
+  iconAnchor: [17, 55],
+  popupAnchor: [1, -44],
+  shadowSize: [41, 41],
+});
+
 /////////////////////////////////////////////////////////////////////////
 
 L.Marker.prototype.options.icon = redIcon;
@@ -53,31 +87,37 @@ function selectIcon(
   battery_level: number,
   expandedNodeIds: string[],
   nodeId: string,
+  mostRecentExpandedNodeId: string | null,
 ) {
-  const baseIcon = selectIconColor(smoke_detected, battery_level);
-  if (expandedNodeIds.includes(nodeId)) {
-    baseIcon.options.iconSize = [35, 55];
-    baseIcon.options.iconAnchor = [17, 55];
-    baseIcon.options.popupAnchor = [1, -44];
+  let iconColor = selectIconColor(smoke_detected, battery_level);
+
+  if (iconColor === "redIcon") {
+    return nodeId === mostRecentExpandedNodeId ? expandedRedIcon : redIcon;
+  } else if (iconColor === "orangeIcon") {
+    return nodeId === mostRecentExpandedNodeId
+      ? expandedOrangeIcon
+      : orangeIcon;
   } else {
-    baseIcon.options.iconSize = [25, 41];
-    baseIcon.options.iconAnchor = [12, 41];
-    baseIcon.options.popupAnchor = [1, -34];
+    return nodeId === mostRecentExpandedNodeId ? expandedGreenIcon : greenIcon;
   }
-  return baseIcon;
 }
 
 function selectIconColor(smoke_detected: boolean, battery_level: number) {
   if (smoke_detected) {
-    return redIcon;
+    return "redIcon";
   } else if (battery_level < 20) {
-    return orangeIcon;
+    return "orangeIcon";
   } else {
-    return greenIcon;
+    return "greenIcon";
   }
 }
 
-function Map({ nodeData, expandedNodeIds, onClick }: MapProps) {
+function Map({
+  nodeData,
+  expandedNodeIds,
+  mostRecentExpandedNodeId,
+  onClick,
+}: MapProps) {
   return (
     <MapContainer
       center={[44.5646, -123.262]}
@@ -98,18 +138,12 @@ function Map({ nodeData, expandedNodeIds, onClick }: MapProps) {
             node.battery_level,
             expandedNodeIds,
             node.node_id,
+            mostRecentExpandedNodeId,
           )}
           eventHandlers={{
             click: () => onClick(node.node_id),
           }}
-        >
-          <Popup>
-            Node ID: {node.node_id} <br />
-            Temp: {node.temperature_c} °C <br />
-            Humidity: {node.humidity_pct} % <br />
-            Smoke Detected?: {node.smoke_detected ? "Yes" : "No"}
-          </Popup>
-        </Marker>
+        ></Marker>
       ))}
     </MapContainer>
   );

@@ -112,24 +112,43 @@ const Dashboard: React.FC = () => {
     }
   */
 
+  /////////////////////////////////////////////////////////////////////////////////////////
+  //
+  //
+  //
+  //
+  //
+  //
+  //
+  //
+  /////////////////////////////////////////////////////////////////////////////////////////
   const [nodeData, setNodeData] = useState<NodeData[]>(testData);
   const [expandedNodeIds, setExpandedNodeIds] = useState<string[]>([]);
+  const [mostRecentExpandedNodeId, setMostRecentExpandedNodeId] = useState<
+    string | null
+  >(null);
 
   const toggleExpandFromCard = (nodeId: string) => {
     if (expandedNodeIds.includes(nodeId)) {
       setExpandedNodeIds(expandedNodeIds.filter((id) => id !== nodeId));
+      setMostRecentExpandedNodeId(null);
     } else {
       setExpandedNodeIds([...expandedNodeIds, nodeId]);
+      setMostRecentExpandedNodeId(nodeId);
     }
   };
 
   const toggleExpandFromMap = (nodeId: string) => {
     if (expandedNodeIds.includes(nodeId)) {
       setExpandedNodeIds([]);
+      setMostRecentExpandedNodeId(null);
     } else {
       setExpandedNodeIds([nodeId]);
+      setMostRecentExpandedNodeId(nodeId);
     }
   };
+
+  /////////////////////////////////////////////////////////////////////////////////////////
 
   return (
     <>
@@ -142,6 +161,7 @@ const Dashboard: React.FC = () => {
           <Map
             nodeData={nodeData}
             expandedNodeIds={expandedNodeIds}
+            mostRecentExpandedNodeId={mostRecentExpandedNodeId}
             onClick={toggleExpandFromMap}
           />
           <div className="flex flex-col overflow-y-auto lg:w-100 md:w-60 bg-slate-400 rounded-md py-2 px-4">
