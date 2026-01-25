@@ -1,6 +1,5 @@
 import React from "react";
 import type { NodeData } from "../../types/nodeTypes";
-import { useState } from "react";
 import CardLongData from "./CardLongData";
 import CardShortData from "./CardShortData";
 
