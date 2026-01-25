@@ -1,5 +1,5 @@
 import Map from "./../Map/Map";
-import NodeCard from "./../NodeCard/NodeCard";
+import NodeCardList from "../NodeCardList/NodeCardList";
 import type { NodeData } from "./../../types/nodeTypes";
 
 import { useEffect, useState } from "react";
@@ -168,46 +168,15 @@ const Dashboard: React.FC = () => {
           </div>
           <Map
             nodeData={nodeData}
-            expandedNodeIds={expandedNodeIds}
             mostRecentExpandedNodeId={mostRecentExpandedNodeId}
             onClick={toggleExpandFromMap}
           />
           <div className="flex flex-col overflow-y-auto lg:w-100 md:w-60 bg-slate-400 rounded-md py-2 px-4">
-            <h2>Alert Nodes</h2>
-            {nodeData
-              .filter((node) => node.smoke_detected)
-              .map((nodeData) => (
-                <NodeCard
-                  key={nodeData.node_id}
-                  nodeData={nodeData}
-                  expandedNodeIds={expandedNodeIds}
-                  onClick={() => toggleExpandFromCard(nodeData.node_id)}
-                />
-              ))}
-            <h2>Warning Nodes</h2>
-            {nodeData
-              .filter((node) => node.battery_level < 20)
-              .map((nodeData) => (
-                <NodeCard
-                  key={nodeData.node_id}
-                  nodeData={nodeData}
-                  expandedNodeIds={expandedNodeIds}
-                  onClick={() => toggleExpandFromCard(nodeData.node_id)}
-                />
-              ))}
-            <h2>Nodes</h2>
-            {nodeData
-              .filter(
-                (node) => !node.smoke_detected && node.battery_level >= 20,
-              )
-              .map((nodeData) => (
-                <NodeCard
-                  key={nodeData.node_id}
-                  nodeData={nodeData}
-                  expandedNodeIds={expandedNodeIds}
-                  onClick={() => toggleExpandFromCard(nodeData.node_id)}
-                />
-              ))}
+            <NodeCardList
+              nodeData={nodeData}
+              expandedNodeIds={expandedNodeIds}
+              onClick={toggleExpandFromCard}
+            />
           </div>
         </div>
       </div>

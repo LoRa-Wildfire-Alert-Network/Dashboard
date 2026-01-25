@@ -5,9 +5,8 @@ import type { NodeData } from "../../types/nodeTypes";
 
 interface MapProps {
   nodeData: NodeData[];
-  expandedNodeIds: string[];
-  onClick: (nodeId: string) => void;
   mostRecentExpandedNodeId: string | null;
+  onClick: (nodeId: string) => void;
 }
 
 // Source: https://github.com/pointhi/leaflet-color-markers /////////////
@@ -85,7 +84,6 @@ L.Marker.prototype.options.icon = redIcon;
 function selectIcon(
   smoke_detected: boolean,
   battery_level: number,
-  expandedNodeIds: string[],
   nodeId: string,
   mostRecentExpandedNodeId: string | null,
 ) {
@@ -112,12 +110,7 @@ function selectIconColor(smoke_detected: boolean, battery_level: number) {
   }
 }
 
-function Map({
-  nodeData,
-  expandedNodeIds,
-  mostRecentExpandedNodeId,
-  onClick,
-}: MapProps) {
+function Map({ nodeData, mostRecentExpandedNodeId, onClick }: MapProps) {
   return (
     <MapContainer
       center={[44.5646, -123.262]}
@@ -136,7 +129,6 @@ function Map({
           icon={selectIcon(
             node.smoke_detected,
             node.battery_level,
-            expandedNodeIds,
             node.node_id,
             mostRecentExpandedNodeId,
           )}
