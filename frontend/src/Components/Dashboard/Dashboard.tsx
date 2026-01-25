@@ -98,20 +98,6 @@ const testData = [
 ];
 
 const Dashboard: React.FC = () => {
-  /* 
-
-  useEffect(() => {
-    async function fetchNodeData() {
-      try {
-        const response = await fetch("http://localhost:5000/latest");
-        const data = await response.json();
-        setNodeData(data);
-      } catch (error) {
-        console.error("Error fetching node data:", error);
-      }
-    }
-  */
-
   /////////////////////////////////////////////////////////////////////////////////////////
   //
   //         STATE AND HANDLERS
@@ -157,6 +143,20 @@ const Dashboard: React.FC = () => {
   };
 
   /////////////////////////////////////////////////////////////////////////////////////////
+
+  /* 
+
+  useEffect(() => {
+    async function fetchNodeData() {
+      try {
+        const response = await fetch("http://localhost:8000/latest");
+        const data = await response.json();
+        setNodeData(data);
+      } catch (error) {
+        console.error("Error fetching node data:", error);
+      }
+    }
+  */
 
   return (
     <>
