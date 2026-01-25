@@ -114,14 +114,22 @@ const Dashboard: React.FC = () => {
 
   /////////////////////////////////////////////////////////////////////////////////////////
   //
+  //         STATE AND HANDLERS
   //
+  //  Multiple NodeCards can be expanded at once.
+  //  A maximum of one Map Marker can be expanded at a time.
   //
-  //
-  //
+  //  Logic for managing expanded nodes from both Map and NodeCard components
+  //    clicking a NodeCard toggles its expanded state.
+  //      if collapsed, it will also expand the corresponding marker on the Map.
+  //      if expanded, it will collapse itself and any expanded markers on the Map.
+  //    clicking a Marker expands that marker and corresponding NodeCard
+  //      all other expanded markers and NodeCards collapse.
   //
   //
   //
   /////////////////////////////////////////////////////////////////////////////////////////
+
   const [nodeData, setNodeData] = useState<NodeData[]>(testData);
   const [expandedNodeIds, setExpandedNodeIds] = useState<string[]>([]);
   const [mostRecentExpandedNodeId, setMostRecentExpandedNodeId] = useState<
