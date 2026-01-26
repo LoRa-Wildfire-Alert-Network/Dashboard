@@ -23,5 +23,8 @@ dist-ssr
 *.sln
 *.sw?
 
-#Environment variables
+# Environment variables
 *.env
+
+# CI/CD Build & cleanup server scripts
+*/scripts/*
