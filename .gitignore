@@ -26,5 +26,5 @@ dist-ssr
 # Environment variables
 *.env
 
-# CI/CD Build & cleanup server scripts
-*/scripts/*
+# PR Preview Deployment Scripts
+scripts/
