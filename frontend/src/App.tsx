@@ -27,7 +27,7 @@ function App() {
       <SignedOut>
         <div className="bg-slate-300 h-[calc(100vh-4rem)] flex items-center justify-center">
           <div className="text-center">
-            <h1 className="text-2xl font-semibold mb-4">Welcome to LoRa Wildfire Dashboard</h1>
+            <h1 className="text-2xl font-semibold mb-4">Check it out, I auto-rebuild when new commits are pushed to a PR!</h1>
             <p className="text-lg mb-4">Please sign in to access the dashboard</p>
           </div>
         </div>
