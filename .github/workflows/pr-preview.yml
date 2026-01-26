@@ -1,0 +1,102 @@
+name: PR Preview Deployment
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, closed]
+  workflow_dispatch:
+
+jobs:
+  deploy-preview:
+    if: github.event.action != 'closed'
+    runs-on: self-hosted
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        working-directory: ./frontend
+        run: npm ci
+
+      - name: Build
+        working-directory: ./frontend
+        run: npm run build
+        env:
+          NODE_ENV: production
+
+      - name: Deploy PR preview
+        run: |
+          DEPLOY_DIR="$HOME/Dashboard/pr-previews/pr_${{ github.event.pull_request.number }}"
+          mkdir -p "$DEPLOY_DIR"
+          cp -r frontend/dist/* "$DEPLOY_DIR/"
+
+      - name: Start preview server
+        run: |
+          $HOME/Dashboard/scripts/serve-pr.sh ${{ github.event.pull_request.number }}
+
+      - name: Update Cloudflare tunnel config
+        run: |
+          $HOME/Dashboard/scripts/update-tunnel-config.sh add lora_${{ github.event.pull_request.number }}.derekrgreene.com ${{ github.event.pull_request.number }}
+
+      - name: Restart Cloudflare tunnel
+        run: |
+          sudo systemctl restart cloudflaredDerekrGreene.service
+
+      - name: Comment on PR
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const prNumber = context.payload.pull_request.number;
+            const previewUrl = `https://lora_${prNumber}.derekrgreene.com`;
+            const comment = `🚀 Preview deployment ready!\n\n🔗 **Preview URL:** ${previewUrl}\n\nThis preview will be automatically removed when the PR is merged or closed.`;
+            
+            // Find existing comment
+            const comments = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: prNumber,
+            });
+            
+            const botComment = comments.data.find(comment => 
+              comment.user.type === 'Bot' && comment.body.includes('Preview deployment ready')
+            );
+            
+            if (botComment) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: botComment.id,
+                body: comment,
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: prNumber,
+                body: comment,
+              });
+            }
+
+  cleanup-preview:
+    if: github.event.action == 'closed'
+    runs-on: self-hosted
+    steps:
+      - name: Cleanup deployment
+        run: |
+          $HOME/Dashboard/scripts/cleanup-pr.sh ${{ github.event.pull_request.number }}
+
+      - name: Update Cloudflare tunnel config
+        run: |
+          $HOME/Dashboard/scripts/update-tunnel-config.sh remove lora_${{ github.event.pull_request.number }}.derekrgreene.com
+
+      - name: Restart Cloudflare tunnel
+        run: |
+          sudo systemctl restart cloudflaredDerekrGreene.service
