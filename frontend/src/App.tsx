@@ -27,12 +27,8 @@ function App() {
       <SignedOut>
         <div className="bg-slate-300 h-[calc(100vh-4rem)] flex items-center justify-center">
           <div className="text-center">
-            <h1 className="text-2xl font-semibold mb-4">
-              Check it out, even more changes!
-            </h1>
-            <p className="text-lg mb-4">
-              Please sign in to access the dashboard
-            </p>
+            <h1 className="text-2xl font-semibold mb-4">Check it out, the build re-runs when new commits are pushed!!</h1>
+            <p className="text-lg mb-4">Please sign in to access the dashboard</p>
           </div>
         </div>
       </SignedOut>

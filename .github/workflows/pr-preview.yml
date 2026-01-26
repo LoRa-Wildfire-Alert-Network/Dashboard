@@ -66,11 +66,18 @@ jobs:
         run: |
           sudo systemctl restart cloudflaredDerekrGreene.service
 
+      - name: Generate Bot Token
+        id: generate_token
+        uses: actions/create-github-app-token@v1
+        with:
+          app-id: ${{ secrets.BOT_APP_ID }}
+          private-key: ${{ secrets.BOT_PRIVATE_KEY }}
+
       - name: Comment on PR
         uses: actions/github-script@v7
         if: github.event.pull_request.head.repo.full_name == github.repository
         with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
+          github-token: ${{ steps.generate_token.outputs.token }}
           script: |
             const prNumber = context.payload.pull_request.number;
             const previewUrl = `https://lora-${prNumber}.derekrgreene.com`;
