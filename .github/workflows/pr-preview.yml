@@ -5,6 +5,10 @@ on:
     types: [opened, synchronize, reopened, closed]
   workflow_dispatch:
 
+permissions:
+  issues: write
+  pull-requests: write
+
 jobs:
   deploy-preview:
     if: github.event.action != 'closed'
@@ -21,6 +25,15 @@ jobs:
         with:
           node-version: '20'
 
+      - name: Copy .env files for build
+        run: |
+          cp /home/derek/Dashboard/.env . || true
+          cp /home/derek/Dashboard/frontend/.env frontend/.env || true
+          cp /home/derek/Dashboard/backend/.env backend/.env || true
+          if ! grep -q "VITE_CLERK_PUBLISHABLE_KEY" frontend/.env 2>/dev/null; then
+            echo "VITE_CLERK_PUBLISHABLE_KEY=pk_test_Z3Jvd2luZy1taWRnZS03OS5jbGVyay5hY2NvdW50cy5kZXYk" >> frontend/.env
+          fi
+
       - name: Install dependencies
         working-directory: ./frontend
         run: npm ci
@@ -35,7 +48,11 @@ jobs:
         run: |
           DEPLOY_DIR="$HOME/Dashboard/pr-previews/pr_${{ github.event.pull_request.number }}"
           mkdir -p "$DEPLOY_DIR"
+          rm -rf "$DEPLOY_DIR"/*
           cp -r frontend/dist/* "$DEPLOY_DIR/"
+          cp .env "$DEPLOY_DIR/" || true
+          cp frontend/.env "$DEPLOY_DIR/" || true
+          cp backend/.env "$DEPLOY_DIR/" || true
 
       - name: Start preview server
         run: |
@@ -43,7 +60,7 @@ jobs:
 
       - name: Update Cloudflare tunnel config
         run: |
-          $HOME/Dashboard/scripts/update-tunnel-config.sh add lora_${{ github.event.pull_request.number }}.derekrgreene.com ${{ github.event.pull_request.number }}
+          $HOME/Dashboard/scripts/update-tunnel-config.sh add lora-${{ github.event.pull_request.number }}.derekrgreene.com ${{ github.event.pull_request.number }}
 
       - name: Restart Cloudflare tunnel
         run: |
@@ -51,14 +68,14 @@ jobs:
 
       - name: Comment on PR
         uses: actions/github-script@v7
+        if: github.event.pull_request.head.repo.full_name == github.repository
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
             const prNumber = context.payload.pull_request.number;
-            const previewUrl = `https://lora_${prNumber}.derekrgreene.com`;
+            const previewUrl = `https://lora-${prNumber}.derekrgreene.com`;
             const comment = `🚀 Preview deployment ready!\n\n🔗 **Preview URL:** ${previewUrl}\n\nThis preview will be automatically removed when the PR is merged or closed.`;
             
-            // Find existing comment
             const comments = await github.rest.issues.listComments({
               owner: context.repo.owner,
               repo: context.repo.repo,
@@ -95,7 +112,7 @@ jobs:
 
       - name: Update Cloudflare tunnel config
         run: |
-          $HOME/Dashboard/scripts/update-tunnel-config.sh remove lora_${{ github.event.pull_request.number }}.derekrgreene.com
+          $HOME/Dashboard/scripts/update-tunnel-config.sh remove lora-${{ github.event.pull_request.number }}.derekrgreene.com
 
       - name: Restart Cloudflare tunnel
         run: |
