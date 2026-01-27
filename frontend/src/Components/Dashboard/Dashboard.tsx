@@ -146,6 +146,8 @@ const Dashboard: React.FC = () => {
 
   /* 
 
+  Please leave this here; waiting to request backend changes before re-implementing
+  
   useEffect(() => {
     async function fetchNodeData() {
       try {
