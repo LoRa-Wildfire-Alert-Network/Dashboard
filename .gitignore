@@ -23,7 +23,7 @@ dist-ssr
 *.sln
 *.sw?
 
-#Environment variables
+# Environment variables
 *.env
 
 # Python Virtual Environments
@@ -31,5 +31,6 @@ dist-ssr
 venv/
 env/
 ENV/
-env.bak/
-venv.bak/
+
+# PR Preview Deployment Scripts
+scripts/
