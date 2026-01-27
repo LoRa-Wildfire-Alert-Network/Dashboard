@@ -116,7 +116,7 @@ const Dashboard: React.FC = () => {
   //
   /////////////////////////////////////////////////////////////////////////////////////////
 
-  const [nodeData, setNodeData] = useState<NodeData[]>();
+  const [nodeData, setNodeData] = useState<NodeData[]>(testData);
   const [expandedNodeIds, setExpandedNodeIds] = useState<string[]>([]);
   const [mostRecentExpandedNodeId, setMostRecentExpandedNodeId] = useState<
     string | null
