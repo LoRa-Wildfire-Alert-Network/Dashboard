@@ -1,25 +1,116 @@
 import * as L from "leaflet";
 import "leaflet/dist/leaflet.css";
-import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
+import { MapContainer, TileLayer, Marker } from "react-leaflet";
 import type { NodeData } from "../../types/nodeTypes";
-
-import icon from "leaflet/dist/images/marker-icon.png";
-import iconShadow from "leaflet/dist/images/marker-shadow.png";
 
 interface MapProps {
   nodeData: NodeData[];
+  mostRecentExpandedNodeId: string | null;
+  onClick: (nodeId: string) => void;
 }
 
-const DefaultIcon = L.icon({
-  iconUrl: icon,
-  shadowUrl: iconShadow,
+// Source: https://github.com/pointhi/leaflet-color-markers /////////////
+
+var greenIcon = new L.Icon({
+  iconUrl:
+    "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-green.png",
+  shadowUrl:
+    "https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png",
   iconSize: [25, 41],
   iconAnchor: [12, 41],
+  popupAnchor: [1, -34],
+  shadowSize: [41, 41],
 });
 
-L.Marker.prototype.options.icon = DefaultIcon;
+var redIcon = new L.Icon({
+  iconUrl:
+    "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png",
+  shadowUrl:
+    "https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png",
+  iconSize: [25, 41],
+  iconAnchor: [12, 41],
+  popupAnchor: [1, -34],
+  shadowSize: [41, 41],
+});
 
-function Map({ nodeData }: MapProps) {
+var orangeIcon = new L.Icon({
+  iconUrl:
+    "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-orange.png",
+  shadowUrl:
+    "https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png",
+  iconSize: [25, 41],
+  iconAnchor: [12, 41],
+  popupAnchor: [1, -34],
+  shadowSize: [41, 41],
+});
+
+var expandedGreenIcon = new L.Icon({
+  iconUrl:
+    "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-green.png",
+  shadowUrl:
+    "https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png",
+  iconSize: [35, 55],
+  iconAnchor: [17, 55],
+  popupAnchor: [1, -44],
+  shadowSize: [41, 41],
+});
+
+var expandedRedIcon = new L.Icon({
+  iconUrl:
+    "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png",
+  shadowUrl:
+    "https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png",
+  iconSize: [35, 55],
+  iconAnchor: [17, 55],
+  popupAnchor: [1, -44],
+  shadowSize: [41, 41],
+});
+
+var expandedOrangeIcon = new L.Icon({
+  iconUrl:
+    "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-orange.png",
+  shadowUrl:
+    "https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png",
+  iconSize: [35, 55],
+  iconAnchor: [17, 55],
+  popupAnchor: [1, -44],
+  shadowSize: [41, 41],
+});
+
+/////////////////////////////////////////////////////////////////////////
+
+L.Marker.prototype.options.icon = redIcon;
+
+function selectIcon(
+  smoke_detected: boolean,
+  battery_level: number,
+  nodeId: string,
+  mostRecentExpandedNodeId: string | null,
+) {
+  let iconColor = selectIconColor(smoke_detected, battery_level);
+
+  if (iconColor === "redIcon") {
+    return nodeId === mostRecentExpandedNodeId ? expandedRedIcon : redIcon;
+  } else if (iconColor === "orangeIcon") {
+    return nodeId === mostRecentExpandedNodeId
+      ? expandedOrangeIcon
+      : orangeIcon;
+  } else {
+    return nodeId === mostRecentExpandedNodeId ? expandedGreenIcon : greenIcon;
+  }
+}
+
+function selectIconColor(smoke_detected: boolean, battery_level: number) {
+  if (smoke_detected) {
+    return "redIcon";
+  } else if (battery_level < 20) {
+    return "orangeIcon";
+  } else {
+    return "greenIcon";
+  }
+}
+
+function Map({ nodeData, mostRecentExpandedNodeId, onClick }: MapProps) {
   return (
     <MapContainer
       center={[44.5646, -123.262]}
@@ -31,15 +122,20 @@ function Map({ nodeData }: MapProps) {
         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
       />
-      {nodeData.map((node, i) => (
-        <Marker key={i} position={[node.latitude, node.longitude]}>
-          <Popup>
-            Node ID: {node.node_id} <br />
-            Temp: {node.temperature_c} °C <br />
-            Humidity: {node.humidity_pct} % <br />
-            Smoke Detected?: {node.smoke_detected ? "Yes" : "No"}
-          </Popup>
-        </Marker>
+      {nodeData.map((node: NodeData) => (
+        <Marker
+          key={node.node_id}
+          position={[node.latitude, node.longitude]}
+          icon={selectIcon(
+            node.smoke_detected,
+            node.battery_level,
+            node.node_id,
+            mostRecentExpandedNodeId,
+          )}
+          eventHandlers={{
+            click: () => onClick(node.node_id),
+          }}
+        ></Marker>
       ))}
     </MapContainer>
   );
