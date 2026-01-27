@@ -2,7 +2,7 @@ import Map from "./../Map/Map";
 import NodeCardList from "../NodeCardList/NodeCardList";
 import type { NodeData } from "./../../types/nodeTypes";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
 const testData: NodeData[] = [
   {
@@ -116,11 +116,13 @@ const Dashboard: React.FC = () => {
   //
   /////////////////////////////////////////////////////////////////////////////////////////
 
-  const [nodeData, setNodeData] = useState<NodeData[]>(testData);
+  const [nodeData, setNodeData] = useState<NodeData[]>();
   const [expandedNodeIds, setExpandedNodeIds] = useState<string[]>([]);
   const [mostRecentExpandedNodeId, setMostRecentExpandedNodeId] = useState<
     string | null
   >(null);
+
+  setNodeData(testData);
 
   const toggleExpandFromCard = (nodeId: string) => {
     if (expandedNodeIds.includes(nodeId)) {
