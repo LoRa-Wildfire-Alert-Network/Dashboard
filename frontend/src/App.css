@@ -1,7 +1,1 @@
 @import "tailwindcss";
-
-@layer utilities {
-    .cl-rootBox>div>div:last-child {
-        display: none !important;
-    }
-}
