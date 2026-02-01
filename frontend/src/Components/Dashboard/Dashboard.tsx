@@ -77,8 +77,6 @@ const Dashboard: React.FC = () => {
       <div className="bg-slate-300 h-[calc(100vh-4rem)]">
         <div className="flex space-x-4 w-full h-full p-4">
           <div className="flex-none lg:w-80 md:w-48 bg-slate-100 rounded-md p-4">
-            <h2 className="text-xl font-semibold mb-2">Column 1</h2>
-            <p>First Column</p>
           </div>
           <Map
             nodeData={nodeData}
