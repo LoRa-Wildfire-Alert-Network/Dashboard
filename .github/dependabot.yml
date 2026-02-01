@@ -1,0 +1,10 @@
+version: 2
+updates:
+  - package-ecosystem: "npm"
+    directory: "/frontend/package.json"
+    schedule:
+      interval: "daily"
+  - package-ecosystem: "pip"
+    directory: "/backend/requirements.txt"
+    schedule:
+      interval: "daily"
