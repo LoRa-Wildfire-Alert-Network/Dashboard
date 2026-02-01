@@ -55,7 +55,9 @@ const Dashboard: React.FC = () => {
     const fetchNodeData = async () => {
       try {
         const response = await fetch("https://lora-18.derekrgreene.com/latest");
+        console.log(response);
         const data = await response.json();
+        console.log(data);
         setNodeData(data);
       } catch (error) {
         console.error("Error fetching node data:", error);
