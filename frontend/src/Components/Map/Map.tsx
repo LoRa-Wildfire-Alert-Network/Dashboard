@@ -85,6 +85,7 @@ function selectIcon(
   smoke_detected: boolean,
   battery_level: number,
   nodeId: string,
+  humidity_pct: number,
   mostRecentExpandedNodeId: string | null,
 ) {
   const iconColor = selectIconColor(smoke_detected, battery_level);
@@ -130,6 +131,7 @@ function Map({ nodeData, mostRecentExpandedNodeId, onClick }: MapProps) {
             node.smoke_detected,
             node.battery_level,
             node.node_id,
+            node.humidity_pct,
             mostRecentExpandedNodeId,
           )}
           eventHandlers={{
