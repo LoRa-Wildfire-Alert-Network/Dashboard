@@ -11,7 +11,7 @@ interface MapProps {
 
 // Source: https://github.com/pointhi/leaflet-color-markers /////////////
 
-var greenIcon = new L.Icon({
+const greenIcon = new L.Icon({
   iconUrl:
     "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-green.png",
   shadowUrl:
@@ -22,7 +22,7 @@ var greenIcon = new L.Icon({
   shadowSize: [41, 41],
 });
 
-var redIcon = new L.Icon({
+const redIcon = new L.Icon({
   iconUrl:
     "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png",
   shadowUrl:
@@ -33,7 +33,7 @@ var redIcon = new L.Icon({
   shadowSize: [41, 41],
 });
 
-var orangeIcon = new L.Icon({
+const orangeIcon = new L.Icon({
   iconUrl:
     "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-orange.png",
   shadowUrl:
@@ -44,7 +44,7 @@ var orangeIcon = new L.Icon({
   shadowSize: [41, 41],
 });
 
-var expandedGreenIcon = new L.Icon({
+const expandedGreenIcon = new L.Icon({
   iconUrl:
     "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-green.png",
   shadowUrl:
@@ -55,7 +55,7 @@ var expandedGreenIcon = new L.Icon({
   shadowSize: [41, 41],
 });
 
-var expandedRedIcon = new L.Icon({
+const expandedRedIcon = new L.Icon({
   iconUrl:
     "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png",
   shadowUrl:
@@ -66,7 +66,7 @@ var expandedRedIcon = new L.Icon({
   shadowSize: [41, 41],
 });
 
-var expandedOrangeIcon = new L.Icon({
+const expandedOrangeIcon = new L.Icon({
   iconUrl:
     "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-orange.png",
   shadowUrl:
@@ -77,7 +77,7 @@ var expandedOrangeIcon = new L.Icon({
   shadowSize: [41, 41],
 });
 
-/////////////////////////////////////////////////////////////////////////
+// End of cited code ////////////////////////////////////////////////////
 
 L.Marker.prototype.options.icon = redIcon;
 
@@ -87,7 +87,7 @@ function selectIcon(
   nodeId: string,
   mostRecentExpandedNodeId: string | null,
 ) {
-  let iconColor = selectIconColor(smoke_detected, battery_level);
+  const iconColor = selectIconColor(smoke_detected, battery_level);
 
   if (iconColor === "redIcon") {
     return nodeId === mostRecentExpandedNodeId ? expandedRedIcon : redIcon;
