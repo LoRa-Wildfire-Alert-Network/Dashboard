@@ -26,5 +26,11 @@ dist-ssr
 # Environment variables
 *.env
 
+# Python Virtual Environments
+.venv/
+venv/
+env/
+ENV/
+
 # PR Preview Deployment Scripts
 scripts/
