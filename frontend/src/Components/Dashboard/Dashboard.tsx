@@ -54,7 +54,7 @@ const Dashboard: React.FC = () => {
   useEffect(() => {
     const fetchNodeData = async () => {
       try {
-        const response = await fetch("http://localhost:8000/latest");
+        const response = await fetch("https://lora-18.derekrgreene.com/latest");
         const data = await response.json();
         setNodeData(data);
       } catch (error) {
