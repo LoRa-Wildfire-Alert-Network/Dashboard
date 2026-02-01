@@ -52,25 +52,16 @@ const Dashboard: React.FC = () => {
   /////////////////////////////////////////////////////////////////////////////////////////
 
   useEffect(() => {
-    // For now, use test data
-    setNodeData(testData);
-  }, []);
-
-  /* 
-
-  Please leave this here; waiting to request backend changes before re-implementing
-  
-  useEffect(() => {
-    async function fetchNodeData() {
+    const fetchNodeData = async () => {
       try {
-        const response = await fetch("http://localhost:8000/latest");
+        const response = await fetch("http://localhost:8000/api/latest");
         const data = await response.json();
         setNodeData(data);
       } catch (error) {
         console.error("Error fetching node data:", error);
       }
-    }
-  */
+    };
+  }, []);
 
   return (
     <>
