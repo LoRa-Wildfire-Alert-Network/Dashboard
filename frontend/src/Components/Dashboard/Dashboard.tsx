@@ -51,10 +51,12 @@ const Dashboard: React.FC = () => {
 
   // End of STATE AND HANDLERS block //////////////////////////////////////////////////////
 
+  const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
+
   useEffect(() => {
     const fetchNodeData = async () => {
       try {
-        const response = await fetch("http://localhost:8000/latest");
+        const response = await fetch(`${API_URL}/latest`);
         console.log(response);
         const data = await response.json();
         console.log(data);
