@@ -44,6 +44,17 @@ const orangeIcon = new L.Icon({
   shadowSize: [41, 41],
 });
 
+const yellowIcon = new L.Icon({
+  iconUrl:
+    "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-yellow.png",
+  shadowUrl:
+    "https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png",
+  iconSize: [25, 41],
+  iconAnchor: [12, 41],
+  popupAnchor: [1, -34],
+  shadowSize: [41, 41],
+});
+
 const expandedGreenIcon = new L.Icon({
   iconUrl:
     "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-green.png",
@@ -77,6 +88,17 @@ const expandedOrangeIcon = new L.Icon({
   shadowSize: [41, 41],
 });
 
+const expandedYellowIcon = new L.Icon({
+  iconUrl:
+    "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-yellow.png",
+  shadowUrl:
+    "https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png",
+  iconSize: [35, 55],
+  iconAnchor: [17, 55],
+  popupAnchor: [1, -44],
+  shadowSize: [41, 41],
+});
+
 // End of cited code ////////////////////////////////////////////////////
 
 L.Marker.prototype.options.icon = redIcon;
@@ -88,7 +110,7 @@ function selectIcon(
   humidity_pct: number,
   mostRecentExpandedNodeId: string | null,
 ) {
-  const iconColor = selectIconColor(smoke_detected, battery_level);
+  const iconColor = selectIconColor(smoke_detected, battery_level, humidity_pct);
 
   if (iconColor === "redIcon") {
     return nodeId === mostRecentExpandedNodeId ? expandedRedIcon : redIcon;
@@ -96,16 +118,22 @@ function selectIcon(
     return nodeId === mostRecentExpandedNodeId
       ? expandedOrangeIcon
       : orangeIcon;
+  } else if (iconColor === "yellowIcon") {
+    return nodeId === mostRecentExpandedNodeId
+      ? expandedYellowIcon
+      : yellowIcon;
   } else {
     return nodeId === mostRecentExpandedNodeId ? expandedGreenIcon : greenIcon;
   }
 }
 
-function selectIconColor(smoke_detected: boolean, battery_level: number) {
+function selectIconColor(smoke_detected: boolean, battery_level: number, humidity_pct: number) {
   if (smoke_detected) {
     return "redIcon";
   } else if (battery_level < 20) {
     return "orangeIcon";
+  } else if (humidity_pct < 15) {
+    return "yellowIcon";
   } else {
     return "greenIcon";
   }

@@ -54,13 +54,14 @@ const Dashboard: React.FC = () => {
   useEffect(() => {
     const fetchNodeData = async () => {
       try {
-        const response = await fetch("http://localhost:8000/api/latest");
+        const response = await fetch("http://localhost:8000/latest");
         const data = await response.json();
         setNodeData(data);
       } catch (error) {
         console.error("Error fetching node data:", error);
       }
     };
+    fetchNodeData();
   }, []);
 
   return (
