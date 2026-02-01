@@ -155,7 +155,7 @@ npm run dev
 | Variable | Description | Default |
 |----------|-------------|---------|
 | `DB_DSN` | PostgreSQL connection string | - |
-| `LIVE_URL` | External API for live sensor data | - |
+| `LIVE_URL` | External API for live sensor data | https://api.lora.derekrgreene.com |
 | `ALLOWED_ORIGINS` | CORS allowed origins | `*` |
 | `POSTGRES_DB` | Database name | - |
 | `POSTGRES_USER` | Database user | - |
