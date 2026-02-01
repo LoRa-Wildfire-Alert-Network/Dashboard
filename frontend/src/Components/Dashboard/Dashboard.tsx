@@ -64,6 +64,10 @@ const Dashboard: React.FC = () => {
       }
     };
     fetchNodeData();
+
+    const interval = setInterval(fetchNodeData, 3000);
+
+    return () => clearInterval(interval);
   }, []);
 
   return (
