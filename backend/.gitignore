@@ -1,0 +1,12 @@
+# SQLite database files
+*.db
+*.sqlite
+*.sqlite3
+
+# SQLite temp / journal files
+*-journal
+*-wal
+*-shm
+
+# python cache
+__pycache__/

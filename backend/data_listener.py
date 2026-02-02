@@ -1,10 +1,12 @@
-import os, datetime, requests, psycopg2, time
-from psycopg2.extras import execute_values
+import os, datetime, requests, time, sqlite3
 from dotenv import load_dotenv
 
 load_dotenv()
-DB_DSN = os.getenv("DB_DSN")
 API_URL = os.getenv("LIVE_URL")
+
+# SQLite DB file in the same folder as this script
+HERE = os.path.abspath(os.path.dirname(__file__))
+DB_PATH = os.path.join(HERE, "lora.db")
 
 def parse_rfc3339(dt_str):
     if not dt_str:
@@ -56,50 +58,59 @@ def extract_rows(objs):
             "humidity_pct": humidity,
             "battery_level": battery_level,
             "rssi": rssi, "snr": snr,
-            "smoke_detected": True if obj.get("smoke_detected") else False,
+            "smoke_detected": 1 if obj.get("smoke_detected") else 0,
         })
     return rows
 
+def _to_iso(dt):
+    return dt.isoformat() if isinstance(dt, datetime.datetime) else None
+
 def upsert(conn, rows):
-    with conn.cursor() as cur:
-        node_values = []
-        for r in rows:
-            if r["node_id"]:
-                node_values.append((r["node_id"], r["device_eui"], r["timestamp"]))
-        if node_values:
-            execute_values(cur, """
-                INSERT INTO nodes (node_id, device_eui, last_seen)
-                VALUES %s
-                ON CONFLICT (node_id) DO UPDATE
-                SET device_eui = EXCLUDED.device_eui,
-                    last_seen  = EXCLUDED.last_seen;
-            """, node_values)
+    cur = conn.cursor()
 
-        gw_values = [(r["gateway_id"],) for r in rows if r.get("gateway_id")]
-        if gw_values:
-            execute_values(cur, """
-                INSERT INTO gateways (gateway_id)
-                VALUES %s
-                ON CONFLICT (gateway_id) DO NOTHING;
-            """, gw_values)
+    # Nodes upsert (SQLite ON CONFLICT)
+    node_values = []
+    for r in rows:
+        if r["node_id"]:
+            node_values.append((r["node_id"], r["device_eui"], _to_iso(r["timestamp"])))
 
-        tel_values = []
-        for r in rows:
-            tel_values.append((
-                r["node_id"], r["gateway_id"], r["timestamp"], r["device_timestamp"],
-                r["lat"], r["lon"], r["alt"],
-                r["temperature_c"], r["humidity_pct"], r["battery_level"],
-                r["rssi"], r["snr"], r["smoke_detected"]
-            ))
-        if tel_values:
-            execute_values(cur, """
-                INSERT INTO telemetry
-                  (node_id, gateway_id, timestamp, device_timestamp,
-                   latitude, longitude, altitude,
-                   temperature_c, humidity_pct, battery_level,
-                   rssi, snr, smoke_detected)
-                VALUES %s
-            """, tel_values)
+    if node_values:
+        cur.executemany("""
+            INSERT INTO nodes (node_id, device_eui, last_seen)
+            VALUES (?, ?, ?)
+            ON CONFLICT(node_id) DO UPDATE SET
+              device_eui = excluded.device_eui,
+              last_seen  = excluded.last_seen;
+        """, node_values)
+
+    # Gateways insert-ignore
+    gw_values = [(r["gateway_id"],) for r in rows if r.get("gateway_id")]
+    if gw_values:
+        cur.executemany("""
+            INSERT INTO gateways (gateway_id)
+            VALUES (?)
+            ON CONFLICT(gateway_id) DO NOTHING;
+        """, gw_values)
+
+    # Telemetry insert (bulk)
+    tel_values = []
+    for r in rows:
+        tel_values.append((
+            r["node_id"], r["gateway_id"], _to_iso(r["timestamp"]), _to_iso(r["device_timestamp"]),
+            r["lat"], r["lon"], r["alt"],
+            r["temperature_c"], r["humidity_pct"], r["battery_level"],
+            r["rssi"], r["snr"], r["smoke_detected"]
+        ))
+
+    if tel_values:
+        cur.executemany("""
+            INSERT INTO telemetry
+              (node_id, gateway_id, timestamp, device_timestamp,
+               latitude, longitude, altitude,
+               temperature_c, humidity_pct, battery_level,
+               rssi, snr, smoke_detected)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """, tel_values)
 
     conn.commit()
 
@@ -111,8 +122,9 @@ def main():
             if not rows:
                 print("No data.")
             else:
-                conn = psycopg2.connect(DB_DSN)
+                conn = sqlite3.connect(DB_PATH, check_same_thread=False)
                 try:
+                    conn.execute("PRAGMA foreign_keys = ON;")
                     upsert(conn, rows)
                     print(f"Inserted {len(rows)} row(s).")
                 finally:
