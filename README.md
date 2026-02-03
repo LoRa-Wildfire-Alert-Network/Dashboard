@@ -151,7 +151,7 @@ npm run dev
 
 | Variable | Description | Default |
 |----------|-------------|---------|
-| `LIVE_URL` | External API for live sensor data | https://api.lora.derekrgreene.com |
+| `LIVE_URL` | External API for live sensor data | https://api-lora-{PR_NUMBER}.derekrgreene.com |
 | `ALLOWED_ORIGINS` | CORS allowed origins | `*` |
 | `DB_NAME` | SQLite database filename | `lora.db` |
 
