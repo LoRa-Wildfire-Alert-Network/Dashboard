@@ -4,9 +4,9 @@ from dotenv import load_dotenv
 load_dotenv()
 API_URL = os.getenv("LIVE_URL")
 
-# SQLite DB file in the same folder as this script
 HERE = os.path.abspath(os.path.dirname(__file__))
-DB_PATH = os.path.join(HERE, "lora.db")
+DB_NAME = os.getenv("DB_NAME")
+DB_PATH = os.path.join(HERE, DB_NAME)
 
 def parse_rfc3339(dt_str):
     if not dt_str:

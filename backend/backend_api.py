@@ -23,7 +23,8 @@ app.add_middleware(
 )
 
 HERE = os.path.abspath(os.path.dirname(__file__))
-DB_PATH = os.path.join(HERE, "lora.db")
+DB_NAME = os.getenv("DB_NAME")
+DB_PATH = os.path.join(HERE, DB_NAME)
 
 def db() -> sqlite3.Connection:
     conn = sqlite3.connect(DB_PATH, check_same_thread=False)

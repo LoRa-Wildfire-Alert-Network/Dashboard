@@ -2,7 +2,8 @@ import os
 import sqlite3
 
 HERE = os.path.abspath(os.path.dirname(__file__))
-DB_PATH = os.path.join(HERE, "lora.db")
+DB_NAME = os.getenv("DB_NAME", "lora.db")
+DB_PATH = os.path.join(HERE, DB_NAME)
 SCHEMA_PATH = os.path.join(HERE, "sqlite_schema.sql")
 
 def main():
