@@ -25,6 +25,11 @@ jobs:
         with:
           node-version: '20'
 
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
       - name: Copy .env files for build
         run: |
           cp /home/derek/Dashboard/.env . || true
@@ -33,34 +38,54 @@ jobs:
           if ! grep -q "VITE_CLERK_PUBLISHABLE_KEY" frontend/.env 2>/dev/null; then
             echo "VITE_CLERK_PUBLISHABLE_KEY=pk_test_Z3Jvd2luZy1taWRnZS03OS5jbGVyay5hY2NvdW50cy5kZXYk" >> frontend/.env
           fi
+          PR_NUM=${{ github.event.pull_request.number }}
+          sed -i "s|VITE_API_URL=.*|VITE_API_URL=https://api-lora-${PR_NUM}.derekrgreene.com|" frontend/.env
 
-      - name: Install dependencies
+      - name: Install frontend dependencies
         working-directory: ./frontend
         run: npm ci
 
-      - name: Build
+      - name: Build frontend
         working-directory: ./frontend
         run: npm run build
         env:
           NODE_ENV: production
 
+      - name: Setup backend
+        working-directory: ./backend
+        run: |
+          python -m venv venv
+          source venv/bin/activate
+          pip install --upgrade pip
+          pip install -r requirements.txt
+
       - name: Deploy PR preview
         run: |
-          DEPLOY_DIR="$HOME/Dashboard/pr-previews/pr_${{ github.event.pull_request.number }}"
-          mkdir -p "$DEPLOY_DIR"
-          rm -rf "$DEPLOY_DIR"/*
-          cp -r frontend/dist/* "$DEPLOY_DIR/"
+          PR_NUM=${{ github.event.pull_request.number }}
+          DEPLOY_DIR="$HOME/Dashboard/pr-previews/pr_${PR_NUM}"
+          mkdir -p "$DEPLOY_DIR/frontend"
+          mkdir -p "$DEPLOY_DIR/backend"
+          rm -rf "$DEPLOY_DIR/frontend"/*
+          cp -r frontend/dist/* "$DEPLOY_DIR/frontend/"
+          rm -rf "$DEPLOY_DIR/backend"/*
+          cp -r backend/* "$DEPLOY_DIR/backend/"
           cp .env "$DEPLOY_DIR/" || true
-          cp frontend/.env "$DEPLOY_DIR/" || true
-          cp backend/.env "$DEPLOY_DIR/" || true
+          cp frontend/.env "$DEPLOY_DIR/frontend/" || true
+          cp backend/.env "$DEPLOY_DIR/backend/" || true
+          BACKEND_PORT=$((8000 + PR_NUM))
+          echo "PORT=${BACKEND_PORT}" >> "$DEPLOY_DIR/backend/.env"
 
-      - name: Start preview server
+      - name: Start preview servers
         run: |
           $HOME/Dashboard/scripts/serve-pr.sh ${{ github.event.pull_request.number }}
 
-      - name: Update Cloudflare tunnel config
+      - name: Update Cloudflare tunnel config for frontend
         run: |
-          $HOME/Dashboard/scripts/update-tunnel-config.sh add lora-${{ github.event.pull_request.number }}.derekrgreene.com ${{ github.event.pull_request.number }}
+          $HOME/Dashboard/scripts/update-tunnel-config.sh add lora-${{ github.event.pull_request.number }}.derekrgreene.com ${{ github.event.pull_request.number }} frontend
+
+      - name: Update Cloudflare tunnel config for backend
+        run: |
+          $HOME/Dashboard/scripts/update-tunnel-config.sh add api-lora-${{ github.event.pull_request.number }}.derekrgreene.com ${{ github.event.pull_request.number }} backend
 
       - name: Restart Cloudflare tunnel
         run: |
@@ -80,8 +105,9 @@ jobs:
           github-token: ${{ steps.generate_token.outputs.token }}
           script: |
             const prNumber = context.payload.pull_request.number;
-            const previewUrl = `https://lora-${prNumber}.derekrgreene.com`;
-            const comment = `🚀 Preview deployment ready!\n\n🔗 **Preview URL:** ${previewUrl}\n\nThis preview will be automatically removed when the PR is merged or closed.`;
+            const frontendUrl = `https://lora-${prNumber}.derekrgreene.com`;
+            const backendUrl = `https://api-lora-${prNumber}.derekrgreene.com`;
+            const comment = `🚀 Preview deployment ready!\n\n🔗 **Frontend URL:** ${frontendUrl}\n🔗 **Backend API URL:** ${backendUrl}\n\nThis preview will be automatically removed when the PR is merged or closed.`;
             
             const comments = await github.rest.issues.listComments({
               owner: context.repo.owner,
@@ -117,9 +143,13 @@ jobs:
         run: |
           $HOME/Dashboard/scripts/cleanup-pr.sh ${{ github.event.pull_request.number }}
 
-      - name: Update Cloudflare tunnel config
+      - name: Update Cloudflare tunnel config - remove frontend
         run: |
           $HOME/Dashboard/scripts/update-tunnel-config.sh remove lora-${{ github.event.pull_request.number }}.derekrgreene.com
+
+      - name: Update Cloudflare tunnel config - remove backend
+        run: |
+          $HOME/Dashboard/scripts/update-tunnel-config.sh remove api-lora-${{ github.event.pull_request.number }}.derekrgreene.com
 
       - name: Restart Cloudflare tunnel
         run: |

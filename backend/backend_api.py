@@ -2,17 +2,14 @@ import os
 import datetime as dt
 from typing import Optional, List
 
-import psycopg2
-from psycopg2.extras import RealDictCursor
+import sqlite3
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
 import uvicorn
 
-load_dotenv()
-DB_DSN = os.getenv("DB_DSN")
-if not DB_DSN:
-    raise RuntimeError("Missing DB_DSN in .env")
+HERE = os.path.abspath(os.path.dirname(__file__))
+load_dotenv(os.path.join(HERE, ".env"))
 
 ALLOWED_ORIGINS = os.getenv("ALLOWED_ORIGINS", "*")
 
@@ -26,8 +23,14 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-def db() -> psycopg2.extensions.connection:
-    return psycopg2.connect(DB_DSN, cursor_factory=RealDictCursor)
+DB_NAME = os.getenv("DB_NAME", "lora.db")
+DB_PATH = os.path.join(HERE, DB_NAME)
+
+def db() -> sqlite3.Connection:
+    conn = sqlite3.connect(DB_PATH, check_same_thread=False)
+    conn.row_factory = sqlite3.Row
+    conn.execute("PRAGMA foreign_keys = ON;")
+    return conn
 
 def parse_iso(ts: Optional[str]) -> Optional[dt.datetime]:
     if not ts:
@@ -53,10 +56,9 @@ def list_nodes():
         FROM nodes
         ORDER BY node_id
     """
-    with db() as conn, conn.cursor() as cur:
-        cur.execute(q)
-        rows = cur.fetchall()
-    return rows
+    with db() as conn:
+        rows = conn.execute(q).fetchall()
+    return [dict(r) for r in rows]
 
 @app.get("/nodes/{node_id}/latest")
 def node_latest(node_id: str):
@@ -65,30 +67,29 @@ def node_latest(node_id: str):
     """
     q = """
         SELECT
-          node_id, 
-          gateway_id, 
-          "timestamp", 
+          node_id,
+          gateway_id,
+          timestamp,
           device_timestamp,
-          latitude, 
-          longitude, 
+          latitude,
+          longitude,
           altitude,
-          temperature_c, 
-          humidity_pct, 
-          battery_level, 
-          smoke_detected, 
-          rssi, 
+          temperature_c,
+          humidity_pct,
+          battery_level,
+          smoke_detected,
+          rssi,
           snr
         FROM telemetry
-        WHERE node_id = %s
-        ORDER BY "timestamp" DESC
+        WHERE node_id = ?
+        ORDER BY timestamp DESC
         LIMIT 1
     """
-    with db() as conn, conn.cursor() as cur:
-        cur.execute(q, (node_id,))
-        row = cur.fetchone()
+    with db() as conn:
+        row = conn.execute(q, (node_id,)).fetchone()
     if not row:
         raise HTTPException(status_code=404, detail="No telemetry for this node")
-    return row
+    return dict(row)
 
 @app.get("/telemetry")
 def get_telemetry(
@@ -111,43 +112,44 @@ def get_telemetry(
     params: List[object] = []
 
     if node_id:
-        clauses.append("node_id = %s")
+        clauses.append("node_id = ?")
         params.append(node_id)
     if dt_from:
-        clauses.append('"timestamp" >= %s')
-        params.append(dt_from)
+        clauses.append("timestamp >= ?")
+        params.append(dt_from.isoformat())
     if dt_to:
-        clauses.append('"timestamp" <= %s')
-        params.append(dt_to)
+        clauses.append("timestamp <= ?")
+        params.append(dt_to.isoformat())
 
     where = f"WHERE {' AND '.join(clauses)}" if clauses else ""
-    order = 'DESC' if newest_first else 'ASC'
+    order = "DESC" if newest_first else "ASC"
 
     q = f"""
         SELECT
-          node_id, 
-          gateway_id, 
-          "timestamp", 
+          node_id,
+          gateway_id,
+          timestamp,
           device_timestamp,
-          latitude, 
-          longitude, 
+          latitude,
+          longitude,
           altitude,
-          temperature_c, 
-          humidity_pct, 
+          temperature_c,
+          humidity_pct,
           battery_level,
           smoke_detected,
-          rssi, 
+          rssi,
           snr
         FROM telemetry
         {where}
-        ORDER BY "timestamp" {order}
-        LIMIT %s
+        ORDER BY timestamp {order}
+        LIMIT ?
     """
 
-    with db() as conn, conn.cursor() as cur:
-        cur.execute(q, (*params, limit))
-        rows = cur.fetchall()
-    return rows
+    params.append(limit)
+
+    with db() as conn:
+        rows = conn.execute(q, tuple(params)).fetchall()
+    return [dict(r) for r in rows]
 
 @app.get("/latest")
 def latest_all_nodes():
@@ -156,26 +158,25 @@ def latest_all_nodes():
     """
     q = """
         SELECT
-          node_id, 
-          gateway_id, 
-          "timestamp", 
+          node_id,
+          gateway_id,
+          timestamp,
           device_timestamp,
-          latitude, 
-          longitude, 
+          latitude,
+          longitude,
           altitude,
-          temperature_c, 
-          humidity_pct, 
+          temperature_c,
+          humidity_pct,
           battery_level,
-          smoke_detected, 
-          rssi, 
+          smoke_detected,
+          rssi,
           snr
         FROM latest_telemetry
         ORDER BY node_id
     """
-    with db() as conn, conn.cursor() as cur:
-        cur.execute(q)
-        rows = cur.fetchall()
-    return rows
+    with db() as conn:
+        rows = conn.execute(q).fetchall()
+    return [dict(r) for r in rows]
 
 @app.get("/summary")
 def summary_all_nodes():
@@ -185,7 +186,7 @@ def summary_all_nodes():
     q = """
         SELECT
           node_id,
-          "timestamp",
+          timestamp,
           latitude,
           longitude,
           temperature_c,
@@ -195,9 +196,9 @@ def summary_all_nodes():
         FROM latest_telemetry
         ORDER BY node_id
     """
-    with db() as conn, conn.cursor() as cur:
-        cur.execute(q)
-        return cur.fetchall()
+    with db() as conn:
+        rows = conn.execute(q).fetchall()
+    return [dict(r) for r in rows]
 
 @app.get("/map/nodes")
 def map_nodes(
@@ -214,10 +215,10 @@ def map_nodes(
     params: List[object] = []
 
     if min_lat is not None and max_lat is not None:
-        clauses.append("latitude BETWEEN %s AND %s")
+        clauses.append("latitude BETWEEN ? AND ?")
         params += [min_lat, max_lat]
     if min_lon is not None and max_lon is not None:
-        clauses.append("longitude BETWEEN %s AND %s")
+        clauses.append("longitude BETWEEN ? AND ?")
         params += [min_lon, max_lon]
 
     where = f"WHERE {' AND '.join(clauses)}" if clauses else ""
@@ -225,7 +226,7 @@ def map_nodes(
     q = f"""
         SELECT
           node_id,
-          "timestamp",
+          timestamp,
           latitude,
           longitude,
           temperature_c,
@@ -235,13 +236,13 @@ def map_nodes(
         FROM latest_telemetry
         {where}
         ORDER BY node_id
-        LIMIT %s
+        LIMIT ?
     """
     params.append(limit)
 
-    with db() as conn, conn.cursor() as cur:
-        cur.execute(q, tuple(params))
-        return cur.fetchall()
+    with db() as conn:
+        rows = conn.execute(q, tuple(params)).fetchall()
+    return [dict(r) for r in rows]
 
 
 if __name__ == "__main__":
