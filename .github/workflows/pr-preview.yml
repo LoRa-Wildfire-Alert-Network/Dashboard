@@ -39,7 +39,7 @@ jobs:
             echo "VITE_CLERK_PUBLISHABLE_KEY=pk_test_Z3Jvd2luZy1taWRnZS03OS5jbGVyay5hY2NvdW50cy5kZXYk" >> frontend/.env
           fi
           PR_NUM=${{ github.event.pull_request.number }}
-          sed -i "s|VITE_API_URL=.*|VITE_API_URL=https://lora.derekrgreene.com/api/live|" frontend/.env
+          sed -i "s|VITE_API_URL=.*|VITE_API_URL=https://api-lora-${PR_NUM}.derekrgreene.com|" frontend/.env
 
       - name: Install frontend dependencies
         working-directory: ./frontend
@@ -54,11 +54,10 @@ jobs:
       - name: Setup backend
         working-directory: ./backend
         run: |
-          /usr/bin/python3 -m venv venv
+          python -m venv venv
           source venv/bin/activate
           pip install --upgrade pip
           pip install -r requirements.txt
-          pip install "hypercorn>=0.16,<1.0"
 
       - name: Deploy PR preview
         run: |
