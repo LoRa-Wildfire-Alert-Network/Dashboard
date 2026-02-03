@@ -1,11 +1,12 @@
 import os, datetime, requests, time, sqlite3
 from dotenv import load_dotenv
 
-load_dotenv()
-API_URL = os.getenv("LIVE_URL")
-
+# Load .env from the same directory as this script
 HERE = os.path.abspath(os.path.dirname(__file__))
-DB_NAME = os.getenv("DB_NAME")
+load_dotenv(os.path.join(HERE, ".env"))
+
+API_URL = os.getenv("LIVE_URL", "https://lora.derekrgreene.com/api/live")
+DB_NAME = os.getenv("DB_NAME", "lora.db")
 DB_PATH = os.path.join(HERE, DB_NAME)
 
 def parse_rfc3339(dt_str):

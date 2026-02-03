@@ -8,7 +8,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
 import uvicorn
 
-load_dotenv()
+HERE = os.path.abspath(os.path.dirname(__file__))
+load_dotenv(os.path.join(HERE, ".env"))
 
 ALLOWED_ORIGINS = os.getenv("ALLOWED_ORIGINS", "*")
 
@@ -22,8 +23,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-HERE = os.path.abspath(os.path.dirname(__file__))
-DB_NAME = os.getenv("DB_NAME")
+DB_NAME = os.getenv("DB_NAME", "lora.db")
 DB_PATH = os.path.join(HERE, DB_NAME)
 
 def db() -> sqlite3.Connection:
