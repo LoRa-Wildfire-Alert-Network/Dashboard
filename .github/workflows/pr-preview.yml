@@ -32,15 +32,26 @@ jobs:
 
       - name: Copy .env files for build
         run: |
+          PR_NUM=${{ github.event.pull_request.number }}
+          
+          # Copy base .env files
           cp /home/derek/Dashboard/.env . || true
           cp /home/derek/Dashboard/frontend/.env frontend/.env || true
           cp /home/derek/Dashboard/backend/.env backend/.env || true
+          
+          # Set frontend env vars for this PR
           if ! grep -q "VITE_CLERK_PUBLISHABLE_KEY" frontend/.env 2>/dev/null; then
             echo "VITE_CLERK_PUBLISHABLE_KEY=pk_test_Z3Jvd2luZy1taWRnZS03OS5jbGVyay5hY2NvdW50cy5kZXYk" >> frontend/.env
           fi
-          # Set PR-specific API URL for frontend build
-          PR_NUM=${{ github.event.pull_request.number }}
           sed -i "s|VITE_API_URL=.*|VITE_API_URL=https://api-lora-${PR_NUM}.derekrgreene.com|" frontend/.env
+          
+          # Set backend env vars for this PR
+          # Allow CORS from the PR frontend URL
+          sed -i "s|ALLOWED_ORIGINS=.*|ALLOWED_ORIGINS=https://lora-${PR_NUM}.derekrgreene.com|" backend/.env
+          # Ensure DB_NAME is set
+          if ! grep -q "DB_NAME=" backend/.env 2>/dev/null; then
+            echo "DB_NAME=lora.db" >> backend/.env
+          fi
 
       - name: Install frontend dependencies
         working-directory: ./frontend
@@ -64,25 +75,15 @@ jobs:
         run: |
           PR_NUM=${{ github.event.pull_request.number }}
           DEPLOY_DIR="$HOME/Dashboard/pr-previews/pr_${PR_NUM}"
-          
-          # Create deployment directories
           mkdir -p "$DEPLOY_DIR/frontend"
           mkdir -p "$DEPLOY_DIR/backend"
-          
-          # Deploy frontend
           rm -rf "$DEPLOY_DIR/frontend"/*
           cp -r frontend/dist/* "$DEPLOY_DIR/frontend/"
-          
-          # Deploy backend
           rm -rf "$DEPLOY_DIR/backend"/*
           cp -r backend/* "$DEPLOY_DIR/backend/"
-          
-          # Copy env files
           cp .env "$DEPLOY_DIR/" || true
           cp frontend/.env "$DEPLOY_DIR/frontend/" || true
           cp backend/.env "$DEPLOY_DIR/backend/" || true
-          
-          # Update backend .env with PR-specific port
           BACKEND_PORT=$((8000 + PR_NUM))
           echo "PORT=${BACKEND_PORT}" >> "$DEPLOY_DIR/backend/.env"
 
