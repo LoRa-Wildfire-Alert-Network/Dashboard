@@ -170,7 +170,9 @@ function MapUpdater( {setMapBounds}: {setMapBounds: (bounds: L.LatLngBounds) => 
       map.off('zoomend');
     }
   }, [map, setMapBounds]);
-};
+
+  return null;
+}
 
 function Map({ nodeData, mostRecentExpandedNodeId, onClick, setMapBounds }: MapProps) {
   const [location, setLocation] = useState<{ lat: number; long: number }>({ lat: 44.5646, long: -123.2620 });
