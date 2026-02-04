@@ -8,6 +8,7 @@ interface MapProps {
   nodeData: NodeData[];
   mostRecentExpandedNodeId: string | null;
   onClick: (nodeId: string) => void;
+  setMapBounds: (bounds: L.LatLngBounds) => void;
 }
 
 // Source: https://github.com/pointhi/leaflet-color-markers /////////////
@@ -150,11 +151,33 @@ function Recenter({ lat, long }: { lat: number; long: number }) {
   return null;
 }
 
-function Map({ nodeData, mostRecentExpandedNodeId, onClick }: MapProps) {
-  const [location, setLocation] = useState<{ lat: number; long: number }>({ lat: 44.5646, long: -123.2620 });
+function MapUpdater( {setMapBounds}: {setMapBounds: (bounds: L.LatLngBounds) => void }) {
+  const map = useMap();
 
   useEffect(() => {
-      const getUserLocation = () => {
+    setMapBounds(map.getBounds());
+    map.on('moveend', () => {
+      setMapBounds(map.getBounds());
+      console.log("Map bounds updated:", map.getBounds());
+    });
+    map.on('zoomend', () => {
+      setMapBounds(map.getBounds());
+      console.log("Map bounds updated:", map.getBounds());
+    });
+
+    return () => {
+      map.off('moveend');
+      map.off('zoomend');
+    }
+  }, [map, setMapBounds]);
+};
+
+function Map({ nodeData, mostRecentExpandedNodeId, onClick, setMapBounds }: MapProps) {
+  const [location, setLocation] = useState<{ lat: number; long: number }>({ lat: 44.5646, long: -123.2620 });
+  
+
+  useEffect(() => {
+    const getUserLocation = () => {
       if (navigator.geolocation) {
         navigator.geolocation.getCurrentPosition(
           (position) => {
@@ -172,6 +195,8 @@ function Map({ nodeData, mostRecentExpandedNodeId, onClick }: MapProps) {
       }
     }
     getUserLocation();
+
+
   }, []);
   
   return (
@@ -186,6 +211,7 @@ function Map({ nodeData, mostRecentExpandedNodeId, onClick }: MapProps) {
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
       />
       <Recenter lat={location.lat} long={location.long} />
+      <MapUpdater setMapBounds={setMapBounds} />
       {nodeData.map((node: NodeData) => (
         <Marker
           key={node.node_id}

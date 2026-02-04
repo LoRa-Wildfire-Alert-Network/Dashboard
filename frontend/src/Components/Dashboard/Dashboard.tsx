@@ -53,8 +53,10 @@ const Dashboard: React.FC = () => {
 
   const API_URL: string = import.meta.env.VITE_API_URL || "http://localhost:8000";
 
-  useEffect(() => {
+  const [mapBounds, setMapBounds] = useState<L.LatLngBounds | null>(null);
+  const [visibleNodes, setVisibleNodes] = useState<NodeData[]>([]);
 
+  useEffect(() => {
     const fetchNodeData = async () => {
       try {
         const response = await fetch(`${API_URL}/latest`);
@@ -66,11 +68,24 @@ const Dashboard: React.FC = () => {
     };
 
     fetchNodeData();
-
     const interval = setInterval(fetchNodeData, 3000);
-
     return () => clearInterval(interval);
-  }, []);
+  }, [API_URL]);
+
+  useEffect(() => {
+    const updateVisibleNodes = (mapBounds: L.LatLngBounds | null) => {
+      if (mapBounds) {
+        const visible = nodeData.filter((node) =>
+          mapBounds.contains([node.latitude, node.longitude])
+        );
+        setVisibleNodes(visible);
+      } else {
+        setVisibleNodes(nodeData);
+      }
+    };
+
+    updateVisibleNodes(mapBounds);
+  }, [mapBounds, nodeData]);
 
   return (
     <>
@@ -79,13 +94,14 @@ const Dashboard: React.FC = () => {
           <div className="flex-none lg:w-80 md:w-48 bg-slate-100 rounded-md p-4">
           </div>
           <Map
-            nodeData={nodeData}
+            nodeData={visibleNodes}
             mostRecentExpandedNodeId={mostRecentExpandedNodeId}
             onClick={toggleExpandFromMap}
+            setMapBounds={setMapBounds}
           />
           <div className="flex flex-col overflow-y-auto lg:w-100 md:w-60 bg-slate-400 rounded-md py-2 px-4">
             <NodeCardList
-              nodeData={nodeData}
+              nodeData={visibleNodes}
               expandedNodeIds={expandedNodeIds}
               onClick={toggleExpandFromCard}
             />
