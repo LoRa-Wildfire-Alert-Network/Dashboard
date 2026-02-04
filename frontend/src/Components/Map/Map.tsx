@@ -1,7 +1,8 @@
 import * as L from "leaflet";
 import "leaflet/dist/leaflet.css";
-import { MapContainer, TileLayer, Marker } from "react-leaflet";
+import { MapContainer, TileLayer, Marker, useMap } from "react-leaflet";
 import type { NodeData } from "../../types/nodeTypes";
+import { useEffect, useState } from "react";
 
 interface MapProps {
   nodeData: NodeData[];
@@ -139,10 +140,43 @@ function selectIconColor(smoke_detected: boolean, battery_level: number, humidit
   }
 }
 
+function Recenter({ lat, long }: { lat: number; long: number }) {
+  const map = useMap();
+  useEffect(() => {
+    if (lat !== 0 || long !== 0) {
+      map.setView([lat, long], map.getZoom());
+    }
+  }, [lat, long, map]);
+  return null;
+}
+
 function Map({ nodeData, mostRecentExpandedNodeId, onClick }: MapProps) {
+  const [location, setLocation] = useState<{ lat: number; long: number }>({ lat: 44.5646, long: -123.2620 });
+
+  useEffect(() => {
+      const getUserLocation = () => {
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+          (position) => {
+            setLocation({
+              lat: position.coords.latitude,
+              long: position.coords.longitude,
+            });
+          },
+          (error) => {
+            console.error("Error getting user location:", error);
+          }
+        );
+      } else {
+        console.error("Geolocation is not supported by this browser.");
+      }
+    }
+    getUserLocation();
+  }, []);
+  
   return (
     <MapContainer
-      center={[44.5646, -123.262]}
+      center={[location.lat, location.long]}
       zoom={12}
       scrollWheelZoom={true}
       className="shadow-lg rounded-md p-4 flex-1"
@@ -151,6 +185,7 @@ function Map({ nodeData, mostRecentExpandedNodeId, onClick }: MapProps) {
         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
       />
+      <Recenter lat={location.lat} long={location.long} />
       {nodeData.map((node: NodeData) => (
         <Marker
           key={node.node_id}

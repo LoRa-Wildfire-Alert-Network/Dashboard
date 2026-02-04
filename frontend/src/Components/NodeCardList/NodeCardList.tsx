@@ -13,11 +13,29 @@ const NodeCardList: React.FC<NodeCardListProps> = ({
   expandedNodeIds,
   onClick,
 }) => {
+
+  const alertNodes: NodeData[] | null = nodeData.filter((node) => node.smoke_detected) || null;
+  const warningNodes: NodeData[] | null = nodeData.filter(
+    (node) => !node.smoke_detected && node.battery_level < 20
+  ) || null;
+  const normalNodes: NodeData[] | null = nodeData.filter(
+    (node) => !node.smoke_detected && node.battery_level >= 20
+  );
+
   return (
     <div>
-      <h2>Alert Nodes</h2>
-      {nodeData
-        .filter((node) => node.smoke_detected)
+      {nodeData.length === 0 && <p>No nodes available.</p>}
+      {alertNodes.length > 0 ? <h2>Alert Nodes</h2> : null}
+      {alertNodes && alertNodes.map((nodeData) => (
+          <NodeCard
+            key={nodeData.node_id}
+            nodeData={nodeData}
+            expandedNodeIds={expandedNodeIds}
+            onClick={() => onClick(nodeData.node_id)}
+          />
+        ))}
+      {warningNodes.length > 0 ? <h2>Warning Nodes</h2> : null}
+      {warningNodes && warningNodes
         .map((nodeData) => (
           <NodeCard
             key={nodeData.node_id}
@@ -26,20 +44,8 @@ const NodeCardList: React.FC<NodeCardListProps> = ({
             onClick={() => onClick(nodeData.node_id)}
           />
         ))}
-      <h2>Warning Nodes</h2>
-      {nodeData
-        .filter((node) => node.battery_level < 20)
-        .map((nodeData) => (
-          <NodeCard
-            key={nodeData.node_id}
-            nodeData={nodeData}
-            expandedNodeIds={expandedNodeIds}
-            onClick={() => onClick(nodeData.node_id)}
-          />
-        ))}
-      <h2>Nodes</h2>
-      {nodeData
-        .filter((node) => !node.smoke_detected && node.battery_level >= 20)
+      {normalNodes.length > 0 ? <h2>Nodes</h2> : null}
+      {normalNodes && normalNodes
         .map((nodeData) => (
           <NodeCard
             key={nodeData.node_id}

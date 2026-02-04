@@ -54,6 +54,7 @@ const Dashboard: React.FC = () => {
   const API_URL: string = import.meta.env.VITE_API_URL || "http://localhost:8000";
 
   useEffect(() => {
+
     const fetchNodeData = async () => {
       try {
         const response = await fetch(`${API_URL}/latest`);
@@ -63,6 +64,7 @@ const Dashboard: React.FC = () => {
         console.error("Error fetching node data:", error);
       }
     };
+
     fetchNodeData();
 
     const interval = setInterval(fetchNodeData, 3000);
