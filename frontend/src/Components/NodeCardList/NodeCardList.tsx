@@ -1,6 +1,8 @@
 import React from "react";
 import type { NodeData } from "../../types/nodeTypes";
 import NodeCard from "./NodeCard";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { fas } from "@fortawesome/free-solid-svg-icons";
 
 interface NodeCardListProps {
   nodeData: NodeData[];
@@ -24,6 +26,10 @@ const NodeCardList: React.FC<NodeCardListProps> = ({
 
   return (
     <div>
+        <div className="flex flex-row items-center justify-between mb-4">
+          <h1 className="text-xl font-bold">Node List</h1>
+          <FontAwesomeIcon icon={fas.faFilter} className="text-red-600 mr-2 hover:cursor-pointer" />
+        </div> 
       {nodeData.length === 0 && <p>No nodes available.</p>}
       {alertNodes.length > 0 ? <h2>Alert Nodes</h2> : null}
       {alertNodes && alertNodes.map((nodeData) => (
