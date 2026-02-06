@@ -158,9 +158,3 @@ backend/
 └── lora.db              # SQLite database (ignored)
 ```
 
-## Notes
-
-- `lora.db` **must not be committed**.
-- `.env` **must not be committed**.
-- This backend is optimized for **local development and lightweight deployment**.
-- This backend does not implement authentication or authorization, as those concerns are outside the scope of the current project phase.
