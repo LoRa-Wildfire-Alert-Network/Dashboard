@@ -81,7 +81,7 @@ pip install -r requirements.txt
 python init_sqlite_db.py
 ```
 
-This creates the `lora.db` file using `sqlite_schema.sql`.
+This creates the database using `sqlite_schema.sql`.
 
 ---
 
