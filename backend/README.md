@@ -158,24 +158,6 @@ backend/
 └── lora.db              # SQLite database (ignored)
 ```
 
----
-
-## Docker (Optional)
-
-Build:
-
-```bash
-docker build -t lora-backend .
-```
-
-Run:
-
-```bash
-docker run --rm -p 8000:8000 --env-file .env lora-backend
-```
-
----
-
 ## Notes
 
 - `lora.db` **must not be committed**.
