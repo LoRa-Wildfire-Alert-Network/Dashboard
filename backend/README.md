@@ -33,7 +33,7 @@ This backend ingests live telemetry from LoRa sensor nodes, stores it in a local
 Create a `.env` file in the `backend/` directory (**do not commit this file**):
 
 ```env
-LIVE_URL=https://lora.derekrgreene.com/api/live
+LIVE_URL=
 ALLOWED_ORIGINS=*
 ```
 
