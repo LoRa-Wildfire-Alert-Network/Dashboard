@@ -14,7 +14,7 @@ This backend ingests live telemetry from LoRa sensor nodes, stores it in a local
   Provides REST endpoints for nodes, telemetry history, and map data.
 
 - **SQLite Database**  
-  Lightweight embedded database (`lora.db`) for easy local development and deployment.
+  Lightweight embedded database for easy local development and deployment.
 
 - **CORS Support**  
   Configurable allowed origins for frontend integration.
