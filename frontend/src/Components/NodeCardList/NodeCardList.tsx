@@ -15,24 +15,29 @@ const NodeCardList: React.FC<NodeCardListProps> = ({
   expandedNodeIds,
   onClick,
 }) => {
-
-  const alertNodes: NodeData[] | null = nodeData.filter((node) => node.smoke_detected) || null;
-  const warningNodes: NodeData[] | null = nodeData.filter(
-    (node) => !node.smoke_detected && node.battery_level < 20
-  ) || null;
+  const alertNodes: NodeData[] | null =
+    nodeData.filter((node) => node.smoke_detected) || null;
+  const warningNodes: NodeData[] | null =
+    nodeData.filter(
+      (node) => !node.smoke_detected && node.battery_level < 20,
+    ) || null;
   const normalNodes: NodeData[] | null = nodeData.filter(
-    (node) => !node.smoke_detected && node.battery_level >= 20
+    (node) => !node.smoke_detected && node.battery_level >= 20,
   );
 
   return (
     <div>
-        <div className="flex flex-row items-center justify-between mb-4">
-          <h1 className="text-xl font-bold">Node List</h1>
-          <FontAwesomeIcon icon={fas.faFilter} className="text-red-600 mr-2 hover:cursor-pointer" />
-        </div> 
+      <div className="flex flex-row items-center justify-between mb-4">
+        <h1 className="text-xl font-bold">Node List</h1>
+        <FontAwesomeIcon
+          icon={fas.faFilter}
+          className="text-red-600 mr-2 hover:cursor-pointer"
+        />
+      </div>
       {nodeData.length === 0 && <p>No nodes available.</p>}
       {alertNodes.length > 0 ? <h2>Alert Nodes</h2> : null}
-      {alertNodes && alertNodes.map((nodeData) => (
+      {alertNodes &&
+        alertNodes.map((nodeData) => (
           <NodeCard
             key={nodeData.node_id}
             nodeData={nodeData}
@@ -41,8 +46,8 @@ const NodeCardList: React.FC<NodeCardListProps> = ({
           />
         ))}
       {warningNodes.length > 0 ? <h2>Warning Nodes</h2> : null}
-      {warningNodes && warningNodes
-        .map((nodeData) => (
+      {warningNodes &&
+        warningNodes.map((nodeData) => (
           <NodeCard
             key={nodeData.node_id}
             nodeData={nodeData}
@@ -51,8 +56,8 @@ const NodeCardList: React.FC<NodeCardListProps> = ({
           />
         ))}
       {normalNodes.length > 0 ? <h2>Nodes</h2> : null}
-      {normalNodes && normalNodes
-        .map((nodeData) => (
+      {normalNodes &&
+        normalNodes.map((nodeData) => (
           <NodeCard
             key={nodeData.node_id}
             nodeData={nodeData}

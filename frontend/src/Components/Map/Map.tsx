@@ -112,7 +112,11 @@ function selectIcon(
   humidity_pct: number,
   mostRecentExpandedNodeId: string | null,
 ) {
-  const iconColor = selectIconColor(smoke_detected, battery_level, humidity_pct);
+  const iconColor = selectIconColor(
+    smoke_detected,
+    battery_level,
+    humidity_pct,
+  );
 
   if (iconColor === "redIcon") {
     return nodeId === mostRecentExpandedNodeId ? expandedRedIcon : redIcon;
@@ -129,7 +133,11 @@ function selectIcon(
   }
 }
 
-function selectIconColor(smoke_detected: boolean, battery_level: number, humidity_pct: number) {
+function selectIconColor(
+  smoke_detected: boolean,
+  battery_level: number,
+  humidity_pct: number,
+) {
   if (smoke_detected) {
     return "redIcon";
   } else if (battery_level < 20) {
@@ -151,32 +159,43 @@ function Recenter({ lat, long }: { lat: number; long: number }) {
   return null;
 }
 
-function MapUpdater( {setMapBounds}: {setMapBounds: (bounds: L.LatLngBounds) => void }) {
+function MapUpdater({
+  setMapBounds,
+}: {
+  setMapBounds: (bounds: L.LatLngBounds) => void;
+}) {
   const map = useMap();
 
   useEffect(() => {
     setMapBounds(map.getBounds());
-    map.on('moveend', () => {
+    map.on("moveend", () => {
       setMapBounds(map.getBounds());
       console.log("Map bounds updated:", map.getBounds());
     });
-    map.on('zoomend', () => {
+    map.on("zoomend", () => {
       setMapBounds(map.getBounds());
       console.log("Map bounds updated:", map.getBounds());
     });
 
     return () => {
-      map.off('moveend');
-      map.off('zoomend');
-    }
+      map.off("moveend");
+      map.off("zoomend");
+    };
   }, [map, setMapBounds]);
 
   return null;
 }
 
-function Map({ nodeData, mostRecentExpandedNodeId, onClick, setMapBounds }: MapProps) {
-  const [location, setLocation] = useState<{ lat: number; long: number }>({ lat: 44.5646, long: -123.2620 });
-  
+function Map({
+  nodeData,
+  mostRecentExpandedNodeId,
+  onClick,
+  setMapBounds,
+}: MapProps) {
+  const [location, setLocation] = useState<{ lat: number; long: number }>({
+    lat: 44.5646,
+    long: -123.262,
+  });
 
   useEffect(() => {
     const getUserLocation = () => {
@@ -190,17 +209,15 @@ function Map({ nodeData, mostRecentExpandedNodeId, onClick, setMapBounds }: MapP
           },
           (error) => {
             console.error("Error getting user location:", error);
-          }
+          },
         );
       } else {
         console.error("Geolocation is not supported by this browser.");
       }
-    }
+    };
     getUserLocation();
-
-
   }, []);
-  
+
   return (
     <MapContainer
       center={[location.lat, location.long]}

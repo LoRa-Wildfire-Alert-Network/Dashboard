@@ -51,7 +51,8 @@ const Dashboard: React.FC = () => {
 
   // End of STATE AND HANDLERS block //////////////////////////////////////////////////////
 
-  const API_URL: string = import.meta.env.VITE_API_URL || "http://localhost:8000";
+  const API_URL: string =
+    import.meta.env.VITE_API_URL || "http://localhost:8000";
 
   const [mapBounds, setMapBounds] = useState<L.LatLngBounds | null>(null);
   const [visibleNodes, setVisibleNodes] = useState<NodeData[]>([]);
@@ -76,7 +77,7 @@ const Dashboard: React.FC = () => {
     const updateVisibleNodes = (mapBounds: L.LatLngBounds | null) => {
       if (mapBounds) {
         const visible = nodeData.filter((node) =>
-          mapBounds.contains([node.latitude, node.longitude])
+          mapBounds.contains([node.latitude, node.longitude]),
         );
         setVisibleNodes(visible);
       } else {
@@ -91,8 +92,7 @@ const Dashboard: React.FC = () => {
     <>
       <div className="bg-slate-300 h-[calc(100vh-4rem)]">
         <div className="flex space-x-4 w-full h-full p-4">
-          <div className="flex-none lg:w-80 md:w-48 bg-slate-100 rounded-md p-4">
-          </div>
+          <div className="flex-none lg:w-80 md:w-48 bg-slate-100 rounded-md p-4"></div>
           <Map
             nodeData={visibleNodes}
             mostRecentExpandedNodeId={mostRecentExpandedNodeId}
