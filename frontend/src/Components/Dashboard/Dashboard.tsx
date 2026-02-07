@@ -5,6 +5,27 @@ import type { NodeData } from "./../../types/nodeTypes";
 import { useEffect, useState } from "react";
 
 const Dashboard: React.FC = () => {
+  const [nodeData, setNodeData] = useState<NodeData[]>([]);
+
+  const API_URL: string =
+    import.meta.env.VITE_API_URL || "http://localhost:8000";
+
+  useEffect(() => {
+    const fetchNodeData = async () => {
+      try {
+        const response = await fetch(`${API_URL}/latest`);
+        const data = await response.json();
+        setNodeData(data);
+      } catch (error) {
+        console.error("Error fetching node data:", error);
+      }
+    };
+
+    fetchNodeData();
+    const interval = setInterval(fetchNodeData, 3000);
+    return () => clearInterval(interval);
+  }, [API_URL]);
+
   /////////////////////////////////////////////////////////////////////////////////////////
   //
   //         STATE AND HANDLERS
@@ -23,7 +44,6 @@ const Dashboard: React.FC = () => {
   //
   /////////////////////////////////////////////////////////////////////////////////////////
 
-  const [nodeData, setNodeData] = useState<NodeData[]>([]);
   const [expandedNodeIds, setExpandedNodeIds] = useState<string[]>([]);
   const [mostRecentExpandedNodeId, setMostRecentExpandedNodeId] = useState<
     string | null
@@ -51,27 +71,8 @@ const Dashboard: React.FC = () => {
 
   // End of STATE AND HANDLERS block //////////////////////////////////////////////////////
 
-  const API_URL: string =
-    import.meta.env.VITE_API_URL || "http://localhost:8000";
-
   const [mapBounds, setMapBounds] = useState<L.LatLngBounds | null>(null);
   const [visibleNodes, setVisibleNodes] = useState<NodeData[]>([]);
-
-  useEffect(() => {
-    const fetchNodeData = async () => {
-      try {
-        const response = await fetch(`${API_URL}/latest`);
-        const data = await response.json();
-        setNodeData(data);
-      } catch (error) {
-        console.error("Error fetching node data:", error);
-      }
-    };
-
-    fetchNodeData();
-    const interval = setInterval(fetchNodeData, 3000);
-    return () => clearInterval(interval);
-  }, [API_URL]);
 
   useEffect(() => {
     const updateVisibleNodes = (mapBounds: L.LatLngBounds | null) => {
@@ -103,7 +104,7 @@ const Dashboard: React.FC = () => {
             <NodeCardList
               nodeData={visibleNodes}
               expandedNodeIds={expandedNodeIds}
-              onClick={toggleExpandFromCard}
+              onCardClick={toggleExpandFromCard}
             />
           </div>
         </div>
