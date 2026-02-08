@@ -4,18 +4,14 @@ interface FilterPopupProps {
   onClickAlert: () => void;
   onClickWarning: () => void;
   onClickNormal: () => void;
-  showAlertNodes: boolean;
-  showWarningNodes: boolean;
-  showNormalNodes: boolean;
+  nodeFilter: string[];
 }
 
 const FilterPopup: React.FC<FilterPopupProps> = ({
   onClickAlert,
   onClickWarning,
   onClickNormal,
-  showAlertNodes,
-  showWarningNodes,
-  showNormalNodes,
+  nodeFilter,
 }) => {
   return (
     <div className="flex flex-col bg-white p-4 rounded shadow-lg">
@@ -27,7 +23,7 @@ const FilterPopup: React.FC<FilterPopupProps> = ({
           onClick={() => {
             onClickAlert();
           }}
-          defaultChecked={showAlertNodes}
+          defaultChecked={nodeFilter.includes("alert")}
         />
         Show Alert Nodes
       </label>
@@ -38,7 +34,7 @@ const FilterPopup: React.FC<FilterPopupProps> = ({
           onClick={() => {
             onClickWarning();
           }}
-          defaultChecked={showWarningNodes}
+          defaultChecked={nodeFilter.includes("warning")}
         />
         Show Warning Nodes
       </label>
@@ -49,7 +45,7 @@ const FilterPopup: React.FC<FilterPopupProps> = ({
           onClick={() => {
             onClickNormal();
           }}
-          defaultChecked={showNormalNodes}
+          defaultChecked={nodeFilter.includes("normal")}
         />
         Show Normal Nodes
       </label>

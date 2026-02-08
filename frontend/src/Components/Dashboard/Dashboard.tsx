@@ -72,29 +72,45 @@ const Dashboard: React.FC = () => {
   // End of STATE AND HANDLERS block //////////////////////////////////////////////////////
 
   const [mapBounds, setMapBounds] = useState<L.LatLngBounds | null>(null);
-  const [visibleNodes, setVisibleNodes] = useState<NodeData[]>([]);
+  const [filteredNodeList, setFilteredNodeList] = useState<NodeData[]>([]);
+  const [nodeFilter, setNodeFilter] = useState(["alert", "warning", "normal"]);
+
+  const applyFilter = (nodes: NodeData[]): NodeData[] => {
+    const result: NodeData[] = [];
+    if (nodeFilter.includes("alert")) {
+      result.push(...nodes.filter((node) => node.smoke_detected));
+    }
+    if (nodeFilter.includes("warning")) {
+      result.push(...nodes.filter((node) => node.battery_level < 20));
+    }
+    if (nodeFilter.includes("normal")) {
+      result.push(...nodes.filter((node) => node.battery_level >= 20));
+    }
+
+    const byId = result.reduce(
+      (acc: Record<string, NodeData>, n) => {
+        acc[n.node_id] = n;
+        return acc;
+      },
+      {} as Record<string, NodeData>,
+    );
+    return Object.values(byId);
+  };
 
   useEffect(() => {
-    const updateVisibleNodes = (mapBounds: L.LatLngBounds | null) => {
+    const updateDisplayedNodes = (mapBounds: L.LatLngBounds | null) => {
       if (mapBounds) {
         const visible = nodeData.filter((node) =>
           mapBounds.contains([node.latitude, node.longitude]),
         );
-        setVisibleNodes(visible);
+        setFilteredNodeList(applyFilter(visible));
       } else {
-        setVisibleNodes(nodeData);
+        setFilteredNodeList(applyFilter(nodeData));
       }
     };
 
-    updateVisibleNodes(mapBounds);
-    setFilteredNodeList(visibleNodes);
-  }, [mapBounds, nodeData]);
-
-  const [filteredNodeList, setFilteredNodeList] =
-    useState<NodeData[]>(visibleNodes);
-  const [nodeFilter, setNodeFilter] = useState();
-
-  const applyFilter = () => {};
+    updateDisplayedNodes(mapBounds);
+  }, [mapBounds, nodeData, nodeFilter]);
 
   return (
     <>
@@ -112,6 +128,7 @@ const Dashboard: React.FC = () => {
               nodeData={filteredNodeList}
               expandedNodeIds={expandedNodeIds}
               onCardClick={toggleExpandFromCard}
+              nodeFilter={nodeFilter}
               setNodeFilter={setNodeFilter}
             />
           </div>
