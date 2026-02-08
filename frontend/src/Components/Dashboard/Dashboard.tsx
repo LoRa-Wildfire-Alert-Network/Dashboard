@@ -87,7 +87,14 @@ const Dashboard: React.FC = () => {
     };
 
     updateVisibleNodes(mapBounds);
+    setFilteredNodeList(visibleNodes);
   }, [mapBounds, nodeData]);
+
+  const [filteredNodeList, setFilteredNodeList] =
+    useState<NodeData[]>(visibleNodes);
+  const [nodeFilter, setNodeFilter] = useState();
+
+  const applyFilter = () => {};
 
   return (
     <>
@@ -95,16 +102,17 @@ const Dashboard: React.FC = () => {
         <div className="flex space-x-4 w-full h-full p-4">
           <div className="flex-none lg:w-80 md:w-48 bg-slate-100 rounded-md p-4"></div>
           <Map
-            nodeData={visibleNodes}
+            nodeData={filteredNodeList}
             mostRecentExpandedNodeId={mostRecentExpandedNodeId}
-            onClick={toggleExpandFromMap}
+            onMarkerClick={toggleExpandFromMap}
             setMapBounds={setMapBounds}
           />
           <div className="flex flex-col overflow-y-auto lg:w-100 md:w-60 bg-slate-400 rounded-md py-2 px-4">
             <NodeCardList
-              nodeData={visibleNodes}
+              nodeData={filteredNodeList}
               expandedNodeIds={expandedNodeIds}
               onCardClick={toggleExpandFromCard}
+              setNodeFilter={setNodeFilter}
             />
           </div>
         </div>

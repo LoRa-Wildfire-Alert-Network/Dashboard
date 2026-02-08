@@ -9,12 +9,14 @@ interface NodeCardListProps {
   nodeData: NodeData[];
   expandedNodeIds: string[];
   onCardClick: (nodeId: string) => void;
+  setNodeFilter: React.Dispatch<React.SetStateAction<any>>;
 }
 
 const NodeCardList: React.FC<NodeCardListProps> = ({
   nodeData,
   expandedNodeIds,
   onCardClick,
+  setNodeFilter,
 }) => {
   const [showFilter, setShowFilter] = useState<boolean>(false);
   const [showAlertNodes, setShowAlertNodes] = useState<boolean>(true);

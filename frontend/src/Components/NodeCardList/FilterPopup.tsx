@@ -53,6 +53,28 @@ const FilterPopup: React.FC<FilterPopupProps> = ({
         />
         Show Normal Nodes
       </label>
+      <h3 className="text-lg font-bold mb-2">Alerts</h3>
+      <label className="flex items-center mb-2 ml-4">
+        <input type="checkbox" className="mr-2" />
+        Smoke Detected
+      </label>
+      <label className="flex items-center mb-2 ml-4">
+        <input type="checkbox" className="mr-2" />
+        Temp Above 100C
+      </label>
+      <label className="flex items-center mb-2 ml-4">
+        <input type="checkbox" className="mr-2" />
+        Humidity below 15%
+      </label>
+      <h3 className="text-lg font-bold mb-2">Node Health</h3>
+      <label className="flex items-center mb-2 ml-4">
+        <input type="checkbox" className="mr-2" />
+        Low battery (&lt; 20%)
+      </label>
+      <label className="flex items-center mb-2 ml-4">
+        <input type="checkbox" className="mr-2" />
+        Smoke Detected
+      </label>
     </div>
   );
 };

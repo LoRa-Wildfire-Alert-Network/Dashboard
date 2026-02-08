@@ -7,7 +7,7 @@ import { useEffect, useState } from "react";
 interface MapProps {
   nodeData: NodeData[];
   mostRecentExpandedNodeId: string | null;
-  onClick: (nodeId: string) => void;
+  onMarkerClick: (nodeId: string) => void;
   setMapBounds: (bounds: L.LatLngBounds) => void;
 }
 
@@ -189,7 +189,7 @@ function MapUpdater({
 function Map({
   nodeData,
   mostRecentExpandedNodeId,
-  onClick,
+  onMarkerClick,
   setMapBounds,
 }: MapProps) {
   const [location, setLocation] = useState<{ lat: number; long: number }>({
@@ -243,7 +243,7 @@ function Map({
             mostRecentExpandedNodeId,
           )}
           eventHandlers={{
-            click: () => onClick(node.node_id),
+            click: () => onMarkerClick(node.node_id),
           }}
         ></Marker>
       ))}
