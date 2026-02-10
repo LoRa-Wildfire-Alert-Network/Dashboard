@@ -1,13 +1,13 @@
 import React from "react";
 
-interface FilterPopupProps {
+interface NodeFilterProps {
   onClickAlert: () => void;
   onClickWarning: () => void;
   onClickNormal: () => void;
   nodeFilter: string[];
 }
 
-const FilterPopup: React.FC<FilterPopupProps> = ({
+const NodeFilter: React.FC<NodeFilterProps> = ({
   onClickAlert,
   onClickWarning,
   onClickNormal,
@@ -75,4 +75,4 @@ const FilterPopup: React.FC<FilterPopupProps> = ({
   );
 };
 
-export default FilterPopup;
+export default NodeFilter;

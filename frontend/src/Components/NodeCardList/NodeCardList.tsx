@@ -3,7 +3,7 @@ import type { NodeData } from "../../types/nodeTypes";
 import NodeCard from "./NodeCard";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { fas } from "@fortawesome/free-solid-svg-icons";
-import FilterPopup from "./FilterPopup";
+import NodeFilter from "../NodeFilter/NodeFilter";
 
 interface NodeCardListProps {
   nodeData: NodeData[];
@@ -35,7 +35,7 @@ const NodeCardList: React.FC<NodeCardListProps> = ({
         />
       </div>
       {showFilter && (
-        <FilterPopup
+        <NodeFilter
           onClickNormal={() => {
             if (nodeFilter.includes("normal")) {
               setNodeFilter(nodeFilter.filter((f) => f !== "normal"));
