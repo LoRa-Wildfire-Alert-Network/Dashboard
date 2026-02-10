@@ -1,8 +1,11 @@
 import Map from "./../Map/Map";
 import NodeCardList from "../NodeCardList/NodeCardList";
 import type { NodeData } from "./../../types/nodeTypes";
+import NodeFilter, { type NodeFilterState } from "../NodeFilter/NodeFilter";
 
 import { useEffect, useState } from "react";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { fas } from "@fortawesome/free-solid-svg-icons";
 
 const Dashboard: React.FC = () => {
   const [nodeData, setNodeData] = useState<NodeData[]>([]);
@@ -75,26 +78,37 @@ const Dashboard: React.FC = () => {
   const [filteredNodeList, setFilteredNodeList] = useState<NodeData[]>([]);
   const [nodeFilter, setNodeFilter] = useState(["alert", "warning", "normal"]);
 
+  const [showFilter, setShowFilter] = useState<boolean>(false);
+  const [smokeDetected, setSmokeDetected] =
+    useState<NodeFilterState["smokeDetected"]>();
+  const [tempAbove, setTempAbove] = useState<NodeFilterState["tempAbove"]>();
+  const [humidityBelow, setHumidityBelow] =
+    useState<NodeFilterState["humidityBelow"]>();
+  const [lowBattery, setLowBattery] = useState<NodeFilterState["lowBattery"]>();
+  /*   const [lastSeenBefore, setLastSeenBefore] =
+    useState<NodeFilterState["lastSeenBefore"]>(); */
+
   const applyFilter = (nodes: NodeData[]): NodeData[] => {
-    const result: NodeData[] = [];
-    if (nodeFilter.includes("alert")) {
-      result.push(...nodes.filter((node) => node.smoke_detected));
+    let filteredNodes = [...nodes];
+
+    if (smokeDetected) {
+      filteredNodes = filteredNodes.filter((node) => node.smoke_detected);
     }
-    if (nodeFilter.includes("warning")) {
-      result.push(...nodes.filter((node) => node.battery_level < 20));
+    if (tempAbove !== undefined) {
+      filteredNodes = filteredNodes.filter(
+        (node) => node.temperature_c > tempAbove,
+      );
     }
-    if (nodeFilter.includes("normal")) {
-      result.push(...nodes.filter((node) => node.battery_level >= 20));
+    if (humidityBelow !== undefined) {
+      filteredNodes = filteredNodes.filter(
+        (node) => node.humidity_pct < humidityBelow,
+      );
+    }
+    if (lowBattery) {
+      filteredNodes = filteredNodes.filter((node) => node.battery_level < 20);
     }
 
-    const byId = result.reduce(
-      (acc: Record<string, NodeData>, n) => {
-        acc[n.node_id] = n;
-        return acc;
-      },
-      {} as Record<string, NodeData>,
-    );
-    return Object.values(byId);
+    return filteredNodes;
   };
 
   useEffect(() => {
@@ -110,7 +124,15 @@ const Dashboard: React.FC = () => {
     };
 
     updateDisplayedNodes(mapBounds);
-  }, [mapBounds, nodeData, nodeFilter]);
+  }, [
+    mapBounds,
+    nodeData,
+    nodeFilter,
+    smokeDetected,
+    tempAbove,
+    humidityBelow,
+    lowBattery,
+  ]);
 
   return (
     <>
@@ -124,6 +146,27 @@ const Dashboard: React.FC = () => {
             setMapBounds={setMapBounds}
           />
           <div className="flex flex-col overflow-y-auto lg:w-100 md:w-60 bg-slate-400 rounded-md py-2 px-4">
+            <div className="flex flex-row items-center justify-between mb-4">
+              <h1 className="text-xl font-bold">Node List</h1>
+              <FontAwesomeIcon
+                icon={fas.faFilter}
+                className="text-red-600 mr-2 hover:cursor-pointer"
+                onClick={() => {
+                  setShowFilter((s) => !s);
+                }}
+              />
+            </div>
+            {showFilter && (
+              <NodeFilter
+                onChange={(filters) => {
+                  setSmokeDetected(filters.smokeDetected);
+                  setTempAbove(filters.tempAbove);
+                  setHumidityBelow(filters.humidityBelow);
+                  setLowBattery(filters.lowBattery);
+                  /* setLastSeenBefore(filters.lastSeenBefore); */
+                }}
+              />
+            )}
             <NodeCardList
               nodeData={filteredNodeList}
               expandedNodeIds={expandedNodeIds}

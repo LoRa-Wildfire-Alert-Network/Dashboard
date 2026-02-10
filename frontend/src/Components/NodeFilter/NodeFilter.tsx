@@ -1,75 +1,120 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 
 interface NodeFilterProps {
-  onClickAlert: () => void;
-  onClickWarning: () => void;
-  onClickNormal: () => void;
-  nodeFilter: string[];
+  onChange: (filter: NodeFilterState) => void;
 }
 
-const NodeFilter: React.FC<NodeFilterProps> = ({
-  onClickAlert,
-  onClickWarning,
-  onClickNormal,
-  nodeFilter,
-}) => {
+export type NodeFilterState = {
+  smokeDetected?: boolean;
+  tempAbove?: number;
+  humidityBelow?: number;
+  lowBattery?: boolean;
+  lastSeenBefore?: Date;
+};
+
+const NodeFilter = ({ onChange }: NodeFilterProps) => {
+  const [smokeDetected, setSmokeDetected] =
+    useState<NodeFilterState["smokeDetected"]>(false);
+  const [tempAbove, setTempAbove] = useState<NodeFilterState["tempAbove"]>();
+  const [humidityBelow, setHumidityBelow] =
+    useState<NodeFilterState["humidityBelow"]>();
+  const [lowBattery, setLowBattery] =
+    useState<NodeFilterState["lowBattery"]>(false);
+  /*   const [lastSeenBefore, setLastSeenBefore] =
+    useState<NodeFilterState["lastSeenBefore"]>(); */
+
+  const [showTempAboveInput, setShowTempAboveInput] = useState<boolean>(false);
+  const [showHumidityBelowInput, setShowHumidityBelowInput] =
+    useState<boolean>(false);
+  /*   const [showLastSeenBeforeInput, setShowLastSeenBeforeInput] =
+    useState<boolean>(false); */
+
+  useEffect(() => {
+    onChange({
+      smokeDetected,
+      tempAbove,
+      humidityBelow,
+      lowBattery,
+      /* lastSeenBefore, */
+    });
+  }, [smokeDetected, tempAbove, humidityBelow, lowBattery]);
+
   return (
     <div className="flex flex-col bg-white p-4 rounded shadow-lg">
       <h2 className="text-lg font-bold mb-2">Filter Options</h2>
-      <label className="flex items-center mb-2">
-        <input
-          type="checkbox"
-          className="mr-2"
-          onClick={() => {
-            onClickAlert();
-          }}
-          defaultChecked={nodeFilter.includes("alert")}
-        />
-        Show Alert Nodes
-      </label>
-      <label className="flex items-center mb-2">
-        <input
-          type="checkbox"
-          className="mr-2"
-          onClick={() => {
-            onClickWarning();
-          }}
-          defaultChecked={nodeFilter.includes("warning")}
-        />
-        Show Warning Nodes
-      </label>
-      <label className="flex items-center mb-2">
-        <input
-          type="checkbox"
-          className="mr-2"
-          onClick={() => {
-            onClickNormal();
-          }}
-          defaultChecked={nodeFilter.includes("normal")}
-        />
-        Show Normal Nodes
-      </label>
       <h3 className="text-lg font-bold mb-2">Alerts</h3>
       <label className="flex items-center mb-2 ml-4">
-        <input type="checkbox" className="mr-2" />
+        <input
+          type="checkbox"
+          className="mr-2"
+          onChange={() => setSmokeDetected(!smokeDetected)}
+          checked={!!smokeDetected}
+        />
         Smoke Detected
       </label>
       <label className="flex items-center mb-2 ml-4">
-        <input type="checkbox" className="mr-2" />
-        Temp Above 100C
+        <input
+          type="checkbox"
+          className="mr-2"
+          onChange={() => {
+            setShowTempAboveInput(!showTempAboveInput);
+            setTempAbove(undefined);
+          }}
+          checked={showTempAboveInput}
+        />
+        Temp above
       </label>
+      {showTempAboveInput && (
+        <label className="flex items-center mb-2 ml-8">
+          <input
+            type="text"
+            value={tempAbove ?? ""}
+            className="mr-2 w-20 outline-none border border-gray-300 rounded px-2 py-1"
+            onChange={(e) =>
+              setTempAbove(
+                e.target.value === "" ? undefined : Number(e.target.value),
+              )
+            }
+          />
+          &deg;C
+        </label>
+      )}
       <label className="flex items-center mb-2 ml-4">
-        <input type="checkbox" className="mr-2" />
-        Humidity below 15%
+        <input
+          type="checkbox"
+          className="mr-2"
+          onChange={() => {
+            setShowHumidityBelowInput(!showHumidityBelowInput);
+            setHumidityBelow(undefined);
+          }}
+          checked={showHumidityBelowInput}
+        />
+        Humidity below
       </label>
+      {showHumidityBelowInput && (
+        <label className="flex items-center mb-2 ml-8">
+          <input
+            type="text"
+            value={humidityBelow ?? ""}
+            className="mr-2 w-20 outline-none border border-gray-300 rounded px-2 py-1"
+            onChange={(e) =>
+              setHumidityBelow(
+                e.target.value === "" ? undefined : Number(e.target.value),
+              )
+            }
+          />{" "}
+          %
+        </label>
+      )}
       <h3 className="text-lg font-bold mb-2">Node Health</h3>
       <label className="flex items-center mb-2 ml-4">
-        <input type="checkbox" className="mr-2" />
+        <input
+          type="checkbox"
+          className="mr-2"
+          onChange={() => setLowBattery(!lowBattery)}
+          checked={!!lowBattery}
+        />
         Low battery (&lt; 20%)
-      </label>
-      <label className="flex items-center mb-2 ml-4">
-        <input type="checkbox" className="mr-2" />
-        Smoke Detected
       </label>
     </div>
   );
