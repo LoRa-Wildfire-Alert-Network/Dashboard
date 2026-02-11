@@ -49,7 +49,7 @@ const NodeFilter = ({ onChange }: NodeFilterProps) => {
       lowBattery,
       /* timeSinceLastSeen, */
     });
-  }, [smokeDetected, tempAbove, humidityBelow, lowBattery]);
+  }, [onChange, smokeDetected, tempAbove, humidityBelow, lowBattery]);
 
   return (
     <div className="flex flex-col bg-white p-4 rounded shadow-lg">

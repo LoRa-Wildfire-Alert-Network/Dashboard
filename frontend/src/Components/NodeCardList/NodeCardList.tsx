@@ -5,8 +5,6 @@ interface NodeCardListProps {
   nodeData: NodeData[];
   expandedNodeIds: string[];
   onCardClick: (nodeId: string) => void;
-  nodeFilter: string[];
-  setNodeFilter: React.Dispatch<React.SetStateAction<any>>;
 }
 
 const NodeCardList: React.FC<NodeCardListProps> = ({

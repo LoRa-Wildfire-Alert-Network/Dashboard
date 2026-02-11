@@ -76,7 +76,6 @@ const Dashboard: React.FC = () => {
 
   const [mapBounds, setMapBounds] = useState<L.LatLngBounds | null>(null);
   const [filteredNodeList, setFilteredNodeList] = useState<NodeData[]>([]);
-  const [nodeFilter, setNodeFilter] = useState(["alert", "warning", "normal"]);
 
   const [showFilter, setShowFilter] = useState<boolean>(false);
   const [smokeDetected, setSmokeDetected] =
@@ -126,9 +125,9 @@ const Dashboard: React.FC = () => {
 
     updateDisplayedNodes(mapBounds);
   }, [
+    applyFilter,
     mapBounds,
     nodeData,
-    nodeFilter,
     smokeDetected,
     tempAbove,
     humidityBelow,
