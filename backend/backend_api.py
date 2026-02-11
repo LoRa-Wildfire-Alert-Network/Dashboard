@@ -17,7 +17,8 @@ app = FastAPI(title="LoRa Wildfire Backend API")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[o.strip() for o in ALLOWED_ORIGINS.split(",")] if ALLOWED_ORIGINS != "*" else ["*"],
+    allow_origins=[o.strip() for o in ALLOWED_ORIGINS.split(",")]
+    if ALLOWED_ORIGINS != "*" else ["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -26,11 +27,13 @@ app.add_middleware(
 DB_NAME = os.getenv("DB_NAME", "lora.db")
 DB_PATH = os.path.join(HERE, DB_NAME)
 
+
 def db() -> sqlite3.Connection:
     conn = sqlite3.connect(DB_PATH, check_same_thread=False)
     conn.row_factory = sqlite3.Row
     conn.execute("PRAGMA foreign_keys = ON;")
     return conn
+
 
 def parse_iso(ts: Optional[str]) -> Optional[dt.datetime]:
     if not ts:
@@ -42,9 +45,11 @@ def parse_iso(ts: Optional[str]) -> Optional[dt.datetime]:
 #         ENDPOINTS
 # -------------------------
 
+
 @app.get("/health")
 def health():
     return {"status": "ok"}
+
 
 @app.get("/nodes")
 def list_nodes():
@@ -59,6 +64,7 @@ def list_nodes():
     with db() as conn:
         rows = conn.execute(q).fetchall()
     return [dict(r) for r in rows]
+
 
 @app.get("/nodes/{node_id}/latest")
 def node_latest(node_id: str):
@@ -91,10 +97,12 @@ def node_latest(node_id: str):
         raise HTTPException(status_code=404, detail="No telemetry for this node")
     return dict(row)
 
+
 @app.get("/telemetry")
 def get_telemetry(
     node_id: Optional[str] = None,
-    t_from: Optional[str] = Query(None, description="ISO8601; e.g. 2025-01-01T00:00:00Z"),
+    t_from: Optional[str] =
+    Query(None, description="ISO8601; e.g. 2025-01-01T00:00:00Z"),
     t_to: Optional[str] = Query(None, description="ISO8601; e.g. 2025-01-02T00:00:00Z"),
     limit: int = Query(500, ge=1, le=5000),
     newest_first: bool = True,
@@ -106,7 +114,7 @@ def get_telemetry(
       - limit: row cap (default 500)
     """
     dt_from = parse_iso(t_from)
-    dt_to   = parse_iso(t_to)
+    dt_to = parse_iso(t_to)
 
     clauses: List[str] = []
     params: List[object] = []
@@ -151,6 +159,7 @@ def get_telemetry(
         rows = conn.execute(q, tuple(params)).fetchall()
     return [dict(r) for r in rows]
 
+
 @app.get("/latest")
 def latest_all_nodes():
     """
@@ -178,6 +187,7 @@ def latest_all_nodes():
         rows = conn.execute(q).fetchall()
     return [dict(r) for r in rows]
 
+
 @app.get("/summary")
 def summary_all_nodes():
     """
@@ -199,6 +209,7 @@ def summary_all_nodes():
     with db() as conn:
         rows = conn.execute(q).fetchall()
     return [dict(r) for r in rows]
+
 
 @app.get("/map/nodes")
 def map_nodes(
@@ -246,4 +257,5 @@ def map_nodes(
 
 
 if __name__ == "__main__":
-    uvicorn.run("backend_api:app", host="0.0.0.0", port=8000, reload=True)
+    port = int(os.getenv("PORT", "8000"))
+    uvicorn.run("backend_api:app", host="0.0.0.0", port=port, reload=False)
