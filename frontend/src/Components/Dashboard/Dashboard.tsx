@@ -85,8 +85,9 @@ const Dashboard: React.FC = () => {
   const [humidityBelow, setHumidityBelow] =
     useState<NodeFilterState["humidityBelow"]>();
   const [lowBattery, setLowBattery] = useState<NodeFilterState["lowBattery"]>();
-  /*   const [lastSeenBefore, setLastSeenBefore] =
-    useState<NodeFilterState["lastSeenBefore"]>(); */
+  // Please leave; Not implemented yet, would require backend support
+  /*   const [timeSinceLastSeen, setTimeSinceLastSeen] =
+    useState<NodeFilterState["timeSinceLastSeen"]>(); */
 
   const applyFilter = (nodes: NodeData[]): NodeData[] => {
     let filteredNodes = [...nodes];
@@ -163,7 +164,7 @@ const Dashboard: React.FC = () => {
                   setTempAbove(filters.tempAbove);
                   setHumidityBelow(filters.humidityBelow);
                   setLowBattery(filters.lowBattery);
-                  /* setLastSeenBefore(filters.lastSeenBefore); */
+                  /* setTimeSinceLastSeen(filters.timeSinceLastSeen); */
                 }}
               />
             )}

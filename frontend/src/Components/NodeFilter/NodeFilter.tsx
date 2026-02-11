@@ -1,4 +1,13 @@
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
+
+///////////////////////////////////////////////////////////////////////////////
+//
+//
+// Filter implementation heavily inspired by
+//  https://github.com/cosdensolutions/code/tree/master/videos/long/react-custom-filter-component
+//
+//
+///////////////////////////////////////////////////////////////////////////////
 
 interface NodeFilterProps {
   onChange: (filter: NodeFilterState) => void;
@@ -9,7 +18,8 @@ export type NodeFilterState = {
   tempAbove?: number;
   humidityBelow?: number;
   lowBattery?: boolean;
-  lastSeenBefore?: Date;
+  // Please leave; Not implemented yet, would require backend support
+  /* timeSinceLastSeen?: Date; */
 };
 
 const NodeFilter = ({ onChange }: NodeFilterProps) => {
@@ -20,13 +30,15 @@ const NodeFilter = ({ onChange }: NodeFilterProps) => {
     useState<NodeFilterState["humidityBelow"]>();
   const [lowBattery, setLowBattery] =
     useState<NodeFilterState["lowBattery"]>(false);
-  /*   const [lastSeenBefore, setLastSeenBefore] =
-    useState<NodeFilterState["lastSeenBefore"]>(); */
+  // Please leave; Not implemented yet, would require backend support
+  /*   const [timeSinceLastSeen, setTimeSinceLastSeen] =
+    useState<NodeFilterState["timeSinceLastSeen"]>(); */
 
   const [showTempAboveInput, setShowTempAboveInput] = useState<boolean>(false);
   const [showHumidityBelowInput, setShowHumidityBelowInput] =
     useState<boolean>(false);
-  /*   const [showLastSeenBeforeInput, setShowLastSeenBeforeInput] =
+  // Please leave; Not implemented yet, would require backend support
+  /*   const [showTimeSinceLastSeen, setShowTimeSinceLastSeen] =
     useState<boolean>(false); */
 
   useEffect(() => {
@@ -35,7 +47,7 @@ const NodeFilter = ({ onChange }: NodeFilterProps) => {
       tempAbove,
       humidityBelow,
       lowBattery,
-      /* lastSeenBefore, */
+      /* timeSinceLastSeen, */
     });
   }, [smokeDetected, tempAbove, humidityBelow, lowBattery]);
 
