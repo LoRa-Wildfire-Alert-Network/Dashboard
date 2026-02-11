@@ -171,8 +171,6 @@ const Dashboard: React.FC = () => {
               nodeData={filteredNodeList}
               expandedNodeIds={expandedNodeIds}
               onCardClick={toggleExpandFromCard}
-              nodeFilter={nodeFilter}
-              setNodeFilter={setNodeFilter}
             />
           </div>
         </div>
