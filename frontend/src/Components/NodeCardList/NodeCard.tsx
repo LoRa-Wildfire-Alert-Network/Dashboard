@@ -1,10 +1,10 @@
 import React from "react";
-import type { NodeData } from "../../types/nodeTypes";
+import type { ShortNodeData } from "../../types/nodeTypes";
 import CardLongData from "./CardLongData";
 import CardShortData from "./CardShortData";
 
 interface NodeCardProps {
-  nodeData: NodeData;
+  nodeData: ShortNodeData;
   expandedNodeIds: string[];
   onCardClick?: () => void;
 }

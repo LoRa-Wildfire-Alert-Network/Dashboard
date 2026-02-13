@@ -1,11 +1,11 @@
 import * as L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import { MapContainer, TileLayer, Marker, useMap } from "react-leaflet";
-import type { NodeData } from "../../types/nodeTypes";
+import type { ShortNodeData } from "../../types/nodeTypes";
 import { useEffect, useState } from "react";
 
 interface MapProps {
-  nodeData: NodeData[];
+  nodeData: ShortNodeData[];
   mostRecentExpandedNodeId: string | null;
   onMarkerClick: (nodeId: string) => void;
   setMapBounds: (bounds: L.LatLngBounds) => void;
@@ -231,7 +231,7 @@ function Map({
       />
       <Recenter lat={location.lat} long={location.long} />
       <MapUpdater setMapBounds={setMapBounds} />
-      {nodeData.map((node: NodeData) => (
+      {nodeData.map((node: ShortNodeData) => (
         <Marker
           key={node.node_id}
           position={[node.latitude, node.longitude]}

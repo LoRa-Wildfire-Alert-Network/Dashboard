@@ -1,14 +1,15 @@
 import Map from "./../Map/Map";
 import NodeCardList from "../NodeCardList/NodeCardList";
-import type { NodeData } from "./../../types/nodeTypes";
+import type { ShortNodeData } from "./../../types/nodeTypes";
 import NodeFilter, { type NodeFilterState } from "../NodeFilter/NodeFilter";
 
 import { useEffect, useState } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { fas } from "@fortawesome/free-solid-svg-icons";
+import NodeDetails from "../NodeDetails/NodeDetails";
 
 const Dashboard: React.FC = () => {
-  const [nodeData, setNodeData] = useState<NodeData[]>([]);
+  const [nodeData, setNodeData] = useState<ShortNodeData[]>([]);
 
   const API_URL: string =
     import.meta.env.VITE_API_URL || "http://localhost:8000";
@@ -75,7 +76,7 @@ const Dashboard: React.FC = () => {
   // End of STATE AND HANDLERS block //////////////////////////////////////////////////////
 
   const [mapBounds, setMapBounds] = useState<L.LatLngBounds | null>(null);
-  const [filteredNodeList, setFilteredNodeList] = useState<NodeData[]>([]);
+  const [filteredNodeList, setFilteredNodeList] = useState<ShortNodeData[]>([]);
 
   const [showFilter, setShowFilter] = useState<boolean>(false);
   const [smokeDetected, setSmokeDetected] =
@@ -88,7 +89,7 @@ const Dashboard: React.FC = () => {
   /*   const [timeSinceLastSeen, setTimeSinceLastSeen] =
     useState<NodeFilterState["timeSinceLastSeen"]>(); */
 
-  const applyFilter = (nodes: NodeData[]): NodeData[] => {
+  const applyFilter = (nodes: ShortNodeData[]): ShortNodeData[] => {
     let filteredNodes = [...nodes];
 
     if (smokeDetected) {
@@ -138,7 +139,7 @@ const Dashboard: React.FC = () => {
     <>
       <div className="bg-slate-300 h-[calc(100vh-4rem)]">
         <div className="flex space-x-4 w-full h-full p-4">
-          <div className="flex-none lg:w-80 md:w-48 bg-slate-100 rounded-md p-4"></div>
+          <NodeDetails nodeId={mostRecentExpandedNodeId} />
           <Map
             nodeData={filteredNodeList}
             mostRecentExpandedNodeId={mostRecentExpandedNodeId}

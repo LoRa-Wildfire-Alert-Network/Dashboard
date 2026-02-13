@@ -1,8 +1,8 @@
-import type { NodeData } from "../../types/nodeTypes";
+import type { ShortNodeData } from "../../types/nodeTypes";
 import NodeCard from "./NodeCard";
 
 interface NodeCardListProps {
-  nodeData: NodeData[];
+  nodeData: ShortNodeData[];
   expandedNodeIds: string[];
   onCardClick: (nodeId: string) => void;
 }
