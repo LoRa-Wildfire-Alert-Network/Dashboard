@@ -3,7 +3,7 @@ import NodeCardList from "../NodeCardList/NodeCardList";
 import type { NodeData } from "./../../types/nodeTypes";
 import NodeFilter, { type NodeFilterState } from "../NodeFilter/NodeFilter";
 
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { fas } from "@fortawesome/free-solid-svg-icons";
 
@@ -88,7 +88,7 @@ const Dashboard: React.FC = () => {
   /*   const [timeSinceLastSeen, setTimeSinceLastSeen] =
     useState<NodeFilterState["timeSinceLastSeen"]>(); */
 
-  const applyFilter = (nodes: NodeData[]): NodeData[] => {
+  const applyFilter = React.useCallback((nodes: NodeData[]): NodeData[] => {
     let filteredNodes = [...nodes];
 
     if (smokeDetected) {
@@ -109,7 +109,7 @@ const Dashboard: React.FC = () => {
     }
 
     return filteredNodes;
-  };
+  }, [smokeDetected, tempAbove, humidityBelow, lowBattery]);
 
   useEffect(() => {
     const updateDisplayedNodes = (mapBounds: L.LatLngBounds | null) => {
