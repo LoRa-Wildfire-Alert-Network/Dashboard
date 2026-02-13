@@ -173,7 +173,6 @@ function MapUpdater({
     });
     map.on("zoomend", () => {
       setMapBounds(map.getBounds());
-      console.log("Map bounds updated:", map.getBounds());
     });
 
     return () => {
