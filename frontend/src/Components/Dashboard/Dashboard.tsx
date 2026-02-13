@@ -150,7 +150,7 @@ const Dashboard: React.FC = () => {
               <h1 className="text-xl font-bold">Node List</h1>
               <FontAwesomeIcon
                 icon={fas.faFilter}
-                className="text-red-600 mr-2 hover:cursor-pointer"
+                className="text-black mr-2 hover:cursor-pointer"
                 onClick={() => {
                   setShowFilter((s) => !s);
                 }}
