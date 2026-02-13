@@ -1,12 +1,14 @@
 import * as L from "leaflet";
 import "leaflet/dist/leaflet.css";
-import { MapContainer, TileLayer, Marker } from "react-leaflet";
+import { MapContainer, TileLayer, Marker, useMap } from "react-leaflet";
 import type { NodeData } from "../../types/nodeTypes";
+import { useEffect, useState } from "react";
 
 interface MapProps {
   nodeData: NodeData[];
   mostRecentExpandedNodeId: string | null;
-  onClick: (nodeId: string) => void;
+  onMarkerClick: (nodeId: string) => void;
+  setMapBounds: (bounds: L.LatLngBounds) => void;
 }
 
 // Source: https://github.com/pointhi/leaflet-color-markers /////////////
@@ -110,7 +112,11 @@ function selectIcon(
   humidity_pct: number,
   mostRecentExpandedNodeId: string | null,
 ) {
-  const iconColor = selectIconColor(smoke_detected, battery_level, humidity_pct);
+  const iconColor = selectIconColor(
+    smoke_detected,
+    battery_level,
+    humidity_pct,
+  );
 
   if (iconColor === "redIcon") {
     return nodeId === mostRecentExpandedNodeId ? expandedRedIcon : redIcon;
@@ -127,7 +133,11 @@ function selectIcon(
   }
 }
 
-function selectIconColor(smoke_detected: boolean, battery_level: number, humidity_pct: number) {
+function selectIconColor(
+  smoke_detected: boolean,
+  battery_level: number,
+  humidity_pct: number,
+) {
   if (smoke_detected) {
     return "redIcon";
   } else if (battery_level < 20) {
@@ -139,10 +149,71 @@ function selectIconColor(smoke_detected: boolean, battery_level: number, humidit
   }
 }
 
-function Map({ nodeData, mostRecentExpandedNodeId, onClick }: MapProps) {
+function Recenter({ lat, long }: { lat: number; long: number }) {
+  const map = useMap();
+  useEffect(() => {
+    if (lat !== 0 || long !== 0) {
+      map.setView([lat, long], map.getZoom());
+    }
+  }, [lat, long, map]);
+  return null;
+}
+
+function MapUpdater({
+  setMapBounds,
+}: {
+  setMapBounds: (bounds: L.LatLngBounds) => void;
+}) {
+  const map = useMap();
+
+  useEffect(() => {
+    setMapBounds(map.getBounds());
+    map.on("moveend", () => {
+      setMapBounds(map.getBounds());
+    });
+    map.on("zoomend", () => {
+      setMapBounds(map.getBounds());
+    });
+
+    return () => {
+      map.off("moveend");
+      map.off("zoomend");
+    };
+  }, [map, setMapBounds]);
+
+  return null;
+}
+
+function Map({
+  nodeData,
+  mostRecentExpandedNodeId,
+  onMarkerClick,
+  setMapBounds,
+}: MapProps) {
+  const [location, setLocation] = useState<{ lat: number; long: number }>({
+    lat: 44.5646,
+    long: -123.262,
+  });
+
+  useEffect(() => {
+    const getUserLocation = () => {
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition((position) => {
+          setLocation({
+            lat: position.coords.latitude,
+            long: position.coords.longitude,
+          });
+        });
+      } else {
+        setLocation({ lat: 44.5646, long: -123.262 });
+      }
+    };
+    getUserLocation();
+  }, []);
+
   return (
     <MapContainer
-      center={[44.5646, -123.262]}
+      center={[location.lat, location.long]}
       zoom={12}
       scrollWheelZoom={true}
       className="shadow-lg rounded-md p-4 flex-1"
@@ -151,6 +222,8 @@ function Map({ nodeData, mostRecentExpandedNodeId, onClick }: MapProps) {
         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
       />
+      <Recenter lat={location.lat} long={location.long} />
+      <MapUpdater setMapBounds={setMapBounds} />
       {nodeData.map((node: NodeData) => (
         <Marker
           key={node.node_id}
@@ -163,7 +236,7 @@ function Map({ nodeData, mostRecentExpandedNodeId, onClick }: MapProps) {
             mostRecentExpandedNodeId,
           )}
           eventHandlers={{
-            click: () => onClick(node.node_id),
+            click: () => onMarkerClick(node.node_id),
           }}
         ></Marker>
       ))}
