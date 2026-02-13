@@ -170,7 +170,6 @@ function MapUpdater({
     setMapBounds(map.getBounds());
     map.on("moveend", () => {
       setMapBounds(map.getBounds());
-      console.log("Map bounds updated:", map.getBounds());
     });
     map.on("zoomend", () => {
       setMapBounds(map.getBounds());
