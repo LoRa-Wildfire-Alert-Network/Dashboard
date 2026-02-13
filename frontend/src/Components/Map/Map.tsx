@@ -198,19 +198,14 @@ function Map({
   useEffect(() => {
     const getUserLocation = () => {
       if (navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition(
-          (position) => {
-            setLocation({
-              lat: position.coords.latitude,
-              long: position.coords.longitude,
-            });
-          },
-          (error) => {
-            console.error("Error getting user location:", error);
-          },
-        );
+        navigator.geolocation.getCurrentPosition((position) => {
+          setLocation({
+            lat: position.coords.latitude,
+            long: position.coords.longitude,
+          });
+        });
       } else {
-        console.error("Geolocation is not supported by this browser.");
+        setLocation({ lat: 44.5646, long: -123.262 });
       }
     };
     getUserLocation();
