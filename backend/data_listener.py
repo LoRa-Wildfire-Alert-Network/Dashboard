@@ -5,9 +5,6 @@ import time
 import sqlite3
 from dotenv import load_dotenv
 from alerts.engine import process_row_for_alerts
-from alerts.cooldown import can_send
-from alerts.dispatch_email import send_email_alert
-
 
 
 HERE = os.path.abspath(os.path.dirname(__file__))

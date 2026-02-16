@@ -1,5 +1,7 @@
-import os, smtplib
+import os
+import smtplib
 from email.mime.text import MIMEText
+
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -8,7 +10,8 @@ EMAIL = os.getenv("ALERT_EMAIL")
 PASSWORD = os.getenv("ALERT_PASS")
 TARGET = os.getenv("ALERT_TARGET")
 
-def send_email_alert(message: str):
+
+def send_email_alert(message: str) -> None:
     if not EMAIL or not PASSWORD or not TARGET:
         print("Alert email not configured (ALERT_EMAIL/ALERT_PASS/ALERT_TARGET).")
         return
