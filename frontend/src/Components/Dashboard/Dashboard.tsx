@@ -3,7 +3,7 @@ import NodeCardList from "../NodeCardList/NodeCardList";
 import type { ShortNodeData } from "./../../types/nodeTypes";
 import NodeFilter, { type NodeFilterState } from "../NodeFilter/NodeFilter";
 
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { fas } from "@fortawesome/free-solid-svg-icons";
 import NodeDetails from "../NodeDetails/NodeDetails";
@@ -89,28 +89,31 @@ const Dashboard: React.FC = () => {
   /*   const [timeSinceLastSeen, setTimeSinceLastSeen] =
     useState<NodeFilterState["timeSinceLastSeen"]>(); */
 
-  const applyFilter = (nodes: ShortNodeData[]): ShortNodeData[] => {
-    let filteredNodes = [...nodes];
+  const applyFilter = React.useCallback(
+    (nodes: NodeData[]): NodeData[] => {
+      let filteredNodes = [...nodes];
 
-    if (smokeDetected) {
-      filteredNodes = filteredNodes.filter((node) => node.smoke_detected);
-    }
-    if (tempAbove !== undefined) {
-      filteredNodes = filteredNodes.filter(
-        (node) => node.temperature_c > tempAbove,
-      );
-    }
-    if (humidityBelow !== undefined) {
-      filteredNodes = filteredNodes.filter(
-        (node) => node.humidity_pct < humidityBelow,
-      );
-    }
-    if (lowBattery) {
-      filteredNodes = filteredNodes.filter((node) => node.battery_level < 20);
-    }
+      if (smokeDetected) {
+        filteredNodes = filteredNodes.filter((node) => node.smoke_detected);
+      }
+      if (tempAbove !== undefined) {
+        filteredNodes = filteredNodes.filter(
+          (node) => node.temperature_c > tempAbove,
+        );
+      }
+      if (humidityBelow !== undefined) {
+        filteredNodes = filteredNodes.filter(
+          (node) => node.humidity_pct < humidityBelow,
+        );
+      }
+      if (lowBattery) {
+        filteredNodes = filteredNodes.filter((node) => node.battery_level < 20);
+      }
 
-    return filteredNodes;
-  };
+      return filteredNodes;
+    },
+    [smokeDetected, tempAbove, humidityBelow, lowBattery],
+  );
 
   useEffect(() => {
     const updateDisplayedNodes = (mapBounds: L.LatLngBounds | null) => {
@@ -151,7 +154,7 @@ const Dashboard: React.FC = () => {
               <h1 className="text-xl font-bold">Node List</h1>
               <FontAwesomeIcon
                 icon={fas.faFilter}
-                className="text-red-600 mr-2 hover:cursor-pointer"
+                className="text-black mr-2 hover:cursor-pointer"
                 onClick={() => {
                   setShowFilter((s) => !s);
                 }}
