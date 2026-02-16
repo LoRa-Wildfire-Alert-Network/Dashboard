@@ -28,4 +28,3 @@ def process_row_for_alerts(row: dict) -> None:
         f"Smoke: {smoke}\n"
     )
     send_email_alert(msg)
-    

@@ -133,10 +133,10 @@ def main():
         try:
             objs = fetch_live()
             rows = extract_rows(objs)
-            
+
             for r in rows:
                 process_row_for_alerts(r)
-            
+
             if not rows:
                 print("No data.")
             else:
