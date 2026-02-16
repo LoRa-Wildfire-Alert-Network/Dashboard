@@ -1,5 +1,9 @@
 import os, datetime, requests, time, sqlite3
 from dotenv import load_dotenv
+from alerts.engine import process_row_for_alerts
+from alerts.cooldown import can_send
+from alerts.dispatch_email import send_email_alert
+
 
 load_dotenv()
 API_URL = os.getenv("LIVE_URL")
@@ -119,6 +123,10 @@ def main():
         try:
             objs = fetch_live()
             rows = extract_rows(objs)
+            
+            for r in rows:
+                process_row_for_alerts(r)
+            
             if not rows:
                 print("No data.")
             else:
