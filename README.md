@@ -10,7 +10,7 @@ A real-time monitoring dashboard for LoRa-based wildfire detection sensor nodes.
   - 🟠 Orange: Low battery warning
   - 🔴 Red: Smoke detected
 - **Node Details**: View detailed telemetry including temperature, humidity, battery level, and smoke detection status
-- **PostgreSQL + PostGIS**: Geospatial database for efficient location-based queries
+- **SQLite Database**: Lightweight embedded database for easy deployment and data persistence
 
 ## Architecture
 
@@ -22,8 +22,8 @@ A real-time monitoring dashboard for LoRa-based wildfire detection sensor nodes.
                                                          │
                                                          ▼
 ┌─────────────────┐     ┌─────────────────┐     ┌─────────────────┐
-│   Frontend      │◀────│  Backend API    │◀────│  PostgreSQL     │
-│   (React/Vite)  │     │  (FastAPI)      │     │  (PostGIS)      │
+│   Frontend      │◀────│  Backend API    │◀────│    SQLite       │
+│   (React/Vite)  │     │  (FastAPI)      │     │   (lora.db)     │
 └─────────────────┘     └─────────────────┘     └─────────────────┘
 ```
 
@@ -47,10 +47,6 @@ A real-time monitoring dashboard for LoRa-based wildfire detection sensor nodes.
    
    Create a `.env` file in the root directory:
    ```env
-   POSTGRES_DB=
-   POSTGRES_USER=
-   POSTGRES_PASSWORD=
-   DB_DSN=
    ALLOWED_ORIGINS=
    LIVE_URL=
    ```
@@ -101,7 +97,8 @@ Dashboard/
 ├── backend/
 │   ├── backend_api.py        # FastAPI REST API
 │   ├── data_listener.py      # Live data ingestion service
-│   ├── lora_schema.sql       # Database schema
+│   ├── init_sqlite_db.py     # Database initialization script
+│   ├── sqlite_schema.sql     # SQLite database schema
 │   ├── requirements.txt      # Python dependencies
 │   └── Dockerfile
 ├── frontend/
@@ -154,12 +151,9 @@ npm run dev
 
 | Variable | Description | Default |
 |----------|-------------|---------|
-| `DB_DSN` | PostgreSQL connection string | - |
-| `LIVE_URL` | External API for live sensor data | https://api.lora.derekrgreene.com |
+| `LIVE_URL` | External API for live sensor data | https://api-lora-{PR_NUMBER}.derekrgreene.com |
 | `ALLOWED_ORIGINS` | CORS allowed origins | `*` |
-| `POSTGRES_DB` | Database name | - |
-| `POSTGRES_USER` | Database user | - |
-| `POSTGRES_PASSWORD` | Database password | - |
+| `DB_NAME` | SQLite database filename | `lora.db` |
 
 ## License
 

@@ -2,8 +2,10 @@ import os
 import sqlite3
 
 HERE = os.path.abspath(os.path.dirname(__file__))
-DB_PATH = os.path.join(HERE, "lora.db")
+DB_NAME = os.getenv("DB_NAME", "lora.db")
+DB_PATH = os.path.join(HERE, DB_NAME)
 SCHEMA_PATH = os.path.join(HERE, "sqlite_schema.sql")
+
 
 def main():
     os.makedirs(HERE, exist_ok=True)
@@ -21,6 +23,7 @@ def main():
         print(f"SQLite DB created at: {DB_PATH}")
     finally:
         conn.close()
+
 
 if __name__ == "__main__":
     main()

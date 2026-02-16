@@ -1,21 +1,28 @@
-import os, datetime, requests, time, sqlite3
+import os
+import datetime
+import requests
+import time
+import sqlite3
 from dotenv import load_dotenv
 from alerts.engine import process_row_for_alerts
 from alerts.cooldown import can_send
 from alerts.dispatch_email import send_email_alert
 
 
-load_dotenv()
-API_URL = os.getenv("LIVE_URL")
 
-# SQLite DB file in the same folder as this script
 HERE = os.path.abspath(os.path.dirname(__file__))
-DB_PATH = os.path.join(HERE, "lora.db")
+load_dotenv(os.path.join(HERE, ".env"))
+
+API_URL = os.getenv("LIVE_URL", "https://lora.derekrgreene.com/api/live")
+DB_NAME = os.getenv("DB_NAME") or "lora.db"
+DB_PATH = os.path.join(HERE, DB_NAME)
+
 
 def parse_rfc3339(dt_str):
     if not dt_str:
         return None
     return datetime.datetime.fromisoformat(dt_str.replace("Z", "+00:00"))
+
 
 def parse_unix_epoch(ts):
     try:
@@ -23,11 +30,13 @@ def parse_unix_epoch(ts):
     except Exception:
         return None
 
+
 def fetch_live():
     r = requests.get(API_URL, timeout=10)
     r.raise_for_status()
     data = r.json()
     return data if isinstance(data, list) else [data]
+
 
 def extract_rows(objs):
     rows = []
@@ -39,17 +48,17 @@ def extract_rows(objs):
         rx0 = rx[0] if rx else {}
         gateway_id = rx0.get("gatewayId")
         rssi = rx0.get("rssi")
-        snr  = rx0.get("snr")
-        loc  = rx0.get("location") or {}
+        snr = rx0.get("snr")
+        loc = rx0.get("location") or {}
         lat, lon, alt = loc.get("latitude"), loc.get("longitude"), loc.get("altitude")
 
         obj = o.get("object") or {}
         battery_level = obj.get("battery_level")
-        humidity      = obj.get("humidity")
-        smoke         = obj.get("smoke_detected")
-        temp_raw      = obj.get("temperature")
+        humidity = obj.get("humidity")
+        smoke = obj.get("smoke_detected")
+        temp_raw = obj.get("temperature")
         temperature_c = (float(temp_raw) / 100.0) if temp_raw is not None else None
-        ts_device     = parse_unix_epoch(obj.get("timestamp"))
+        ts_device = parse_unix_epoch(obj.get("timestamp"))
 
         rows.append({
             "node_id": node_id,
@@ -62,12 +71,14 @@ def extract_rows(objs):
             "humidity_pct": humidity,
             "battery_level": battery_level,
             "rssi": rssi, "snr": snr,
-            "smoke_detected": 1 if obj.get("smoke_detected") else 0,
+            "smoke_detected": 1 if smoke else 0,
         })
     return rows
 
+
 def _to_iso(dt):
     return dt.isoformat() if isinstance(dt, datetime.datetime) else None
+
 
 def upsert(conn, rows):
     cur = conn.cursor()
@@ -100,7 +111,8 @@ def upsert(conn, rows):
     tel_values = []
     for r in rows:
         tel_values.append((
-            r["node_id"], r["gateway_id"], _to_iso(r["timestamp"]), _to_iso(r["device_timestamp"]),
+            r["node_id"], r["gateway_id"], _to_iso(r["timestamp"]),
+            _to_iso(r["device_timestamp"]),
             r["lat"], r["lon"], r["alt"],
             r["temperature_c"], r["humidity_pct"], r["battery_level"],
             r["rssi"], r["snr"], r["smoke_detected"]
@@ -117,6 +129,7 @@ def upsert(conn, rows):
         """, tel_values)
 
     conn.commit()
+
 
 def main():
     while True:
@@ -141,6 +154,7 @@ def main():
             print("Error:", e)
 
         time.sleep(3)
+
 
 if __name__ == "__main__":
     main()

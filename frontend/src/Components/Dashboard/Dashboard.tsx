@@ -1,10 +1,34 @@
 import Map from "./../Map/Map";
 import NodeCardList from "../NodeCardList/NodeCardList";
 import type { NodeData } from "./../../types/nodeTypes";
+import NodeFilter, { type NodeFilterState } from "../NodeFilter/NodeFilter";
 
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { fas } from "@fortawesome/free-solid-svg-icons";
 
 const Dashboard: React.FC = () => {
+  const [nodeData, setNodeData] = useState<NodeData[]>([]);
+
+  const API_URL: string =
+    import.meta.env.VITE_API_URL || "http://localhost:8000";
+
+  useEffect(() => {
+    const fetchNodeData = async () => {
+      try {
+        const response = await fetch(`${API_URL}/latest`);
+        const data = await response.json();
+        setNodeData(data);
+      } catch (error) {
+        console.error("Error fetching node data:", error);
+      }
+    };
+
+    fetchNodeData();
+    const interval = setInterval(fetchNodeData, 3000);
+    return () => clearInterval(interval);
+  }, [API_URL]);
+
   /////////////////////////////////////////////////////////////////////////////////////////
   //
   //         STATE AND HANDLERS
@@ -23,7 +47,6 @@ const Dashboard: React.FC = () => {
   //
   /////////////////////////////////////////////////////////////////////////////////////////
 
-  const [nodeData, setNodeData] = useState<NodeData[]>([]);
   const [expandedNodeIds, setExpandedNodeIds] = useState<string[]>([]);
   const [mostRecentExpandedNodeId, setMostRecentExpandedNodeId] = useState<
     string | null
@@ -51,41 +74,103 @@ const Dashboard: React.FC = () => {
 
   // End of STATE AND HANDLERS block //////////////////////////////////////////////////////
 
-  const API_URL: string = import.meta.env.VITE_API_URL || "http://localhost:8000";
+  const [mapBounds, setMapBounds] = useState<L.LatLngBounds | null>(null);
+  const [filteredNodeList, setFilteredNodeList] = useState<NodeData[]>([]);
+
+  const [showFilter, setShowFilter] = useState<boolean>(false);
+  const [smokeDetected, setSmokeDetected] =
+    useState<NodeFilterState["smokeDetected"]>();
+  const [tempAbove, setTempAbove] = useState<NodeFilterState["tempAbove"]>();
+  const [humidityBelow, setHumidityBelow] =
+    useState<NodeFilterState["humidityBelow"]>();
+  const [lowBattery, setLowBattery] = useState<NodeFilterState["lowBattery"]>();
+  // Please leave; Not implemented yet, would require backend support
+  /*   const [timeSinceLastSeen, setTimeSinceLastSeen] =
+    useState<NodeFilterState["timeSinceLastSeen"]>(); */
+
+  const applyFilter = React.useCallback((nodes: NodeData[]): NodeData[] => {
+    let filteredNodes = [...nodes];
+
+    if (smokeDetected) {
+      filteredNodes = filteredNodes.filter((node) => node.smoke_detected);
+    }
+    if (tempAbove !== undefined) {
+      filteredNodes = filteredNodes.filter(
+        (node) => node.temperature_c > tempAbove,
+      );
+    }
+    if (humidityBelow !== undefined) {
+      filteredNodes = filteredNodes.filter(
+        (node) => node.humidity_pct < humidityBelow,
+      );
+    }
+    if (lowBattery) {
+      filteredNodes = filteredNodes.filter((node) => node.battery_level < 20);
+    }
+
+    return filteredNodes;
+  }, [smokeDetected, tempAbove, humidityBelow, lowBattery]);
 
   useEffect(() => {
-    const fetchNodeData = async () => {
-      try {
-        const response = await fetch(`${API_URL}/latest`);
-        const data = await response.json();
-        setNodeData(data);
-      } catch (error) {
-        console.error("Error fetching node data:", error);
+    const updateDisplayedNodes = (mapBounds: L.LatLngBounds | null) => {
+      if (mapBounds) {
+        const visible = nodeData.filter((node) =>
+          mapBounds.contains([node.latitude, node.longitude]),
+        );
+        setFilteredNodeList(applyFilter(visible));
+      } else {
+        setFilteredNodeList(applyFilter(nodeData));
       }
     };
-    fetchNodeData();
 
-    const interval = setInterval(fetchNodeData, 3000);
-
-    return () => clearInterval(interval);
-  }, []);
+    updateDisplayedNodes(mapBounds);
+  }, [
+    applyFilter,
+    mapBounds,
+    nodeData,
+    smokeDetected,
+    tempAbove,
+    humidityBelow,
+    lowBattery,
+  ]);
 
   return (
     <>
       <div className="bg-slate-300 h-[calc(100vh-4rem)]">
         <div className="flex space-x-4 w-full h-full p-4">
-          <div className="flex-none lg:w-80 md:w-48 bg-slate-100 rounded-md p-4">
-          </div>
+          <div className="flex-none lg:w-80 md:w-48 bg-slate-100 rounded-md p-4"></div>
           <Map
-            nodeData={nodeData}
+            nodeData={filteredNodeList}
             mostRecentExpandedNodeId={mostRecentExpandedNodeId}
-            onClick={toggleExpandFromMap}
+            onMarkerClick={toggleExpandFromMap}
+            setMapBounds={setMapBounds}
           />
           <div className="flex flex-col overflow-y-auto lg:w-100 md:w-60 bg-slate-400 rounded-md py-2 px-4">
+            <div className="flex flex-row items-center justify-between mb-4">
+              <h1 className="text-xl font-bold">Node List</h1>
+              <FontAwesomeIcon
+                icon={fas.faFilter}
+                className="text-black mr-2 hover:cursor-pointer"
+                onClick={() => {
+                  setShowFilter((s) => !s);
+                }}
+              />
+            </div>
+            {showFilter && (
+              <NodeFilter
+                onChange={(filters) => {
+                  setSmokeDetected(filters.smokeDetected);
+                  setTempAbove(filters.tempAbove);
+                  setHumidityBelow(filters.humidityBelow);
+                  setLowBattery(filters.lowBattery);
+                  /* setTimeSinceLastSeen(filters.timeSinceLastSeen); */
+                }}
+              />
+            )}
             <NodeCardList
-              nodeData={nodeData}
+              nodeData={filteredNodeList}
               expandedNodeIds={expandedNodeIds}
-              onClick={toggleExpandFromCard}
+              onCardClick={toggleExpandFromCard}
             />
           </div>
         </div>
