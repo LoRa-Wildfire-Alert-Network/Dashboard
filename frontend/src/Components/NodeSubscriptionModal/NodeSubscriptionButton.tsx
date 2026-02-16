@@ -53,7 +53,11 @@ const NodeSubscriptionButton: React.FC<NodeSubscriptionButtonProps> = ({ apiBase
         subscribedNodeIds={subscribedNodeIds}
         onUpdate={handleUpdate}
         apiBaseUrl={apiBaseUrl}
-        getAuthToken={getToken}
+        getAuthToken={async () => {
+          const token = await getToken();
+          if (!token) throw new Error("No auth token returned");
+          return token;
+        }}
       />
     </>
   );

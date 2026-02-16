@@ -11,7 +11,6 @@ import WildfireMap from "./../Map/Map";
 
 const Dashboard: React.FC = () => {
   const [nodeData, setNodeData] = useState<NodeData[]>([]);
-  const [userSubscriptions, setUserSubscriptions] = useState<string[]>([]);
 
   const API_URL: string =
     import.meta.env.VITE_API_URL || "http://localhost:8000";
@@ -140,11 +139,7 @@ const Dashboard: React.FC = () => {
               <div className="flex flex-row gap-2 items-center">
                 <NodeSubscriptionButton
                   apiBaseUrl={API_URL}
-                  userSubscriptions={userSubscriptions}
-                  onSubscriptionsChange={(subs) => {
-                    setUserSubscriptions(subs);
-                    fetchNodeData();
-                  }}
+                  onSubscriptionsChange={() => fetchNodeData()}
                 />
                 <FontAwesomeIcon
                   icon={fas.faFilter}

@@ -211,7 +211,7 @@ function WildfireMap({ nodeData, mostRecentExpandedDeviceEui, expandedNodeIds, o
       const node = selectedNodes[0];
       mapRef.current.setView([node.latitude, node.longitude], 15, { animate: true });
     } else if (selectedNodes.length > 1) {
-      const latLngs = selectedNodes.map(n => [n.latitude, n.longitude]);
+      const latLngs = selectedNodes.map(n => [n.latitude, n.longitude]) as [number, number][];
       const bounds = L.latLngBounds(latLngs);
       mapRef.current.fitBounds(bounds, { animate: true, padding: [50, 50] });
     }
