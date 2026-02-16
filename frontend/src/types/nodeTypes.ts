@@ -1,5 +1,6 @@
 export type NodeData = {
-  node_id: string;
+  device_eui: string;
+  node_id?: string;
   temperature_c: number;
   smoke_detected: boolean;
   humidity_pct: number;

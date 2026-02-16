@@ -19,10 +19,10 @@ const NodeCardList: React.FC<NodeCardListProps> = ({
       {nodeData &&
         nodeData.map((nodeData) => (
           <NodeCard
-            key={nodeData.node_id}
+            key={nodeData.device_eui}
             nodeData={nodeData}
             expandedNodeIds={expandedNodeIds}
-            onCardClick={() => onCardClick(nodeData.node_id)}
+            onCardClick={() => onCardClick(nodeData.device_eui)}
           />
         ))}
     </div>
