@@ -30,7 +30,7 @@ const CardShortData: React.FC<NodeCardProps> = ({ nodeData }) => {
       {decideIndicator(nodeData.smoke_detected, nodeData.battery_level)}
       <div className="flex flex-col w-full justify-center my-2">
         <h3 className="text-sm">EUI: {nodeData.device_eui}</h3>
-        {nodeData.node_id && <span className="text-xs text-gray-400">({nodeData.node_id})</span>}
+        
       </div>
     </>
   );
