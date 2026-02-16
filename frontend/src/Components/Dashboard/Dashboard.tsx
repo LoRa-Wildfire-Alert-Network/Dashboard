@@ -24,7 +24,11 @@ const Dashboard: React.FC = () => {
       });
       let data = await response.json();
       if (!Array.isArray(data)) data = [];
-      setNodeData(data);
+      // Deduplicate by device_eui
+      const uniqueNodes = Array.from(
+        new Map(data.map((node: NodeData) => [node.device_eui, node])).values()
+      );
+      setNodeData(uniqueNodes);
     } catch (error) {
       setNodeData([]); // fallback to empty array on error
       console.error("Error fetching node data:", error);
