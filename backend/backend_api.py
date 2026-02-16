@@ -1,18 +1,32 @@
+from pydantic import BaseModel
 import os
 import datetime as dt
 from typing import Optional, List
-
 import sqlite3
-from fastapi import FastAPI, HTTPException, Query
+from fastapi import FastAPI, HTTPException, Query, Depends, Request
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
 import uvicorn
+import jwt as pyjwt
 
 HERE = os.path.abspath(os.path.dirname(__file__))
 load_dotenv(os.path.join(HERE, ".env"))
 
-ALLOWED_ORIGINS = os.getenv("ALLOWED_ORIGINS", "*")
 
+class NodeIdRequest(BaseModel):
+    device_eui: str
+
+
+ALLOWED_ORIGINS = os.getenv("ALLOWED_ORIGINS", "*")
+CLERK_JWT_ISSUER = os.getenv(
+    "CLERK_JWT_ISSUER",
+    "https://growing-midge-79.clerk.accounts.dev/"
+)
+with open(os.path.join(HERE, "clerk_public_key.pem")) as f:
+    CLERK_JWT_PUBLIC_KEY = f.read()
+
+bearer_scheme = HTTPBearer()
 app = FastAPI(title="LoRa Wildfire Backend API")
 
 app.add_middleware(
@@ -41,9 +55,82 @@ def parse_iso(ts: Optional[str]) -> Optional[dt.datetime]:
     ts = ts.replace("Z", "+00:00")
     return dt.datetime.fromisoformat(ts)
 
+
+def get_clerk_user_id(
+    request: Request,
+    credentials: HTTPAuthorizationCredentials = Depends(bearer_scheme)
+):
+    token = credentials.credentials
+    try:
+        payload = pyjwt.decode(
+            token,
+            CLERK_JWT_PUBLIC_KEY,
+            algorithms=["RS256"],
+            audience=None,
+            issuer=CLERK_JWT_ISSUER
+        )
+    except Exception as e:
+        raise HTTPException(status_code=401, detail=f"Invalid Clerk JWT: {e}")
+    user_id = payload.get("sub") or payload.get("user_id")
+    if not user_id:
+        raise HTTPException(status_code=401, detail="No user_id in Clerk token")
+    return user_id
+
 # -------------------------
 #         ENDPOINTS
 # -------------------------
+
+
+@app.post("/subscriptions/subscribe")
+def subscribe_node(
+    body: NodeIdRequest,
+    user_id: str = Depends(get_clerk_user_id)
+):
+    device_eui = body.device_eui
+    with db() as conn:
+        node = conn.execute(
+            "SELECT device_eui FROM nodes WHERE device_eui = ?",
+            (device_eui,)
+        ).fetchone()
+        if not node:
+            raise HTTPException(status_code=404, detail="Node not found")
+        try:
+            conn.execute(
+                "INSERT INTO user_node_subscriptions "
+                "(user_id, device_eui) VALUES (?, ?)",
+                (user_id, device_eui)
+            )
+            conn.commit()
+        except sqlite3.IntegrityError:
+            raise HTTPException(status_code=400, detail="Already subscribed")
+    return {
+        "message": f"Subscribed to {device_eui}"
+    }
+
+
+@app.post("/subscriptions/unsubscribe")
+def unsubscribe_node(body: NodeIdRequest, user_id: str = Depends(get_clerk_user_id)):
+    device_eui = body.device_eui
+    with db() as conn:
+        conn.execute(
+            "DELETE FROM user_node_subscriptions "
+            "WHERE user_id = ? AND device_eui = ?",
+            (user_id, device_eui)
+        )
+        conn.commit()
+    return {
+        "message": f"Unsubscribed from {device_eui}"
+    }
+
+
+@app.get("/subscriptions")
+def get_user_subscriptions(user_id: str = Depends(get_clerk_user_id)):
+    with db() as conn:
+        rows = conn.execute(
+            "SELECT device_eui FROM user_node_subscriptions WHERE user_id = ?",
+            (user_id,)
+        ).fetchall()
+    return [r[0] for r in rows]
 
 
 @app.get("/health")
@@ -54,26 +141,26 @@ def health():
 @app.get("/nodes")
 def list_nodes():
     """
-    Returns: [{node_id, device_eui, last_seen}]
+    Returns: [{device_eui, node_id, last_seen}]
     """
     q = """
-        SELECT node_id, device_eui, last_seen
+        SELECT device_eui, node_id, last_seen
         FROM nodes
-        ORDER BY node_id
+        ORDER BY device_eui
     """
     with db() as conn:
         rows = conn.execute(q).fetchall()
     return [dict(r) for r in rows]
 
 
-@app.get("/nodes/{node_id}/latest")
-def node_latest(node_id: str):
+@app.get("/nodes/{device_eui}/latest")
+def node_latest(device_eui: str):
     """
-    Latest telemetry row for a node_id.
+    Latest telemetry row for a device_eui.
     """
     q = """
         SELECT
-          node_id,
+          device_eui,
           gateway_id,
           timestamp,
           device_timestamp,
@@ -87,29 +174,31 @@ def node_latest(node_id: str):
           rssi,
           snr
         FROM telemetry
-        WHERE node_id = ?
+        WHERE device_eui = ?
         ORDER BY timestamp DESC
         LIMIT 1
     """
     with db() as conn:
-        row = conn.execute(q, (node_id,)).fetchone()
+        row = conn.execute(q, (device_eui,)).fetchone()
     if not row:
-        raise HTTPException(status_code=404, detail="No telemetry for this node")
+        raise HTTPException(status_code=404, detail="No telemetry for this device")
     return dict(row)
 
 
 @app.get("/telemetry")
 def get_telemetry(
-    node_id: Optional[str] = None,
-    t_from: Optional[str] =
-    Query(None, description="ISO8601; e.g. 2025-01-01T00:00:00Z"),
+    device_eui: Optional[str] = None,
+    t_from: Optional[str] = Query(
+        None,
+        description="ISO8601; e.g. 2025-01-01T00:00:00Z"
+    ),
     t_to: Optional[str] = Query(None, description="ISO8601; e.g. 2025-01-02T00:00:00Z"),
     limit: int = Query(500, ge=1, le=5000),
     newest_first: bool = True,
 ):
     """
     Returns telemetry rows. Filters:
-      - node_id: only that node’s data
+      - device_eui: only that device’s data
       - t_from/t_to: time range on 'timestamp'
       - limit: row cap (default 500)
     """
@@ -119,9 +208,9 @@ def get_telemetry(
     clauses: List[str] = []
     params: List[object] = []
 
-    if node_id:
-        clauses.append("node_id = ?")
-        params.append(node_id)
+    if device_eui:
+        clauses.append("device_eui = ?")
+        params.append(device_eui)
     if dt_from:
         clauses.append("timestamp >= ?")
         params.append(dt_from.isoformat())
@@ -134,7 +223,7 @@ def get_telemetry(
 
     q = f"""
         SELECT
-          node_id,
+          device_eui,
           gateway_id,
           timestamp,
           device_timestamp,
@@ -161,41 +250,47 @@ def get_telemetry(
 
 
 @app.get("/latest")
-def latest_all_nodes():
-    """
-    Latest telemetry row per node.
-    """
-    q = """
-        SELECT
-          node_id,
-          gateway_id,
-          timestamp,
-          device_timestamp,
-          latitude,
-          longitude,
-          altitude,
-          temperature_c,
-          humidity_pct,
-          battery_level,
-          smoke_detected,
-          rssi,
-          snr
-        FROM latest_telemetry
-        ORDER BY node_id
-    """
+def latest_all_nodes(user_id: str = Depends(get_clerk_user_id)):
     with db() as conn:
-        rows = conn.execute(q).fetchall()
+        device_euis = conn.execute(
+            "SELECT device_eui FROM user_node_subscriptions WHERE user_id = ?",
+            (user_id,)
+        ).fetchall()
+        device_euis = [r[0] for r in device_euis]
+        if not device_euis:
+            return []
+        placeholders = ",".join(["?"] * len(device_euis))
+        q = f"""
+            SELECT
+              device_eui,
+              gateway_id,
+              timestamp,
+              device_timestamp,
+              latitude,
+              longitude,
+              altitude,
+              temperature_c,
+              humidity_pct,
+              battery_level,
+              smoke_detected,
+              rssi,
+              snr
+            FROM latest_telemetry
+            WHERE device_eui IN ({placeholders})
+            ORDER BY device_eui
+        """
+        rows = conn.execute(q, tuple(device_euis)).fetchall()
     return [dict(r) for r in rows]
 
 
 @app.get("/summary")
 def summary_all_nodes():
     """
-    Compact payload for map: latest row per node.
+    Compact payload for map: latest row per device.
     """
     q = """
         SELECT
-          node_id,
+          device_eui,
           timestamp,
           latitude,
           longitude,
@@ -204,7 +299,7 @@ def summary_all_nodes():
           battery_level,
           smoke_detected
         FROM latest_telemetry
-        ORDER BY node_id
+        ORDER BY device_eui
     """
     with db() as conn:
         rows = conn.execute(q).fetchall()
@@ -236,7 +331,7 @@ def map_nodes(
 
     q = f"""
         SELECT
-          node_id,
+          device_eui,
           timestamp,
           latitude,
           longitude,
@@ -246,7 +341,7 @@ def map_nodes(
           smoke_detected
         FROM latest_telemetry
         {where}
-        ORDER BY node_id
+        ORDER BY device_eui
         LIMIT ?
     """
     params.append(limit)
