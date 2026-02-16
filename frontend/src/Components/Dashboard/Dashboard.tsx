@@ -1,33 +1,42 @@
-import Map from "./../Map/Map";
+
+import React, { useEffect, useState } from "react";
+import { useAuth } from "@clerk/clerk-react";
+import NodeSubscriptionButton from "../NodeSubscriptionModal/NodeSubscriptionButton";
 import NodeCardList from "../NodeCardList/NodeCardList";
 import type { NodeData } from "./../../types/nodeTypes";
 import NodeFilter, { type NodeFilterState } from "../NodeFilter/NodeFilter";
-
-import React, { useEffect, useState } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { fas } from "@fortawesome/free-solid-svg-icons";
+import WildfireMap from "./../Map/Map";
 
 const Dashboard: React.FC = () => {
   const [nodeData, setNodeData] = useState<NodeData[]>([]);
+  const [userSubscriptions, setUserSubscriptions] = useState<string[]>([]);
 
   const API_URL: string =
     import.meta.env.VITE_API_URL || "http://localhost:8000";
 
-  useEffect(() => {
-    const fetchNodeData = async () => {
-      try {
-        const response = await fetch(`${API_URL}/latest`);
-        const data = await response.json();
-        setNodeData(data);
-      } catch (error) {
-        console.error("Error fetching node data:", error);
-      }
-    };
+  const { getToken } = useAuth();
+  const fetchNodeData = React.useCallback(async () => {
+    try {
+      const token = await getToken();
+      const response = await fetch(`${API_URL}/latest`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      let data = await response.json();
+      if (!Array.isArray(data)) data = [];
+      setNodeData(data);
+    } catch (error) {
+      setNodeData([]); // fallback to empty array on error
+      console.error("Error fetching node data:", error);
+    }
+  }, [API_URL, getToken]);
 
+  useEffect(() => {
     fetchNodeData();
     const interval = setInterval(fetchNodeData, 3000);
     return () => clearInterval(interval);
-  }, [API_URL]);
+  }, [fetchNodeData]);
 
   /////////////////////////////////////////////////////////////////////////////////////////
   //
@@ -74,9 +83,7 @@ const Dashboard: React.FC = () => {
 
   // End of STATE AND HANDLERS block //////////////////////////////////////////////////////
 
-  const [mapBounds, setMapBounds] = useState<L.LatLngBounds | null>(null);
   const [filteredNodeList, setFilteredNodeList] = useState<NodeData[]>([]);
-
   const [showFilter, setShowFilter] = useState<boolean>(false);
   const [smokeDetected, setSmokeDetected] =
     useState<NodeFilterState["smokeDetected"]>();
@@ -112,49 +119,41 @@ const Dashboard: React.FC = () => {
   }, [smokeDetected, tempAbove, humidityBelow, lowBattery]);
 
   useEffect(() => {
-    const updateDisplayedNodes = (mapBounds: L.LatLngBounds | null) => {
-      if (mapBounds) {
-        const visible = nodeData.filter((node) =>
-          mapBounds.contains([node.latitude, node.longitude]),
-        );
-        setFilteredNodeList(applyFilter(visible));
-      } else {
-        setFilteredNodeList(applyFilter(nodeData));
-      }
-    };
-
-    updateDisplayedNodes(mapBounds);
-  }, [
-    applyFilter,
-    mapBounds,
-    nodeData,
-    smokeDetected,
-    tempAbove,
-    humidityBelow,
-    lowBattery,
-  ]);
+    setFilteredNodeList(applyFilter(nodeData));
+  }, [applyFilter, nodeData, smokeDetected, tempAbove, humidityBelow, lowBattery]);
 
   return (
     <>
       <div className="bg-slate-300 h-[calc(100vh-4rem)]">
         <div className="flex space-x-4 w-full h-full p-4">
           <div className="flex-none lg:w-80 md:w-48 bg-slate-100 rounded-md p-4"></div>
-          <Map
+          <WildfireMap
             nodeData={filteredNodeList}
-            mostRecentExpandedNodeId={mostRecentExpandedNodeId}
+            mostRecentExpandedDeviceEui={mostRecentExpandedNodeId}
+            expandedNodeIds={expandedNodeIds}
             onMarkerClick={toggleExpandFromMap}
-            setMapBounds={setMapBounds}
+            setMapBounds={() => {}}
           />
           <div className="flex flex-col overflow-y-auto lg:w-100 md:w-60 bg-slate-400 rounded-md py-2 px-4">
             <div className="flex flex-row items-center justify-between mb-4">
               <h1 className="text-xl font-bold">Node List</h1>
-              <FontAwesomeIcon
-                icon={fas.faFilter}
-                className="text-black mr-2 hover:cursor-pointer"
-                onClick={() => {
-                  setShowFilter((s) => !s);
-                }}
-              />
+              <div className="flex flex-row gap-2 items-center">
+                <NodeSubscriptionButton
+                  apiBaseUrl={API_URL}
+                  userSubscriptions={userSubscriptions}
+                  onSubscriptionsChange={(subs) => {
+                    setUserSubscriptions(subs);
+                    fetchNodeData();
+                  }}
+                />
+                <FontAwesomeIcon
+                  icon={fas.faFilter}
+                  className="text-black mr-2 hover:cursor-pointer"
+                  onClick={() => {
+                    setShowFilter((s) => !s);
+                  }}
+                />
+              </div>
             </div>
             {showFilter && (
               <NodeFilter
