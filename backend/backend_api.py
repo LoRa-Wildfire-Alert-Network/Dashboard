@@ -21,7 +21,7 @@ class NodeIdRequest(BaseModel):
 ALLOWED_ORIGINS = os.getenv("ALLOWED_ORIGINS", "*")
 CLERK_JWT_ISSUER = os.getenv(
     "CLERK_JWT_ISSUER",
-    "https://growing-midge-79.clerk.accounts.dev/"
+    "https://growing-midge-79.clerk.accounts.dev"
 )
 with open(os.path.join(HERE, "clerk_public_key.pem")) as f:
     CLERK_JWT_PUBLIC_KEY = f.read()
