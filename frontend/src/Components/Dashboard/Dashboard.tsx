@@ -7,7 +7,7 @@ import type { NodeData } from "./../../types/nodeTypes";
 import NodeFilter, { type NodeFilterState } from "../NodeFilter/NodeFilter";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { fas } from "@fortawesome/free-solid-svg-icons";
-import WildfireMap from "./../Map/Map";
+import WildfireMap from "../WildfireMap/WildfireMap";
 
 const Dashboard: React.FC = () => {
   const [nodeData, setNodeData] = useState<NodeData[]>([]);
@@ -26,7 +26,7 @@ const Dashboard: React.FC = () => {
       if (!Array.isArray(data)) data = [];
       // Deduplicate by device_eui
       const uniqueNodes = Array.from(
-        new Map(data.map((node: NodeData) => [node.device_eui, node])).values()
+        new Map((data as NodeData[]).map((node) => [node.device_eui, node])).values()
       );
       setNodeData(uniqueNodes);
     } catch (error) {
