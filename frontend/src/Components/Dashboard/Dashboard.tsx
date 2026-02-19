@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from "react";
 import { useAuth } from "@clerk/clerk-react";
 import NodeSubscriptionButton from "../NodeSubscriptionModal/NodeSubscriptionButton";
@@ -11,6 +10,7 @@ import WildfireMap from "../WildfireMap/WildfireMap";
 
 const Dashboard: React.FC = () => {
   const [nodeData, setNodeData] = useState<NodeData[]>([]);
+  const [userSubscriptions, setUserSubscriptions] = useState<string[]>([]);
 
   const API_URL: string =
     import.meta.env.VITE_API_URL || "http://localhost:8000";
@@ -18,10 +18,7 @@ const Dashboard: React.FC = () => {
   const { getToken } = useAuth();
   const fetchNodeData = React.useCallback(async () => {
     try {
-      const token = await getToken();
-      const response = await fetch(`${API_URL}/latest`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const response = await fetch(`${API_URL}/summary`);
       let data = await response.json();
       if (!Array.isArray(data)) data = [];
       // Deduplicate by device_eui
@@ -33,13 +30,27 @@ const Dashboard: React.FC = () => {
       setNodeData([]); // fallback to empty array on error
       console.error("Error fetching node data:", error);
     }
+  }, [API_URL]);
+
+  const fetchSubscriptions = React.useCallback(async () => {
+    try {
+      const token = await getToken();
+      const response = await fetch(`${API_URL}/subscriptions`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await response.json();
+      if (Array.isArray(data)) setUserSubscriptions(data);
+    } catch (error) {
+      console.error("Error fetching subscriptions:", error);
+    }
   }, [API_URL, getToken]);
 
   useEffect(() => {
     fetchNodeData();
+    fetchSubscriptions();
     const interval = setInterval(fetchNodeData, 3000);
     return () => clearInterval(interval);
-  }, [fetchNodeData]);
+  }, [fetchNodeData, fetchSubscriptions]);
 
   /////////////////////////////////////////////////////////////////////////////////////////
   //
@@ -97,10 +108,16 @@ const Dashboard: React.FC = () => {
   // Please leave; Not implemented yet, would require backend support
   /*   const [timeSinceLastSeen, setTimeSinceLastSeen] =
     useState<NodeFilterState["timeSinceLastSeen"]>(); */
+  const [onlySubscribed, setOnlySubscribed] = useState<boolean>(false);
 
   const applyFilter = React.useCallback((nodes: NodeData[]): NodeData[] => {
     let filteredNodes = [...nodes];
 
+    if (onlySubscribed) {
+      filteredNodes = filteredNodes.filter((node) =>
+        userSubscriptions.includes(node.device_eui)
+      );
+    }
     if (smokeDetected) {
       filteredNodes = filteredNodes.filter((node) => node.smoke_detected);
     }
@@ -119,11 +136,11 @@ const Dashboard: React.FC = () => {
     }
 
     return filteredNodes;
-  }, [smokeDetected, tempAbove, humidityBelow, lowBattery]);
+  }, [smokeDetected, tempAbove, humidityBelow, lowBattery, onlySubscribed, userSubscriptions]);
 
   useEffect(() => {
     setFilteredNodeList(applyFilter(nodeData));
-  }, [applyFilter, nodeData, smokeDetected, tempAbove, humidityBelow, lowBattery]);
+  }, [applyFilter, nodeData]);
 
   return (
     <>
@@ -131,7 +148,7 @@ const Dashboard: React.FC = () => {
         <div className="flex space-x-4 w-full h-full p-4">
           <div className="flex-none lg:w-80 md:w-48 bg-slate-100 rounded-md p-4"></div>
           <WildfireMap
-            nodeData={filteredNodeList}
+            nodeData={nodeData.filter((node) => userSubscriptions.includes(node.device_eui))}
             mostRecentExpandedDeviceEui={mostRecentExpandedNodeId}
             expandedNodeIds={expandedNodeIds}
             onMarkerClick={toggleExpandFromMap}
@@ -143,7 +160,10 @@ const Dashboard: React.FC = () => {
               <div className="flex flex-row gap-2 items-center">
                 <NodeSubscriptionButton
                   apiBaseUrl={API_URL}
-                  onSubscriptionsChange={() => fetchNodeData()}
+                  onSubscriptionsChange={() => {
+                    fetchNodeData();
+                    fetchSubscriptions();
+                  }}
                 />
                 <FontAwesomeIcon
                   icon={fas.faFilter}
@@ -161,7 +181,7 @@ const Dashboard: React.FC = () => {
                   setTempAbove(filters.tempAbove);
                   setHumidityBelow(filters.humidityBelow);
                   setLowBattery(filters.lowBattery);
-                  /* setTimeSinceLastSeen(filters.timeSinceLastSeen); */
+                  setOnlySubscribed(!!filters.onlySubscribed);
                 }}
               />
             )}
@@ -169,6 +189,11 @@ const Dashboard: React.FC = () => {
               nodeData={filteredNodeList}
               expandedNodeIds={expandedNodeIds}
               onCardClick={toggleExpandFromCard}
+              apiBaseUrl={API_URL}
+              subscribedNodeIds={userSubscriptions}
+              onSubscriptionsChange={(subs) => {
+                setUserSubscriptions(subs);
+              }}
             />
           </div>
         </div>

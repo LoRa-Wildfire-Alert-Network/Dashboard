@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from "react";
 import { useAuth } from "@clerk/clerk-react";
-import NodeSubscriptionModal from "../NodeSubscriptionModal/NodeSubscriptionModal";
 
 interface NodeSubscriptionButtonProps {
   apiBaseUrl: string;
@@ -9,7 +8,6 @@ interface NodeSubscriptionButtonProps {
 
 const NodeSubscriptionButton: React.FC<NodeSubscriptionButtonProps> = ({ apiBaseUrl, onSubscriptionsChange }) => {
   const { getToken } = useAuth();
-  const [modalOpen, setModalOpen] = useState(false);
   const [subscribedNodeIds, setSubscribedNodeIds] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
 
@@ -30,37 +28,44 @@ const NodeSubscriptionButton: React.FC<NodeSubscriptionButtonProps> = ({ apiBase
         setLoading(false);
       }
     };
-    if (modalOpen) fetchSubscriptions();
-  }, [modalOpen, apiBaseUrl, getToken, onSubscriptionsChange]);
+    fetchSubscriptions();
+  }, [apiBaseUrl, getToken, onSubscriptionsChange]);
 
-  const handleUpdate = (newSubs: string[]) => {
-    setSubscribedNodeIds(newSubs);
-    onSubscriptionsChange(newSubs);
+  const handleToggle = async (deviceEui: string) => {
+    setLoading(true);
+    try {
+      const token = await getToken();
+      let newSubs;
+      if (subscribedNodeIds.includes(deviceEui)) {
+        await fetch(`${apiBaseUrl}/subscriptions/unsubscribe`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ device_eui: deviceEui }),
+        });
+        newSubs = subscribedNodeIds.filter((id) => id !== deviceEui);
+      } else {
+        await fetch(`${apiBaseUrl}/subscriptions/subscribe`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ device_eui: deviceEui }),
+        });
+        newSubs = [...subscribedNodeIds, deviceEui];
+      }
+      setSubscribedNodeIds(newSubs);
+      onSubscriptionsChange(newSubs);
+    } catch {
+    } finally {
+      setLoading(false);
+    }
   };
 
-  return (
-    <>
-      <button
-        className="px-4 py-2 rounded bg-slate-700 hover:bg-slate-800 text-white font-semibold mb-2"
-        onClick={() => setModalOpen(true)}
-        disabled={loading}
-      >
-        {loading ? "Loading..." : "Subscriptions"}
-      </button>
-      <NodeSubscriptionModal
-        isOpen={modalOpen}
-        onClose={() => setModalOpen(false)}
-        subscribedNodeIds={subscribedNodeIds}
-        onUpdate={handleUpdate}
-        apiBaseUrl={apiBaseUrl}
-        getAuthToken={async () => {
-          const token = await getToken();
-          if (!token) throw new Error("No auth token returned");
-          return token;
-        }}
-      />
-    </>
-  );
+  return null;
 };
 
 export default NodeSubscriptionButton;

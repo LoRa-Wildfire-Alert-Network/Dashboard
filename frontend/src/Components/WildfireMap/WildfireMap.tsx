@@ -204,12 +204,15 @@ function WildfireMap({ nodeData, mostRecentExpandedDeviceEui, expandedNodeIds, o
     return null;
   }
 
+  const prevExpandedNodeIdsRef = useRef<string[]>([]);
   useEffect(() => {
     if (!mapReady || !mapRef.current) return;
+    if (JSON.stringify(prevExpandedNodeIdsRef.current) === JSON.stringify(expandedNodeIds)) return;
+    prevExpandedNodeIdsRef.current = [...expandedNodeIds];
     const selectedNodes = validNodes.filter(n => expandedNodeIds.includes(n.device_eui));
     if (selectedNodes.length === 1) {
       const node = selectedNodes[0];
-      mapRef.current.setView([node.latitude, node.longitude], 15, { animate: true });
+      mapRef.current.setView([node.latitude, node.longitude], 10, { animate: true });
     } else if (selectedNodes.length > 1) {
       const latLngs = selectedNodes.map(n => [n.latitude, n.longitude]) as [number, number][];
       const bounds = L.latLngBounds(latLngs);
@@ -220,7 +223,7 @@ function WildfireMap({ nodeData, mostRecentExpandedDeviceEui, expandedNodeIds, o
   const [initialCenterSet, setInitialCenterSet] = useState(false);
   useEffect(() => {
     if (!mapReady || !mapRef.current || initialCenterSet) return;
-    mapRef.current.setView(defaultCenter, 12);
+    mapRef.current.setView(defaultCenter, 10);
     setInitialCenterSet(true);
   }, [mapReady, defaultCenter, initialCenterSet]);
 
