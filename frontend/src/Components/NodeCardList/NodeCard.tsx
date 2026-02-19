@@ -1,4 +1,3 @@
-import NodeSubscriptionButton from "../NodeSubscriptionModal/NodeSubscriptionButton";
 import React, { useState } from "react";
 import { useAuth } from "@clerk/clerk-react";
 import type { NodeData } from "../../types/nodeTypes";
@@ -55,6 +54,7 @@ const NodeCard: React.FC<NodeCardProps> = ({
       }
       onSubscriptionsChange(newSubs);
     } catch {
+      // ignore
     } finally {
       setLoading(false);
     }
