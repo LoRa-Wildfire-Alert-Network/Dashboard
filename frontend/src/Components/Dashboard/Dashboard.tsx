@@ -90,7 +90,7 @@ const Dashboard: React.FC = () => {
     useState<NodeFilterState["timeSinceLastSeen"]>(); */
 
   const applyFilter = React.useCallback(
-    (nodes: NodeData[]): NodeData[] => {
+    (nodes: ShortNodeData[]): ShortNodeData[] => {
       let filteredNodes = [...nodes];
 
       if (smokeDetected) {
