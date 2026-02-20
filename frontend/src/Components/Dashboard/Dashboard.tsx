@@ -25,7 +25,7 @@ const Dashboard: React.FC = () => {
       // Deduplicate by device_eui
       const uniqueNodes = Array.from(
         new Map(
-          (data as NodeData[]).map((node) => [node.device_eui, node]),
+          (data as ShortNodeData[]).map((node) => [node.device_eui, node]),
         ).values(),
       );
       setNodeData(uniqueNodes);
