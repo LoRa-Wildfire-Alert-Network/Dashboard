@@ -18,6 +18,7 @@ export type NodeFilterState = {
   tempAbove?: number;
   humidityBelow?: number;
   lowBattery?: boolean;
+  onlySubscribed?: boolean;
   // Please leave; Not implemented yet, would require backend support
   /* timeSinceLastSeen?: Date; */
 };
@@ -33,6 +34,7 @@ const NodeFilter = ({ onChange }: NodeFilterProps) => {
   // Please leave; Not implemented yet, would require backend support
   /*   const [timeSinceLastSeen, setTimeSinceLastSeen] =
     useState<NodeFilterState["timeSinceLastSeen"]>(); */
+  const [onlySubscribed, setOnlySubscribed] = useState(false);
 
   const [showTempAboveInput, setShowTempAboveInput] = useState<boolean>(false);
   const [showHumidityBelowInput, setShowHumidityBelowInput] =
@@ -47,13 +49,23 @@ const NodeFilter = ({ onChange }: NodeFilterProps) => {
       tempAbove,
       humidityBelow,
       lowBattery,
+      onlySubscribed,
       /* timeSinceLastSeen, */
     });
-  }, [onChange, smokeDetected, tempAbove, humidityBelow, lowBattery]);
+  }, [onChange, smokeDetected, tempAbove, humidityBelow, lowBattery, onlySubscribed]);
 
   return (
     <div className="flex flex-col bg-white p-4 rounded shadow-lg">
       <h2 className="text-lg font-bold mb-2">Filter Options</h2>
+      <label className="flex items-center mb-2 ml-4">
+        <input
+          type="checkbox"
+          className="mr-2"
+          onChange={() => setOnlySubscribed(!onlySubscribed)}
+          checked={!!onlySubscribed}
+        />
+        Only show subscribed nodes
+      </label>
       <h3 className="text-lg font-bold mb-2">Alerts</h3>
       <label className="flex items-center mb-2 ml-4">
         <input

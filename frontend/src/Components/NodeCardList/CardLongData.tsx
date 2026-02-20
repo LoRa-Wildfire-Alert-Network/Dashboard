@@ -29,7 +29,8 @@ const CardLongData: React.FC<NodeCardProps> = ({ nodeData }) => {
     <>
       {decideIndicator(nodeData.smoke_detected, nodeData.battery_level)}
       <div className="flex flex-col w-full h-24 justify-center my-4">
-        <h3 className="text-sm mb-2">ID: {nodeData.node_id}</h3>
+        <h3 className="text-sm mb-2">EUI: {nodeData.device_eui}</h3>
+        
         <p className="text-sm">Temperature: {nodeData.temperature_c} °C</p>
         <p className="text-sm">
           Smoke Detected?: {nodeData.smoke_detected ? "Yes" : "No"}
