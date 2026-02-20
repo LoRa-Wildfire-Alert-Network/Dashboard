@@ -1,5 +1,6 @@
 export type ShortNodeData = {
-  node_id: string;
+  device_eui: string;
+  node_id?: string;
   timestamp?: string;
   temperature_c: number;
   smoke_detected: boolean;

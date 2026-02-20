@@ -2,12 +2,13 @@ import * as L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import { MapContainer, TileLayer, Marker, useMap } from "react-leaflet";
 import type { ShortNodeData } from "../../types/nodeTypes";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState, useMemo } from "react";
 
-interface MapProps {
+export interface MapProps {
   nodeData: ShortNodeData[];
-  mostRecentExpandedNodeId: string | null;
-  onMarkerClick: (nodeId: string) => void;
+  mostRecentExpandedDeviceEui: string | null;
+  expandedNodeIds: string[];
+  onMarkerClick: (deviceEui: string) => void;
   setMapBounds: (bounds: L.LatLngBounds) => void;
 }
 
@@ -108,9 +109,9 @@ L.Marker.prototype.options.icon = redIcon;
 function selectIcon(
   smoke_detected: boolean,
   battery_level: number,
-  nodeId: string,
+  deviceEui: string,
   humidity_pct: number,
-  mostRecentExpandedNodeId: string | null,
+  mostRecentExpandedDeviceEui: string | null,
 ) {
   const iconColor = selectIconColor(
     smoke_detected,
@@ -119,17 +120,21 @@ function selectIcon(
   );
 
   if (iconColor === "redIcon") {
-    return nodeId === mostRecentExpandedNodeId ? expandedRedIcon : redIcon;
+    return deviceEui === mostRecentExpandedDeviceEui
+      ? expandedRedIcon
+      : redIcon;
   } else if (iconColor === "orangeIcon") {
-    return nodeId === mostRecentExpandedNodeId
+    return deviceEui === mostRecentExpandedDeviceEui
       ? expandedOrangeIcon
       : orangeIcon;
   } else if (iconColor === "yellowIcon") {
-    return nodeId === mostRecentExpandedNodeId
+    return deviceEui === mostRecentExpandedDeviceEui
       ? expandedYellowIcon
       : yellowIcon;
   } else {
-    return nodeId === mostRecentExpandedNodeId ? expandedGreenIcon : greenIcon;
+    return deviceEui === mostRecentExpandedDeviceEui
+      ? expandedGreenIcon
+      : greenIcon;
   }
 }
 
@@ -147,16 +152,6 @@ function selectIconColor(
   } else {
     return "greenIcon";
   }
-}
-
-function Recenter({ lat, long }: { lat: number; long: number }) {
-  const map = useMap();
-  useEffect(() => {
-    if (lat !== 0 || long !== 0) {
-      map.setView([lat, long], map.getZoom());
-    }
-  }, [lat, long, map]);
-  return null;
 }
 
 function MapUpdater({
@@ -184,64 +179,120 @@ function MapUpdater({
   return null;
 }
 
-function Map({
+function WildfireMap({
   nodeData,
-  mostRecentExpandedNodeId,
+  mostRecentExpandedDeviceEui,
+  expandedNodeIds,
   onMarkerClick,
   setMapBounds,
 }: MapProps) {
-  const [location, setLocation] = useState<{ lat: number; long: number }>({
-    lat: 44.5646,
-    long: -123.262,
-  });
+  // Default center: selected node if available, else first valid node, else Corvallis
+  const validNodes = nodeData.filter(
+    (n) => n.latitude != null && n.longitude != null,
+  );
+  const defaultCenter = useMemo(() => {
+    const selectedNode = validNodes.find(
+      (n) => n.device_eui === mostRecentExpandedDeviceEui,
+    );
+    if (
+      selectedNode &&
+      selectedNode.latitude != null &&
+      selectedNode.longitude != null
+    ) {
+      return [selectedNode.latitude, selectedNode.longitude] as [
+        number,
+        number,
+      ];
+    } else if (validNodes.length > 0) {
+      return [validNodes[0].latitude, validNodes[0].longitude] as [
+        number,
+        number,
+      ];
+    }
+    return [44.5646, -123.262] as [number, number];
+  }, [validNodes, mostRecentExpandedDeviceEui]);
 
-  useEffect(() => {
-    const getUserLocation = () => {
-      if (navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition((position) => {
-          setLocation({
-            lat: position.coords.latitude,
-            long: position.coords.longitude,
-          });
-        });
-      } else {
-        setLocation({ lat: 44.5646, long: -123.262 });
+  const mapRef = useRef<L.Map | null>(null);
+  const [mapReady, setMapReady] = useState(false);
+  function MapRefSetter() {
+    const map = useMap();
+    useEffect(() => {
+      if (!mapRef.current) {
+        mapRef.current = map;
+        setMapReady(true);
       }
-    };
-    getUserLocation();
-  }, []);
+    }, [map]);
+    return null;
+  }
+
+  const prevExpandedNodeIdsRef = useRef<string[]>([]);
+  useEffect(() => {
+    if (!mapReady || !mapRef.current) return;
+    if (
+      JSON.stringify(prevExpandedNodeIdsRef.current) ===
+      JSON.stringify(expandedNodeIds)
+    )
+      return;
+    prevExpandedNodeIdsRef.current = [...expandedNodeIds];
+    const selectedNodes = validNodes.filter((n) =>
+      expandedNodeIds.includes(n.device_eui),
+    );
+    if (selectedNodes.length === 1) {
+      const node = selectedNodes[0];
+      mapRef.current.setView([node.latitude, node.longitude], 10, {
+        animate: true,
+      });
+    } else if (selectedNodes.length > 1) {
+      const latLngs = selectedNodes.map((n) => [n.latitude, n.longitude]) as [
+        number,
+        number,
+      ][];
+      const bounds = L.latLngBounds(latLngs);
+      mapRef.current.fitBounds(bounds, { animate: true, padding: [50, 50] });
+    }
+  }, [expandedNodeIds, validNodes, mapReady]);
+
+  const [initialCenterSet, setInitialCenterSet] = useState(false);
+  useEffect(() => {
+    if (!mapReady || !mapRef.current || initialCenterSet) return;
+    mapRef.current.setView(defaultCenter, 10);
+    setInitialCenterSet(true);
+  }, [mapReady, defaultCenter, initialCenterSet]);
 
   return (
     <MapContainer
-      center={[location.lat, location.long]}
+      center={defaultCenter}
       zoom={12}
       scrollWheelZoom={true}
       className="shadow-lg rounded-md p-4 flex-1"
     >
+      <MapRefSetter />
       <TileLayer
         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
       />
-      <Recenter lat={location.lat} long={location.long} />
       <MapUpdater setMapBounds={setMapBounds} />
-      {nodeData.map((node: ShortNodeData) => (
-        <Marker
-          key={node.node_id}
-          position={[node.latitude, node.longitude]}
-          icon={selectIcon(
-            node.smoke_detected,
-            node.battery_level,
-            node.node_id,
-            node.humidity_pct,
-            mostRecentExpandedNodeId,
-          )}
-          eventHandlers={{
-            click: () => onMarkerClick(node.node_id),
-          }}
-        ></Marker>
-      ))}
+      {validNodes.map((node: ShortNodeData, idx: number) => {
+        const markerKey = `${node.device_eui}_${idx}`;
+        return (
+          <Marker
+            key={markerKey}
+            position={[node.latitude, node.longitude]}
+            icon={selectIcon(
+              node.smoke_detected,
+              node.battery_level,
+              node.device_eui,
+              node.humidity_pct,
+              mostRecentExpandedDeviceEui,
+            )}
+            eventHandlers={{
+              click: () => onMarkerClick(node.device_eui),
+            }}
+          ></Marker>
+        );
+      })}
     </MapContainer>
   );
 }
 
-export default Map;
+export default WildfireMap;

@@ -5,7 +5,6 @@ import time
 import sqlite3
 from dotenv import load_dotenv
 
-
 HERE = os.path.abspath(os.path.dirname(__file__))
 load_dotenv(os.path.join(HERE, ".env"))
 
@@ -36,7 +35,12 @@ def fetch_live():
 
 def extract_rows(objs):
     rows = []
+    seen_euis = set()
     for o in objs:
+        device_eui = (o.get("deviceInfo") or {}).get("devEui")
+        if not device_eui or device_eui in seen_euis:
+            continue
+        seen_euis.add(device_eui)
         node_id = o.get("devAddr")
         ts_network = parse_rfc3339(o.get("time"))
 
@@ -46,9 +50,11 @@ def extract_rows(objs):
         rssi = rx0.get("rssi")
         snr = rx0.get("snr")
         loc = rx0.get("location") or {}
-        lat, lon, alt = loc.get("latitude"), loc.get("longitude"), loc.get("altitude")
+        alt = loc.get("altitude")
 
         obj = o.get("object") or {}
+        lat = obj.get("latitude")
+        lon = obj.get("longitude")
         battery_level = obj.get("battery_level")
         humidity = obj.get("humidity")
         smoke = obj.get("smoke_detected")
@@ -58,7 +64,7 @@ def extract_rows(objs):
 
         rows.append({
             "node_id": node_id,
-            "device_eui": (o.get("deviceInfo") or {}).get("devEui"),
+            "device_eui": device_eui,
             "gateway_id": gateway_id,
             "timestamp": ts_network,
             "device_timestamp": ts_device,
@@ -82,17 +88,18 @@ def upsert(conn, rows):
     # Nodes upsert (SQLite ON CONFLICT)
     node_values = []
     for r in rows:
-        if r["node_id"]:
-            node_values.append((r["node_id"], r["device_eui"], _to_iso(r["timestamp"])))
+        if r["device_eui"]:
+            node_values.append((r["device_eui"], r["node_id"], _to_iso(r["timestamp"])))
 
     if node_values:
-        cur.executemany("""
-            INSERT INTO nodes (node_id, device_eui, last_seen)
+        conn.executemany(
+            """
+            INSERT INTO nodes (device_eui, node_id, last_seen)
             VALUES (?, ?, ?)
-            ON CONFLICT(node_id) DO UPDATE SET
-              device_eui = excluded.device_eui,
+            ON CONFLICT(device_eui) DO UPDATE SET
+              node_id = excluded.node_id,
               last_seen  = excluded.last_seen;
-        """, node_values)
+            """, node_values)
 
     # Gateways insert-ignore
     gw_values = [(r["gateway_id"],) for r in rows if r.get("gateway_id")]
@@ -107,7 +114,7 @@ def upsert(conn, rows):
     tel_values = []
     for r in rows:
         tel_values.append((
-            r["node_id"], r["gateway_id"], _to_iso(r["timestamp"]),
+            r["device_eui"], r["gateway_id"], _to_iso(r["timestamp"]),
             _to_iso(r["device_timestamp"]),
             r["lat"], r["lon"], r["alt"],
             r["temperature_c"], r["humidity_pct"], r["battery_level"],
@@ -117,7 +124,7 @@ def upsert(conn, rows):
     if tel_values:
         cur.executemany("""
             INSERT INTO telemetry
-              (node_id, gateway_id, timestamp, device_timestamp,
+              (device_eui, gateway_id, timestamp, device_timestamp,
                latitude, longitude, altitude,
                temperature_c, humidity_pct, battery_level,
                rssi, snr, smoke_detected)

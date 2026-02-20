@@ -43,6 +43,7 @@ ALLOWED_ORIGINS=*
 |---------|-------------|----------|
 | `LIVE_URL` | External API for live LoRa telemetry | Yes |
 | `ALLOWED_ORIGINS` | CORS allowed origins | No (default `*`) |
+| `CLERK_JWT_ISSUER` | Clerk JWT Issuer | https://growing-midge-79.clerk.accounts.dev |
 
 ---
 
@@ -153,6 +154,7 @@ backend/
 ├── init_sqlite_db.py    # SQLite initialization script
 ├── sqlite_schema.sql    # Database schema
 ├── requirements.txt     # Python dependencies
+├── clerk_public_key.pem # Clerk JWT Public Key
 ├── Dockerfile           # Backend container
 ├── README.md
 └── lora.db              # SQLite database (ignored)
