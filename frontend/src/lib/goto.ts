@@ -4,9 +4,34 @@ export function currentPath(): string {
   return window.location.pathname + window.location.search;
 }
 
+/**
+ * Reject absolute URLs to foreign origins, javascript: URIs, and anything
+ * that isn't a plain same-origin path.  Returns a safe path or null.
+ */
+function sanitizeGoto(raw: string | null): string | null {
+  if (!raw) return null;
+
+  if (raw.startsWith("/")) {
+    // Block protocol-relative URLs (e.g. "//evil.com")
+    if (raw.startsWith("//")) return null;
+    return raw;
+  }
+
+  try {
+    const parsed = new URL(raw, window.location.origin);
+    if (parsed.origin !== window.location.origin) return null;
+    if (parsed.protocol !== "http:" && parsed.protocol !== "https:") return null;
+    return parsed.pathname + parsed.search + parsed.hash;
+  } catch {
+    return null;
+  }
+}
+
+/** Read goto target from URL param first, then sessionStorage. Sanitized to same-origin paths. */
 export function getGoto(): string | null {
   const params = new URLSearchParams(window.location.search);
-  return params.get("goto") || sessionStorage.getItem(STORAGE_KEY);
+  const raw = params.get("goto") || sessionStorage.getItem(STORAGE_KEY);
+  return sanitizeGoto(raw);
 }
 
 export function storeGoto(path: string = currentPath()) {
