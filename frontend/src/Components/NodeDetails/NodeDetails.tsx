@@ -33,6 +33,7 @@ const NodeDetails: React.FC<{ nodeEui: string | null }> = ({ nodeEui }) => {
           `${API_URL}/telemetry?node_id=${nodeEui}&limit=50`,
         );
         const data = await response.json();
+        console.log("Historical data:", data);
         setHistoricalData(data);
       } catch (error) {
         console.error("Error fetching historical data:", error);
