@@ -30,7 +30,7 @@ const NodeDetails: React.FC<{ nodeEui: string | null }> = ({ nodeEui }) => {
       }
       try {
         const response = await fetch(
-          `${API_URL}/telemetry?node_eui=${nodeEui}&limit=50`,
+          `${API_URL}/telemetry?device_eui=${nodeEui}&limit=50`,
         );
         console.log(`${API_URL}/telemetry?node_eui=${nodeEui}&limit=50`);
         const data = await response.json();
