@@ -1,15 +1,8 @@
-import { useEffect, useRef, createContext, useContext } from "react";
+import { useEffect, useRef } from "react";
 import { useAuth, useOrganization } from "@clerk/clerk-react";
 import { broadcastSignIn, onAuthMessage } from "../lib/broadcast";
 import { getGoto, storeGoto, clearGoto } from "../lib/goto";
-
-interface AuthCtx {
-  orgId: string | null;
-  orgName: string | null;
-}
-
-const AuthContext = createContext<AuthCtx>({ orgId: null, orgName: null });
-export const useAuthContext = () => useContext(AuthContext);
+import { AuthContext, type AuthCtx } from "./AuthContext";
 
 export default function AuthProvider({ children }: { children: React.ReactNode }) {
   const { isSignedIn } = useAuth();
