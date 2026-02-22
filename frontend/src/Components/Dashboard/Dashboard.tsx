@@ -73,28 +73,28 @@ const Dashboard: React.FC = () => {
   //
   /////////////////////////////////////////////////////////////////////////////////////////
 
-  const [expandedNodeIds, setExpandedNodeIds] = useState<string[]>([]);
-  const [mostRecentExpandedNodeId, setMostRecentExpandedNodeId] = useState<
+  const [expandedNodeEuis, setExpandedNodeEuis] = useState<string[]>([]);
+  const [mostRecentExpandedNodeEui, setMostRecentExpandedNodeEui] = useState<
     string | null
   >(null);
 
-  const toggleExpandFromCard = (nodeId: string) => {
-    if (expandedNodeIds.includes(nodeId)) {
-      setExpandedNodeIds(expandedNodeIds.filter((id) => id !== nodeId));
-      setMostRecentExpandedNodeId(null);
+  const toggleExpandFromCard = (nodeEui: string) => {
+    if (expandedNodeEuis.includes(nodeEui)) {
+      setExpandedNodeEuis(expandedNodeEuis.filter((Eui) => Eui !== nodeEui));
+      setMostRecentExpandedNodeEui(null);
     } else {
-      setExpandedNodeIds([...expandedNodeIds, nodeId]);
-      setMostRecentExpandedNodeId(nodeId);
+      setExpandedNodeEuis([...expandedNodeEuis, nodeEui]);
+      setMostRecentExpandedNodeEui(nodeEui);
     }
   };
 
-  const toggleExpandFromMap = (nodeId: string) => {
-    if (expandedNodeIds.includes(nodeId)) {
-      setExpandedNodeIds([]);
-      setMostRecentExpandedNodeId(null);
+  const toggleExpandFromMap = (nodeEui: string) => {
+    if (expandedNodeEuis.includes(nodeEui)) {
+      setExpandedNodeEuis([]);
+      setMostRecentExpandedNodeEui(null);
     } else {
-      setExpandedNodeIds([nodeId]);
-      setMostRecentExpandedNodeId(nodeId);
+      setExpandedNodeEuis([nodeEui]);
+      setMostRecentExpandedNodeEui(nodeEui);
     }
   };
 
@@ -159,13 +159,13 @@ const Dashboard: React.FC = () => {
     <>
       <div className="bg-slate-300 h-[calc(100vh-4rem)]">
         <div className="flex space-x-4 w-full h-full p-4">
-          <NodeDetails nodeId={mostRecentExpandedNodeId} />
+          <NodeDetails nodeEui={mostRecentExpandedNodeEui} />
           <WildfireMap
             nodeData={nodeData.filter((node) =>
               userSubscriptions.includes(node.device_eui),
             )}
-            mostRecentExpandedDeviceEui={mostRecentExpandedNodeId}
-            expandedNodeIds={expandedNodeIds}
+            mostRecentExpandedNodeEui={mostRecentExpandedNodeEui}
+            expandedNodeEuis={expandedNodeEuis}
             onMarkerClick={toggleExpandFromMap}
             setMapBounds={() => {}}
           />
@@ -202,7 +202,7 @@ const Dashboard: React.FC = () => {
             )}
             <NodeCardList
               nodeData={filteredNodeList}
-              expandedNodeIds={expandedNodeIds}
+              expandedNodeEuis={expandedNodeEuis}
               onCardClick={toggleExpandFromCard}
               apiBaseUrl={API_URL}
               subscribedNodeIds={userSubscriptions}

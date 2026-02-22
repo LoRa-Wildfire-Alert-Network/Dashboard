@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import type { DetailNodeData, ShortNodeData } from "../../types/nodeTypes";
 
-const NodeDetails: React.FC<{ nodeId: string | null }> = ({ nodeId }) => {
+const NodeDetails: React.FC<{ nodeEui: string | null }> = ({ nodeEui }) => {
   const [nodeData, setNodeData] = useState<DetailNodeData | null>(null);
   const [historicalData, setHistoricalData] = useState<ShortNodeData[]>([]);
 
@@ -10,12 +10,12 @@ const NodeDetails: React.FC<{ nodeId: string | null }> = ({ nodeId }) => {
 
   useEffect(() => {
     const fetchCurrentNodeData = async () => {
-      if (!nodeId) {
+      if (!nodeEui) {
         setNodeData(null);
         return;
       }
       try {
-        const response = await fetch(`${API_URL}/nodes/${nodeId}/latest`);
+        const response = await fetch(`${API_URL}/nodes/${nodeEui}/latest`);
         const data = await response.json();
         console.log(data);
         setNodeData(data);
@@ -25,13 +25,13 @@ const NodeDetails: React.FC<{ nodeId: string | null }> = ({ nodeId }) => {
     };
 
     const fetchHistoricalData = async () => {
-      if (!nodeId) {
+      if (!nodeEui) {
         setHistoricalData([]);
         return;
       }
       try {
         const response = await fetch(
-          `${API_URL}/telemetry?node_id=${nodeId}&limit=50`,
+          `${API_URL}/telemetry?node_id=${nodeEui}&limit=50`,
         );
         const data = await response.json();
         setHistoricalData(data);
@@ -42,16 +42,13 @@ const NodeDetails: React.FC<{ nodeId: string | null }> = ({ nodeId }) => {
 
     fetchCurrentNodeData();
     fetchHistoricalData();
-    console.log("NodeDetails useEffect ran with nodeId:", nodeId);
-    console.log("Historical data:", historicalData);
     const interval = setInterval(fetchCurrentNodeData, 3000);
     return () => clearInterval(interval);
-  }, [API_URL, nodeId]);
-
+  }, [API_URL, nodeEui]);
   return (
     <div className="flex-none lg:w-90 md:w-48 bg-slate-100 rounded-md p-4 overflow-y-auto">
-      <h2 className="text-2xl font-bold mb-4">Node: {nodeId}</h2>
-      {nodeId && nodeData && (
+      <h2 className="text-2xl font-bold mb-4">Node EUI: {nodeEui}</h2>
+      {nodeEui && nodeData && (
         <div>
           <div>
             <h3 className="text-lg font-bold">Current Readings:</h3>

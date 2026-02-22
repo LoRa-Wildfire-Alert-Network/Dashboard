@@ -6,7 +6,7 @@ import CardShortData from "./CardShortData";
 
 interface NodeCardProps {
   nodeData: ShortNodeData;
-  expandedNodeIds: string[];
+  expandedNodeEuis: string[];
   onCardClick?: () => void;
   apiBaseUrl: string;
   subscribedNodeIds: string[];
@@ -15,7 +15,7 @@ interface NodeCardProps {
 
 const NodeCard: React.FC<NodeCardProps> = ({
   nodeData,
-  expandedNodeIds,
+  expandedNodeEuis,
   onCardClick,
   apiBaseUrl,
   subscribedNodeIds,
@@ -73,7 +73,7 @@ const NodeCard: React.FC<NodeCardProps> = ({
         style={{ marginRight: 8 }}
         onClick={(e) => e.stopPropagation()}
       />
-      {expandedNodeIds.includes(nodeData.device_eui) ? (
+      {expandedNodeEuis.includes(nodeData.device_eui) ? (
         <CardLongData nodeData={nodeData} />
       ) : (
         <CardShortData nodeData={nodeData} />

@@ -3,7 +3,7 @@ import NodeCard from "./NodeCard";
 
 interface NodeCardListProps {
   nodeData: ShortNodeData[];
-  expandedNodeIds: string[];
+  expandedNodeEuis: string[];
   onCardClick: (nodeId: string) => void;
   apiBaseUrl: string;
   subscribedNodeIds?: string[];
@@ -12,7 +12,7 @@ interface NodeCardListProps {
 
 const NodeCardList: React.FC<NodeCardListProps> = ({
   nodeData,
-  expandedNodeIds,
+  expandedNodeEuis,
   onCardClick,
   apiBaseUrl,
   subscribedNodeIds = [],
@@ -27,7 +27,7 @@ const NodeCardList: React.FC<NodeCardListProps> = ({
           <NodeCard
             key={nodeData.device_eui}
             nodeData={nodeData}
-            expandedNodeIds={expandedNodeIds}
+            expandedNodeEuis={expandedNodeEuis}
             onCardClick={() => onCardClick(nodeData.device_eui)}
             apiBaseUrl={apiBaseUrl}
             subscribedNodeIds={subscribedNodeIds}

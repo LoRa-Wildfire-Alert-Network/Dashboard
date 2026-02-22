@@ -6,8 +6,8 @@ import { useEffect, useRef, useState, useMemo } from "react";
 
 export interface MapProps {
   nodeData: ShortNodeData[];
-  mostRecentExpandedDeviceEui: string | null;
-  expandedNodeIds: string[];
+  mostRecentExpandedNodeEui: string | null;
+  expandedNodeEuis: string[];
   onMarkerClick: (deviceEui: string) => void;
   setMapBounds: (bounds: L.LatLngBounds) => void;
 }
@@ -181,8 +181,8 @@ function MapUpdater({
 
 function WildfireMap({
   nodeData,
-  mostRecentExpandedDeviceEui,
-  expandedNodeIds,
+  mostRecentExpandedNodeEui,
+  expandedNodeEuis,
   onMarkerClick,
   setMapBounds,
 }: MapProps) {
@@ -192,7 +192,7 @@ function WildfireMap({
   );
   const defaultCenter = useMemo(() => {
     const selectedNode = validNodes.find(
-      (n) => n.device_eui === mostRecentExpandedDeviceEui,
+      (n) => n.device_eui === mostRecentExpandedNodeEui,
     );
     if (
       selectedNode &&
@@ -210,7 +210,7 @@ function WildfireMap({
       ];
     }
     return [44.5646, -123.262] as [number, number];
-  }, [validNodes, mostRecentExpandedDeviceEui]);
+  }, [validNodes, mostRecentExpandedNodeEui]);
 
   const mapRef = useRef<L.Map | null>(null);
   const [mapReady, setMapReady] = useState(false);
@@ -225,17 +225,17 @@ function WildfireMap({
     return null;
   }
 
-  const prevExpandedNodeIdsRef = useRef<string[]>([]);
+  const prevExpandedNodeEuisRef = useRef<string[]>([]);
   useEffect(() => {
     if (!mapReady || !mapRef.current) return;
     if (
-      JSON.stringify(prevExpandedNodeIdsRef.current) ===
-      JSON.stringify(expandedNodeIds)
+      JSON.stringify(prevExpandedNodeEuisRef.current) ===
+      JSON.stringify(expandedNodeEuis)
     )
       return;
-    prevExpandedNodeIdsRef.current = [...expandedNodeIds];
+    prevExpandedNodeEuisRef.current = [...expandedNodeEuis];
     const selectedNodes = validNodes.filter((n) =>
-      expandedNodeIds.includes(n.device_eui),
+      expandedNodeEuis.includes(n.device_eui),
     );
     if (selectedNodes.length === 1) {
       const node = selectedNodes[0];
@@ -250,7 +250,7 @@ function WildfireMap({
       const bounds = L.latLngBounds(latLngs);
       mapRef.current.fitBounds(bounds, { animate: true, padding: [50, 50] });
     }
-  }, [expandedNodeIds, validNodes, mapReady]);
+  }, [expandedNodeEuis, validNodes, mapReady]);
 
   const [initialCenterSet, setInitialCenterSet] = useState(false);
   useEffect(() => {
@@ -283,7 +283,7 @@ function WildfireMap({
               node.battery_level,
               node.device_eui,
               node.humidity_pct,
-              mostRecentExpandedDeviceEui,
+              mostRecentExpandedNodeEui,
             )}
             eventHandlers={{
               click: () => onMarkerClick(node.device_eui),
