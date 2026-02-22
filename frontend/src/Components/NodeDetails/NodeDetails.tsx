@@ -17,7 +17,6 @@ const NodeDetails: React.FC<{ nodeEui: string | null }> = ({ nodeEui }) => {
       try {
         const response = await fetch(`${API_URL}/nodes/${nodeEui}/latest`);
         const data = await response.json();
-        console.log(data);
         setNodeData(data);
       } catch (error) {
         console.error("Error fetching node data:", error);
