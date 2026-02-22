@@ -4,7 +4,9 @@ import {
   SignInButton,
   SignUpButton,
   UserButton,
+  OrganizationSwitcher,
 } from "@clerk/clerk-react";
+import { withGoto } from "../../lib/goto";
 
 const Navbar = () => {
   return (
@@ -26,7 +28,16 @@ const Navbar = () => {
           </SignUpButton>
         </SignedOut>
         <SignedIn>
-          <UserButton afterSignOutUrl="/" />
+          <OrganizationSwitcher
+            hidePersonal={false}
+            appearance={{
+              elements: {
+                rootBox: "flex items-center",
+                organizationSwitcherTrigger: "text-white",
+              },
+            }}
+          />
+          <UserButton afterSignOutUrl={withGoto("/")} />
         </SignedIn>
       </div>
     </div>
