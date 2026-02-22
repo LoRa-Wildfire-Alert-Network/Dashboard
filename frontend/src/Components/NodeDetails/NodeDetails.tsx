@@ -32,6 +32,7 @@ const NodeDetails: React.FC<{ nodeEui: string | null }> = ({ nodeEui }) => {
         const response = await fetch(
           `${API_URL}/telemetry?node_eui=${nodeEui}&limit=50`,
         );
+        console.log(`${API_URL}/telemetry?node_eui=${nodeEui}&limit=50`);
         const data = await response.json();
         console.log("Historical data:", data);
         setHistoricalData(data);
