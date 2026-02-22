@@ -1,10 +1,10 @@
 import React from "react";
-import type { NodeData } from "../../types/nodeTypes";
+import type { ShortNodeData } from "../../types/nodeTypes";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { fas } from "@fortawesome/free-solid-svg-icons";
 
 interface NodeCardProps {
-  nodeData: NodeData;
+  nodeData: ShortNodeData;
 }
 
 function decideIndicator(smoke_detected: boolean, battery_level: number) {
@@ -30,7 +30,6 @@ const CardShortData: React.FC<NodeCardProps> = ({ nodeData }) => {
       {decideIndicator(nodeData.smoke_detected, nodeData.battery_level)}
       <div className="flex flex-col w-full justify-center my-2">
         <h3 className="text-sm">EUI: {nodeData.device_eui}</h3>
-        
       </div>
     </>
   );

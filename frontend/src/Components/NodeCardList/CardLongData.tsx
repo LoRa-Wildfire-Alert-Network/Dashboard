@@ -1,10 +1,10 @@
 import React from "react";
-import type { NodeData } from "../../types/nodeTypes";
+import type { ShortNodeData } from "../../types/nodeTypes";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { fas } from "@fortawesome/free-solid-svg-icons";
 
 interface NodeCardProps {
-  nodeData: NodeData;
+  nodeData: ShortNodeData;
 }
 
 function decideIndicator(smoke_detected: boolean, battery_level: number) {
