@@ -2,14 +2,15 @@ import React, { useEffect, useState } from "react";
 import { useAuth } from "@clerk/clerk-react";
 import NodeSubscriptionButton from "../NodeSubscriptionModal/NodeSubscriptionButton";
 import NodeCardList from "../NodeCardList/NodeCardList";
-import type { NodeData } from "./../../types/nodeTypes";
+import type { ShortNodeData } from "./../../types/nodeTypes";
 import NodeFilter, { type NodeFilterState } from "../NodeFilter/NodeFilter";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { fas } from "@fortawesome/free-solid-svg-icons";
 import WildfireMap from "../WildfireMap/WildfireMap";
+import NodeDetails from "../NodeDetails/NodeDetails";
 
 const Dashboard: React.FC = () => {
-  const [nodeData, setNodeData] = useState<NodeData[]>([]);
+  const [nodeData, setNodeData] = useState<ShortNodeData[]>([]);
   const [userSubscriptions, setUserSubscriptions] = useState<string[]>([]);
 
   const API_URL: string =
@@ -23,7 +24,9 @@ const Dashboard: React.FC = () => {
       if (!Array.isArray(data)) data = [];
       // Deduplicate by device_eui
       const uniqueNodes = Array.from(
-        new Map((data as NodeData[]).map((node) => [node.device_eui, node])).values()
+        new Map(
+          (data as ShortNodeData[]).map((node) => [node.device_eui, node]),
+        ).values(),
       );
       setNodeData(uniqueNodes);
     } catch (error) {
@@ -70,34 +73,34 @@ const Dashboard: React.FC = () => {
   //
   /////////////////////////////////////////////////////////////////////////////////////////
 
-  const [expandedNodeIds, setExpandedNodeIds] = useState<string[]>([]);
-  const [mostRecentExpandedNodeId, setMostRecentExpandedNodeId] = useState<
+  const [expandedNodeEuis, setExpandedNodeEuis] = useState<string[]>([]);
+  const [mostRecentExpandedNodeEui, setMostRecentExpandedNodeEui] = useState<
     string | null
   >(null);
 
-  const toggleExpandFromCard = (nodeId: string) => {
-    if (expandedNodeIds.includes(nodeId)) {
-      setExpandedNodeIds(expandedNodeIds.filter((id) => id !== nodeId));
-      setMostRecentExpandedNodeId(null);
+  const toggleExpandFromCard = (nodeEui: string) => {
+    if (expandedNodeEuis.includes(nodeEui)) {
+      setExpandedNodeEuis(expandedNodeEuis.filter((Eui) => Eui !== nodeEui));
+      setMostRecentExpandedNodeEui(null);
     } else {
-      setExpandedNodeIds([...expandedNodeIds, nodeId]);
-      setMostRecentExpandedNodeId(nodeId);
+      setExpandedNodeEuis([...expandedNodeEuis, nodeEui]);
+      setMostRecentExpandedNodeEui(nodeEui);
     }
   };
 
-  const toggleExpandFromMap = (nodeId: string) => {
-    if (expandedNodeIds.includes(nodeId)) {
-      setExpandedNodeIds([]);
-      setMostRecentExpandedNodeId(null);
+  const toggleExpandFromMap = (nodeEui: string) => {
+    if (expandedNodeEuis.includes(nodeEui)) {
+      setExpandedNodeEuis([]);
+      setMostRecentExpandedNodeEui(null);
     } else {
-      setExpandedNodeIds([nodeId]);
-      setMostRecentExpandedNodeId(nodeId);
+      setExpandedNodeEuis([nodeEui]);
+      setMostRecentExpandedNodeEui(nodeEui);
     }
   };
 
   // End of STATE AND HANDLERS block //////////////////////////////////////////////////////
 
-  const [filteredNodeList, setFilteredNodeList] = useState<NodeData[]>([]);
+  const [filteredNodeList, setFilteredNodeList] = useState<ShortNodeData[]>([]);
   const [showFilter, setShowFilter] = useState<boolean>(false);
   const [smokeDetected, setSmokeDetected] =
     useState<NodeFilterState["smokeDetected"]>();
@@ -110,33 +113,43 @@ const Dashboard: React.FC = () => {
     useState<NodeFilterState["timeSinceLastSeen"]>(); */
   const [onlySubscribed, setOnlySubscribed] = useState<boolean>(false);
 
-  const applyFilter = React.useCallback((nodes: NodeData[]): NodeData[] => {
-    let filteredNodes = [...nodes];
+  const applyFilter = React.useCallback(
+    (nodes: ShortNodeData[]): ShortNodeData[] => {
+      let filteredNodes = [...nodes];
 
-    if (onlySubscribed) {
-      filteredNodes = filteredNodes.filter((node) =>
-        userSubscriptions.includes(node.device_eui)
-      );
-    }
-    if (smokeDetected) {
-      filteredNodes = filteredNodes.filter((node) => node.smoke_detected);
-    }
-    if (tempAbove !== undefined) {
-      filteredNodes = filteredNodes.filter(
-        (node) => node.temperature_c > tempAbove,
-      );
-    }
-    if (humidityBelow !== undefined) {
-      filteredNodes = filteredNodes.filter(
-        (node) => node.humidity_pct < humidityBelow,
-      );
-    }
-    if (lowBattery) {
-      filteredNodes = filteredNodes.filter((node) => node.battery_level < 20);
-    }
+      if (onlySubscribed) {
+        filteredNodes = filteredNodes.filter((node) =>
+          userSubscriptions.includes(node.device_eui),
+        );
+      }
+      if (smokeDetected) {
+        filteredNodes = filteredNodes.filter((node) => node.smoke_detected);
+      }
+      if (tempAbove !== undefined) {
+        filteredNodes = filteredNodes.filter(
+          (node) => node.temperature_c > tempAbove,
+        );
+      }
+      if (humidityBelow !== undefined) {
+        filteredNodes = filteredNodes.filter(
+          (node) => node.humidity_pct < humidityBelow,
+        );
+      }
+      if (lowBattery) {
+        filteredNodes = filteredNodes.filter((node) => node.battery_level < 20);
+      }
 
-    return filteredNodes;
-  }, [smokeDetected, tempAbove, humidityBelow, lowBattery, onlySubscribed, userSubscriptions]);
+      return filteredNodes;
+    },
+    [
+      smokeDetected,
+      tempAbove,
+      humidityBelow,
+      lowBattery,
+      onlySubscribed,
+      userSubscriptions,
+    ],
+  );
 
   useEffect(() => {
     setFilteredNodeList(applyFilter(nodeData));
@@ -146,11 +159,13 @@ const Dashboard: React.FC = () => {
     <>
       <div className="bg-slate-300 h-[calc(100vh-4rem)]">
         <div className="flex space-x-4 w-full h-full p-4">
-          <div className="flex-none lg:w-80 md:w-48 bg-slate-100 rounded-md p-4"></div>
+          <NodeDetails nodeEui={mostRecentExpandedNodeEui} />
           <WildfireMap
-            nodeData={nodeData.filter((node) => userSubscriptions.includes(node.device_eui))}
-            mostRecentExpandedDeviceEui={mostRecentExpandedNodeId}
-            expandedNodeIds={expandedNodeIds}
+            nodeData={nodeData.filter((node) =>
+              userSubscriptions.includes(node.device_eui),
+            )}
+            mostRecentExpandedNodeEui={mostRecentExpandedNodeEui}
+            expandedNodeEuis={expandedNodeEuis}
             onMarkerClick={toggleExpandFromMap}
             setMapBounds={() => {}}
           />
@@ -187,7 +202,7 @@ const Dashboard: React.FC = () => {
             )}
             <NodeCardList
               nodeData={filteredNodeList}
-              expandedNodeIds={expandedNodeIds}
+              expandedNodeEuis={expandedNodeEuis}
               onCardClick={toggleExpandFromCard}
               apiBaseUrl={API_URL}
               subscribedNodeIds={userSubscriptions}
