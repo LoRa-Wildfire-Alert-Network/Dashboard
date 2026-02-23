@@ -137,6 +137,7 @@ python data_listener.py
 cd frontend
 npm install
 npm run dev
+npm run dev:only
 ```
 
 ## Database Schema
@@ -154,6 +155,8 @@ npm run dev
 | `LIVE_URL` | External API for live sensor data | https://api-lora-{PR_NUMBER}.derekrgreene.com |
 | `ALLOWED_ORIGINS` | CORS allowed origins | `*` |
 | `DB_NAME` | SQLite database filename | `lora.db` |
+| `VITE_DOCS_URL` | Docs URL in navbar (frontend) | `/docs/` |
+| `DOCS_PORT` | Docs dev server port | `4000` |
 
 ## License
 
