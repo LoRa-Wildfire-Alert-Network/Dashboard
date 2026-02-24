@@ -56,25 +56,37 @@ def parse_iso(ts: Optional[str]) -> Optional[dt.datetime]:
     return dt.datetime.fromisoformat(ts)
 
 
-def get_clerk_user_id(
-    request: Request,
-    credentials: HTTPAuthorizationCredentials = Depends(bearer_scheme)
-):
+def _decode_clerk_jwt(
+    credentials: HTTPAuthorizationCredentials = Depends(bearer_scheme),
+) -> dict:
     token = credentials.credentials
     try:
-        payload = pyjwt.decode(
+        return pyjwt.decode(
             token,
             CLERK_JWT_PUBLIC_KEY,
             algorithms=["RS256"],
             audience=None,
-            issuer=CLERK_JWT_ISSUER
+            issuer=CLERK_JWT_ISSUER,
         )
     except Exception as e:
         raise HTTPException(status_code=401, detail=f"Invalid Clerk JWT: {e}")
+
+
+def get_clerk_user_id(
+    request: Request,
+    payload: dict = Depends(_decode_clerk_jwt),
+) -> str:
     user_id = payload.get("sub") or payload.get("user_id")
     if not user_id:
         raise HTTPException(status_code=401, detail="No user_id in Clerk token")
     return user_id
+
+
+def get_clerk_org_id(
+    payload: dict = Depends(_decode_clerk_jwt),
+) -> str | None:
+    """Returns the active Clerk organization id, or None for personal accounts."""
+    return payload.get("org_id")
 
 # -------------------------
 #         ENDPOINTS
