@@ -7,15 +7,22 @@ interface NodeCardProps {
   nodeData: ShortNodeData;
 }
 
-function decideIndicator(smoke_detected: boolean, battery_level: number) {
+function decideIndicator(
+  smoke_detected: boolean,
+  battery_level: number,
+  humidity_pct: number,
+  temperature_c: number,
+) {
   if (smoke_detected) {
     return <FontAwesomeIcon icon={fas.faFire} className={`text-red-500 m-2`} />;
+  } else if (humidity_pct < 15 || temperature_c > 35) {
+    <FontAwesomeIcon
+      icon={fas.faTriangleExclamation}
+      className={`text-orange-500 m-2`}
+    />;
   } else if (battery_level < 20) {
     return (
-      <FontAwesomeIcon
-        icon={fas.faBatteryQuarter}
-        className={`text-orange-500 m-2`}
-      />
+      <FontAwesomeIcon icon={fas.faMobile} className={`text-yellow-300 m-2`} />
     );
   } else {
     return (
@@ -27,7 +34,12 @@ function decideIndicator(smoke_detected: boolean, battery_level: number) {
 const CardShortData: React.FC<NodeCardProps> = ({ nodeData }) => {
   return (
     <>
-      {decideIndicator(nodeData.smoke_detected, nodeData.battery_level)}
+      {decideIndicator(
+        nodeData.smoke_detected,
+        nodeData.battery_level,
+        nodeData.humidity_pct,
+        nodeData.temperature_c,
+      )}
       <div className="flex flex-col w-full justify-center my-2">
         <h3 className="text-sm">EUI: {nodeData.device_eui}</h3>
       </div>
