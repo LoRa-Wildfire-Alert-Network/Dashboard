@@ -43,7 +43,6 @@ const CardLongData: React.FC<NodeCardProps> = ({ nodeData }) => {
       <div className="flex flex-col w-full h-24 justify-center my-4">
         <h3 className="text-sm mb-2">EUI: {nodeData.device_eui}</h3>
         <div className="flex flex-row">
-          <div className="ml-8" />
           {nodeData.smoke_detected === true ? (
             <FontAwesomeIcon
               icon={fas.faCircleExclamation}
