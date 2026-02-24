@@ -57,7 +57,6 @@ const config: Config = {
       respectPrefersColorScheme: true,
     },
     navbar: {
-      title: 'LoRa Wildfire Dashboard',
       logo: {
         alt: 'LoRa Wildfire Dashboard',
         src: 'img/logo.ico',
