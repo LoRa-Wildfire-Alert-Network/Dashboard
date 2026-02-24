@@ -51,3 +51,28 @@ CREATE TABLE IF NOT EXISTS user_node_subscriptions (
   PRIMARY KEY (user_id, device_eui),
   FOREIGN KEY (device_eui) REFERENCES nodes(device_eui) ON DELETE CASCADE
 );
+
+-- -------------------------
+-- Alerts (events)
+-- -------------------------
+CREATE TABLE IF NOT EXISTS alerts (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  dev_eui TEXT NOT NULL,
+  alert_type TEXT NOT NULL,
+  message TEXT NOT NULL,
+  created_at INTEGER NOT NULL,
+  acknowledged INTEGER NOT NULL DEFAULT 0,
+  acknowledged_at INTEGER
+);
+
+CREATE INDEX IF NOT EXISTS idx_alerts_created_at
+ON alerts(created_at DESC);
+
+CREATE INDEX IF NOT EXISTS idx_alerts_dev_eui_type
+ON alerts(dev_eui, alert_type);
+
+CREATE INDEX IF NOT EXISTS idx_alerts_ack
+ON alerts(acknowledged);
+
+CREATE INDEX IF NOT EXISTS idx_alerts_type
+ON alerts(alert_type);

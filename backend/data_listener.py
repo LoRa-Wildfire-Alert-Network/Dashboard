@@ -5,6 +5,7 @@ import time
 import sqlite3
 from dotenv import load_dotenv
 from alerts.engine import process_row_for_alerts
+from alerts.cooldown import can_send
 
 HERE = os.path.abspath(os.path.dirname(__file__))
 load_dotenv(os.path.join(HERE, ".env"))
@@ -155,6 +156,41 @@ def main():
                 finally:
                     conn.close()
         except Exception as e:
+            # Store as a DB alert so dashboard can show API problems
+            dev_eui = "SYSTEM"
+            alert_type = "API_ERROR"
+            now_ts = int(time.time())
+            err_name = type(e).__name__
+            err_msg = str(e).replace("\n", " ").strip()
+            err_msg = err_msg[:200]
+            msg = f"Live API error fetching telemetry. {err_name}: {err_msg}"
+
+            try:
+                conn = sqlite3.connect(DB_PATH, check_same_thread=False)
+                try:
+                    conn.execute("PRAGMA foreign_keys = ON;")
+                    if can_send(conn, dev_eui, alert_type):
+                        cur = conn.cursor()
+                        cur.execute(
+                            """
+                            INSERT INTO alerts (
+                                dev_eui,
+                                alert_type,
+                                message,
+                                created_at,
+                                acknowledged
+                            )
+                            VALUES (?, ?, ?, ?, 0)
+                            """,
+                            (dev_eui, alert_type, msg, now_ts),
+                        )
+                        conn.commit()
+                finally:
+                    conn.close()
+            except Exception:
+                # If logging to DB fails, don't crash the listener loop
+                pass
+
             print("Error:", e)
 
         time.sleep(3)

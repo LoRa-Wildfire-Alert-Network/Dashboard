@@ -138,6 +138,80 @@ def health():
     return {"status": "ok"}
 
 
+@app.get("/alerts")
+def get_alerts(
+    limit: int = Query(50, ge=1, le=200),
+    dev_eui: Optional[str] = Query(None),
+    acknowledged: Optional[bool] = Query(None),
+):
+    """
+    Fetch recent alert events (newest first).
+    Optional filters:
+      - dev_eui
+      - acknowledged (true/false)
+      - limit (default 50)
+    """
+    clauses: List[str] = []
+    params: List[object] = []
+
+    if dev_eui:
+        clauses.append("dev_eui = ?")
+        params.append(dev_eui)
+
+    if acknowledged is not None:
+        clauses.append("acknowledged = ?")
+        params.append(1 if acknowledged else 0)
+
+    where = f"WHERE {' AND '.join(clauses)}" if clauses else ""
+
+    q = f"""
+        SELECT
+          id,
+          dev_eui,
+          alert_type,
+          message,
+          created_at,
+          acknowledged,
+          acknowledged_at
+        FROM alerts
+        {where}
+        ORDER BY created_at DESC
+        LIMIT ?
+    """
+    params.append(limit)
+
+    with db() as conn:
+        rows = conn.execute(q, tuple(params)).fetchall()
+
+    return [dict(r) for r in rows]
+
+
+@app.put("/alerts/{alert_id}/ack")
+def acknowledge_alert(alert_id: int):
+    """
+    Mark an alert as acknowledged.
+    """
+    now_ts = int(dt.datetime.now(dt.UTC).timestamp())
+
+    with db() as conn:
+        cur = conn.cursor()
+        cur.execute(
+            """
+            UPDATE alerts
+            SET acknowledged = 1,
+                acknowledged_at = ?
+            WHERE id = ?
+            """,
+            (now_ts, alert_id),
+        )
+        conn.commit()
+
+        if cur.rowcount == 0:
+            raise HTTPException(status_code=404, detail="Alert not found")
+
+    return {"status": "ok", "id": alert_id}
+
+
 @app.get("/nodes")
 def list_nodes():
     """
