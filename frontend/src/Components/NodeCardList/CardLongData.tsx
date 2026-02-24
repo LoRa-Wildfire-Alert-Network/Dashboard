@@ -51,7 +51,9 @@ const CardLongData: React.FC<NodeCardProps> = ({ nodeData }) => {
           ) : (
             <div className="ml-8" />
           )}
-          <p>Smoke Detected?: {nodeData.smoke_detected ? "Yes" : "No"}</p>
+          <p className="text-sm">
+            Smoke Detected?: {nodeData.smoke_detected ? "Yes" : "No"}
+          </p>
         </div>
         <div className="flex flex-row">
           {nodeData.temperature_c > 35 ? (
