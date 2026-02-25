@@ -17,5 +17,5 @@ The dashboard fetches node data from the server every few seconds. You'll see up
 
 ## Map vs. List
 
-- **Map**: Shows only nodes you've subscribed to. Use it to see where sensors are and their status at a glance.
-- **Node List**: Shows all nodes (or filtered subsets). Use it to browse, subscribe, and see detailed readings.
+- **Map**: Shows only nodes you've subscribed to. Use it to see where sensors are and their status at a glance
+- **Node List**: Shows all nodes (or filtered subsets). Use it to browse, subscribe, and see detailed readings

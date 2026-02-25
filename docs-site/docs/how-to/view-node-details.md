@@ -4,8 +4,8 @@ When you select a node (by clicking its card or map marker), the **Node Details*
 
 ## Opening Node Details
 
-1. **From the map**: Click a marker.
-2. **From the Node List**: Click a node card.
+1. **From the map**: Click a marker
+2. **From the Node List**: Click a node card
 
 The panel updates to show the selected node. If nothing is selected, the panel is empty.
 

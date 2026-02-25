@@ -4,9 +4,9 @@ Each node in the Node List is shown as a card. Cards can be collapsed or expande
 
 ## Card Layout
 
-- **Checkbox** — Subscribe or unsubscribe from the node.
-- **Status icon** — Indicates the node's current condition.
-- **Device EUI** — Unique identifier for the sensor.
+- **Checkbox** — Subscribe or unsubscribe from the node
+- **Status icon** — Indicates the node's current condition
+- **Device EUI** — Unique identifier for the sensor
 
 ## Status Icons
 
@@ -35,6 +35,6 @@ Click the card again to collapse it.
 
 ## Expanding and Collapsing
 
-- **From the list**: Click any node card to expand or collapse it.
-- **From the map**: Click a marker to expand its card and collapse others. Click the same marker again to collapse it.
-- **Node Details panel**: When you expand a card or click a marker, the left panel shows detailed current and historical data for that node.
+- **From the list**: Click any node card to expand or collapse it
+- **From the map**: Click a marker to expand its card and collapse others. Click the same marker again to collapse it
+- **Node Details panel**: When you expand a card or click a marker, the left panel shows detailed current and historical data for that node
