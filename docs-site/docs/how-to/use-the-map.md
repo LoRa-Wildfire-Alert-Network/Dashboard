@@ -6,10 +6,10 @@ The map shows the locations of your subscribed nodes. Each marker is color-coded
 
 | Color | Meaning |
 |-------|---------|
-| **Green** | Normal — no smoke, battery OK, humidity OK |
-| **Yellow** | Low humidity (below 15%) |
-| **Orange** | Low battery (below 20%) |
-| **Red** | Smoke detected — potential fire alert
+| **Red** | Smoke detected — potential fire alert |
+| **Orange** | Low humidity (below 15%) or high temperature (above 35°C) |
+| **Yellow** | Low battery (below 20%) |
+| **Green** | Normal — no smoke, battery OK, humidity OK, temperature OK |
 
 ## Interacting with the Map
 
