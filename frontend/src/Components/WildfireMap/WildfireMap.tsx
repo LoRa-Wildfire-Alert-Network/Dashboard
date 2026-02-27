@@ -111,12 +111,14 @@ function selectIcon(
   battery_level: number,
   deviceEui: string,
   humidity_pct: number,
+  temperature_c: number,
   mostRecentExpandedDeviceEui: string | null,
 ) {
   const iconColor = selectIconColor(
     smoke_detected,
     battery_level,
     humidity_pct,
+    temperature_c,
   );
 
   if (iconColor === "redIcon") {
@@ -142,12 +144,13 @@ function selectIconColor(
   smoke_detected: boolean,
   battery_level: number,
   humidity_pct: number,
+  temperature_c: number,
 ) {
   if (smoke_detected) {
     return "redIcon";
-  } else if (battery_level < 20) {
+  } else if (humidity_pct < 15 || temperature_c > 35) {
     return "orangeIcon";
-  } else if (humidity_pct < 15) {
+  } else if (battery_level < 20) {
     return "yellowIcon";
   } else {
     return "greenIcon";
@@ -283,6 +286,7 @@ function WildfireMap({
               node.battery_level,
               node.device_eui,
               node.humidity_pct,
+              node.temperature_c,
               mostRecentExpandedNodeEui,
             )}
             eventHandlers={{
