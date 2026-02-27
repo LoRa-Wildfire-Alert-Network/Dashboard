@@ -10,12 +10,13 @@ Each node in the Node List is shown as a card. Cards can be collapsed or expande
 
 ## Status Icons
 
-Node cards show three status icons (the map uses four colors — see [Use the map](use-the-map.md)):
+Node cards show four status icons (the map uses the same four colors — see [Use the map](use-the-map.md)):
 
 | Icon | Meaning |
 |------|---------|
 | Fire (red) | Smoke detected |
-| Battery (orange) | Low battery (below 20%) |
+| Triangle warning (orange) | Low humidity (below 15%) or high temperature (above 35°C) |
+| Battery (yellow) | Low battery (below 20%) |
 | Check (green) | Normal status |
 
 ## Collapsed View
