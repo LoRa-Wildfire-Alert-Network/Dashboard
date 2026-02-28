@@ -158,18 +158,22 @@ const Dashboard: React.FC = () => {
   return (
     <>
       <div className="bg-slate-300 h-[calc(100vh-4rem)]">
-        <div className="flex space-x-4 w-full h-full p-4">
-          <NodeDetails nodeEui={mostRecentExpandedNodeEui} />
-          <WildfireMap
-            nodeData={nodeData.filter((node) =>
-              userSubscriptions.includes(node.device_eui),
-            )}
-            mostRecentExpandedNodeEui={mostRecentExpandedNodeEui}
-            expandedNodeEuis={expandedNodeEuis}
-            onMarkerClick={toggleExpandFromMap}
-            setMapBounds={() => {}}
-          />
-          <div className="flex flex-col overflow-y-auto lg:w-100 md:w-60 bg-slate-400 rounded-md py-2 px-4">
+        <div className="flex flex-col md:flex-row justify-center space-x-4 w-full h-full py-2 p-4">
+          <div className="w-11/12 mx-auto md:w-auto md:mx-0">
+            <NodeDetails nodeEui={mostRecentExpandedNodeEui} />
+          </div>
+          <div className="w-11/12 mx-auto md:mx-4 md:flex-1 h-full py-2 md:py-0">
+            <WildfireMap
+              nodeData={nodeData.filter((node) =>
+                userSubscriptions.includes(node.device_eui),
+              )}
+              mostRecentExpandedNodeEui={mostRecentExpandedNodeEui}
+              expandedNodeEuis={expandedNodeEuis}
+              onMarkerClick={toggleExpandFromMap}
+              setMapBounds={() => {}}
+            />
+          </div>
+          <div className="flex flex-col overflow-y-auto w-11/12 mx-auto md:w-100 lg:w-120 md:mx-0 bg-slate-400 rounded-md py-2 px-4">
             <div className="flex flex-row items-center justify-between mb-4">
               <h1 className="text-xl font-bold">Node List</h1>
               <div className="flex flex-row gap-2 items-center">

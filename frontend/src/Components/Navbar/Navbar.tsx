@@ -14,9 +14,6 @@ const Navbar = () => {
   return (
     <div className="flex justify-between items-center w-full h-16 bg-slate-600">
       <div className="flex items-center gap-6 p-6">
-        <p className="text-white text-lg font-semibold">
-          LoRa Wildfire Dashboard
-        </p>
         <a
           href={DOCS_URL}
           target={DOCS_URL.startsWith("http") ? "_blank" : undefined}
@@ -26,7 +23,10 @@ const Navbar = () => {
           Docs
         </a>
       </div>
-      <div className="flex items-center gap-4 p-6">
+      <p className="text-white text-lg font-semibold order-2 md:order-1">
+        LoRa Dashboard
+      </p>
+      <div className="flex items-center gap-4 p-6 order-3">
         <SignedOut>
           <SignInButton mode="modal">
             <button className="text-white text-lg font-semibold hover:underline hover:cursor-pointer">

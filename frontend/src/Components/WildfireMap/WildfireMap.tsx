@@ -267,7 +267,7 @@ function WildfireMap({
       center={defaultCenter}
       zoom={12}
       scrollWheelZoom={true}
-      className="shadow-lg rounded-md p-4 flex-1"
+      className="shadow-lg rounded-md p-4 flex-1 h-full"
     >
       <MapRefSetter />
       <TileLayer

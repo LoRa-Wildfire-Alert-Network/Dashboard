@@ -45,8 +45,10 @@ const NodeDetails: React.FC<{ nodeEui: string | null }> = ({ nodeEui }) => {
     return () => clearInterval(interval);
   }, [API_URL, nodeEui]);
   return (
-    <div className="flex-none lg:w-90 md:w-48 bg-slate-100 rounded-md p-4 overflow-y-auto">
-      <h2 className="text-2xl font-bold mb-4">Node EUI: {nodeEui}</h2>
+    <div className="flex-none h-50 md:h-full lg:w-90 md:w-48 bg-slate-100 rounded-md p-4 overflow-y-auto">
+      <h2 className="text-2xl font-bold mb-4">
+        Node EUI: {nodeEui ? nodeEui : "None Selected"}
+      </h2>
       {nodeEui && nodeData && (
         <div>
           <div>
