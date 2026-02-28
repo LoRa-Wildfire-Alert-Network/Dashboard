@@ -157,12 +157,14 @@ const Dashboard: React.FC = () => {
 
   return (
     <>
-      <div className="bg-slate-300 h-[calc(100vh-4rem)]">
+      <div className="bg-slate-300 h-[calc(100vh-4rem)] overflow-hidden">
         <div className="flex flex-col md:flex-row justify-center space-x-4 w-full h-full py-2 p-4">
-          <div className="w-11/12 mx-auto md:w-auto md:mx-0">
+          <div
+            className={`w-11/12 mx-auto md:w-auto md:mx-0 order-3 md:order-1 py-2 md:py-0 grow transition-all duration-200`}
+          >
             <NodeDetails nodeEui={mostRecentExpandedNodeEui} />
           </div>
-          <div className="w-11/12 mx-auto md:mx-4 md:flex-1 h-full py-2 md:py-0">
+          <div className="w-11/12 mx-auto md:mx-4 min-h-[30vh] h-full py-2 md:py-0 order-1 md:order-2">
             <WildfireMap
               nodeData={nodeData.filter((node) =>
                 userSubscriptions.includes(node.device_eui),
@@ -173,7 +175,7 @@ const Dashboard: React.FC = () => {
               setMapBounds={() => {}}
             />
           </div>
-          <div className="flex flex-col overflow-y-auto w-11/12 mx-auto md:w-100 lg:w-120 md:mx-0 bg-slate-400 rounded-md py-2 px-4">
+          <div className="flex flex-col overflow-y-auto w-11/12 mx-auto md:w-100 lg:w-120 md:mx-0 bg-slate-400 rounded-md py-2 px-4 order-2 md:order-3">
             <div className="flex flex-row items-center justify-between mb-4">
               <h1 className="text-xl font-bold">Node List</h1>
               <div className="flex flex-row gap-2 items-center">
