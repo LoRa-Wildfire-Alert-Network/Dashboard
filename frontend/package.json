@@ -7,6 +7,7 @@
     "dev": "concurrently -n docs,web -c blue,green \"npm run dev:docs\" \"vite\"",
     "dev:docs": "cd ../docs-site && npm run start",
     "dev:only": "vite",
+    "dev:docker": "npm run build:docs && vite --host 0.0.0.0 --port 8001",
     "build": "tsc -b && vite build && npm run build:docs",
     "build:docs": "cd ../docs-site && npm run build && mkdir -p ../frontend/dist/docs && cp -r build/* ../frontend/dist/docs",
     "lint": "eslint . --ext .ts,.tsx",
