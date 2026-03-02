@@ -3,7 +3,7 @@ services:
     build:
       context: ./backend
     env_file:
-      - ./.env
+      - ./backend/.env
     ports:
       - "8000:8000"
     volumes:
@@ -12,17 +12,25 @@ services:
 
   frontend:
     build:
-      context: ./frontend
+      context: .
+      dockerfile: frontend/Dockerfile
     env_file:
       - ./frontend/.env
+    environment:
+      - VITE_API_URL=http://localhost:8000
+      - VITE_DOCS_URL=/docs/
+      - DOCS_PORT=4000
     ports:
       - "8001:8001"
     depends_on:
       - backend
     volumes:
-      - ./frontend:/app
-      - frontend_node_modules:/app/node_modules
-    command: [ "npm", "run", "dev", "--", "--host", "0.0.0.0", "--port", "8001" ]
+      - ./frontend:/app/frontend
+      - ./docs-site:/app/docs-site
+      - frontend_node_modules:/app/frontend/node_modules
+      - docs_site_node_modules:/app/docs-site/node_modules
+    command: [ "sh", "-c", "cd /app/docs-site && npm install && cd /app/frontend && npm install && (cd /app/docs-site && npm run start &) && sleep 25 && cd /app/frontend && npm run dev:only -- --host 0.0.0.0 --port 8001" ]
 
 volumes:
   frontend_node_modules:
+  docs_site_node_modules:

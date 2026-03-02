@@ -45,10 +45,14 @@ A real-time monitoring dashboard for LoRa-based wildfire detection sensor nodes.
 
 2. **Configure environment variables**
    
-   Create a `.env` file in the root directory:
-   ```env
-   ALLOWED_ORIGINS=
-   LIVE_URL=
+   **Backend** — Create `backend/.env` from the example:
+   ```bash
+   cp backend/.env.example backend/.env
+   ```
+   
+   **Frontend** — Create `frontend/.env` from the example:
+   ```bash
+   cp frontend/.env.example frontend/.env
    ```
 
 3. **Start all services**
@@ -63,6 +67,7 @@ A real-time monitoring dashboard for LoRa-based wildfire detection sensor nodes.
 
 5. **Access the application**
    - Frontend: http://localhost:8001
+   - User docs: http://localhost:8001/docs/
    - Backend API: http://localhost:8000
    - API Docs: http://localhost:8000/docs
 
@@ -93,7 +98,6 @@ curl "http://localhost:8000/telemetry?node_id=00c1ea6e&limit=100"
 ```
 Dashboard/
 ├── docker-compose.yml        # Docker container orchestration
-├── .env                      # Environment variables
 ├── backend/
 │   ├── backend_api.py        # FastAPI REST API
 │   ├── data_listener.py      # Live data ingestion service
@@ -112,6 +116,8 @@ Dashboard/
 │   ├── package.json
 │   ├── vite.config.ts
 │   └── Dockerfile
+├── docs-site/                # User documentation
+│   └── docs/                 # How-to guides
 ```
 
 ## Development
@@ -123,11 +129,12 @@ cd backend
 python -m venv venv
 source venv/bin/activate
 pip install -r requirements.txt
-
-# Run the API server
+python init_sqlite_db.py
 uvicorn backend_api:app --reload --port 8000
+```
 
 # Run the data listener
+```bash
 python data_listener.py
 ```
 
@@ -149,11 +156,25 @@ npm run dev
 
 ## Configuration
 
+### Backend (`backend/.env`)
+
 | Variable | Description | Default |
 |----------|-------------|---------|
-| `LIVE_URL` | External API for live sensor data | https://api-lora-{PR_NUMBER}.derekrgreene.com |
+| `LIVE_URL` | External API for live LoRa telemetry | — |
 | `ALLOWED_ORIGINS` | CORS allowed origins | `*` |
 | `DB_NAME` | SQLite database filename | `lora.db` |
+| `CLERK_JWT_ISSUER` | Clerk JWT issuer URL (required) | — |
+
+Also requires `backend/clerk_public_key.pem` (Clerk JWT public key).
+
+### Frontend (`frontend/.env`)
+
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `VITE_API_URL` | Backend API URL | `http://localhost:8000` |
+| `VITE_CLERK_PUBLISHABLE_KEY` | Clerk publishable key | — |
+| `VITE_DOCS_URL` | Docs URL in navbar | `/docs/` |
+| `DOCS_PORT` | Docs dev server port (Vite proxy) | `4000` |
 
 ## License
 

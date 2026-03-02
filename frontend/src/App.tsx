@@ -1,12 +1,13 @@
 import Navbar from "./Components/Navbar/Navbar";
 import { SignedIn, SignedOut } from "@clerk/clerk-react";
 import Dashboard from "./Components/Dashboard/Dashboard";
+import AuthProvider from "./providers/AuthProvider";
 
 import "./App.css";
 
 function App() {
   return (
-    <>
+    <AuthProvider>
       <Navbar />
       <SignedIn>
         <Dashboard />
@@ -23,7 +24,7 @@ function App() {
           </div>
         </div>
       </SignedOut>
-    </>
+    </AuthProvider>
   );
 }
 

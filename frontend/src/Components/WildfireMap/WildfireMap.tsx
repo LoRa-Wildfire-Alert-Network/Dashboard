@@ -1,13 +1,13 @@
 import * as L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import { MapContainer, TileLayer, Marker, useMap } from "react-leaflet";
-import type { NodeData } from "../../types/nodeTypes";
+import type { ShortNodeData } from "../../types/nodeTypes";
 import { useEffect, useRef, useState, useMemo } from "react";
 
 export interface MapProps {
-  nodeData: NodeData[];
-  mostRecentExpandedDeviceEui: string | null;
-  expandedNodeIds: string[];
+  nodeData: ShortNodeData[];
+  mostRecentExpandedNodeEui: string | null;
+  expandedNodeEuis: string[];
   onMarkerClick: (deviceEui: string) => void;
   setMapBounds: (bounds: L.LatLngBounds) => void;
 }
@@ -111,16 +111,20 @@ function selectIcon(
   battery_level: number,
   deviceEui: string,
   humidity_pct: number,
+  temperature_c: number,
   mostRecentExpandedDeviceEui: string | null,
 ) {
   const iconColor = selectIconColor(
     smoke_detected,
     battery_level,
     humidity_pct,
+    temperature_c,
   );
 
   if (iconColor === "redIcon") {
-    return deviceEui === mostRecentExpandedDeviceEui ? expandedRedIcon : redIcon;
+    return deviceEui === mostRecentExpandedDeviceEui
+      ? expandedRedIcon
+      : redIcon;
   } else if (iconColor === "orangeIcon") {
     return deviceEui === mostRecentExpandedDeviceEui
       ? expandedOrangeIcon
@@ -130,7 +134,9 @@ function selectIcon(
       ? expandedYellowIcon
       : yellowIcon;
   } else {
-    return deviceEui === mostRecentExpandedDeviceEui ? expandedGreenIcon : greenIcon;
+    return deviceEui === mostRecentExpandedDeviceEui
+      ? expandedGreenIcon
+      : greenIcon;
   }
 }
 
@@ -138,18 +144,18 @@ function selectIconColor(
   smoke_detected: boolean,
   battery_level: number,
   humidity_pct: number,
+  temperature_c: number,
 ) {
   if (smoke_detected) {
     return "redIcon";
-  } else if (battery_level < 20) {
+  } else if (humidity_pct < 15 || temperature_c > 35) {
     return "orangeIcon";
-  } else if (humidity_pct < 15) {
+  } else if (battery_level < 20) {
     return "yellowIcon";
   } else {
     return "greenIcon";
   }
 }
-
 
 function MapUpdater({
   setMapBounds,
@@ -176,20 +182,38 @@ function MapUpdater({
   return null;
 }
 
-
-
-function WildfireMap({ nodeData, mostRecentExpandedDeviceEui, expandedNodeIds, onMarkerClick, setMapBounds }: MapProps) {
+function WildfireMap({
+  nodeData,
+  mostRecentExpandedNodeEui,
+  expandedNodeEuis,
+  onMarkerClick,
+  setMapBounds,
+}: MapProps) {
   // Default center: selected node if available, else first valid node, else Corvallis
-  const validNodes = nodeData.filter(n => n.latitude != null && n.longitude != null);
+  const validNodes = nodeData.filter(
+    (n) => n.latitude != null && n.longitude != null,
+  );
   const defaultCenter = useMemo(() => {
-    const selectedNode = validNodes.find(n => n.device_eui === mostRecentExpandedDeviceEui);
-    if (selectedNode && selectedNode.latitude != null && selectedNode.longitude != null) {
-      return [selectedNode.latitude, selectedNode.longitude] as [number, number];
+    const selectedNode = validNodes.find(
+      (n) => n.device_eui === mostRecentExpandedNodeEui,
+    );
+    if (
+      selectedNode &&
+      selectedNode.latitude != null &&
+      selectedNode.longitude != null
+    ) {
+      return [selectedNode.latitude, selectedNode.longitude] as [
+        number,
+        number,
+      ];
     } else if (validNodes.length > 0) {
-      return [validNodes[0].latitude, validNodes[0].longitude] as [number, number];
+      return [validNodes[0].latitude, validNodes[0].longitude] as [
+        number,
+        number,
+      ];
     }
     return [44.5646, -123.262] as [number, number];
-  }, [validNodes, mostRecentExpandedDeviceEui]);
+  }, [validNodes, mostRecentExpandedNodeEui]);
 
   const mapRef = useRef<L.Map | null>(null);
   const [mapReady, setMapReady] = useState(false);
@@ -204,21 +228,32 @@ function WildfireMap({ nodeData, mostRecentExpandedDeviceEui, expandedNodeIds, o
     return null;
   }
 
-  const prevExpandedNodeIdsRef = useRef<string[]>([]);
+  const prevExpandedNodeEuisRef = useRef<string[]>([]);
   useEffect(() => {
     if (!mapReady || !mapRef.current) return;
-    if (JSON.stringify(prevExpandedNodeIdsRef.current) === JSON.stringify(expandedNodeIds)) return;
-    prevExpandedNodeIdsRef.current = [...expandedNodeIds];
-    const selectedNodes = validNodes.filter(n => expandedNodeIds.includes(n.device_eui));
+    if (
+      JSON.stringify(prevExpandedNodeEuisRef.current) ===
+      JSON.stringify(expandedNodeEuis)
+    )
+      return;
+    prevExpandedNodeEuisRef.current = [...expandedNodeEuis];
+    const selectedNodes = validNodes.filter((n) =>
+      expandedNodeEuis.includes(n.device_eui),
+    );
     if (selectedNodes.length === 1) {
       const node = selectedNodes[0];
-      mapRef.current.setView([node.latitude, node.longitude], 10, { animate: true });
+      mapRef.current.setView([node.latitude, node.longitude], 10, {
+        animate: true,
+      });
     } else if (selectedNodes.length > 1) {
-      const latLngs = selectedNodes.map(n => [n.latitude, n.longitude]) as [number, number][];
+      const latLngs = selectedNodes.map((n) => [n.latitude, n.longitude]) as [
+        number,
+        number,
+      ][];
       const bounds = L.latLngBounds(latLngs);
       mapRef.current.fitBounds(bounds, { animate: true, padding: [50, 50] });
     }
-  }, [expandedNodeIds, validNodes, mapReady]);
+  }, [expandedNodeEuis, validNodes, mapReady]);
 
   const [initialCenterSet, setInitialCenterSet] = useState(false);
   useEffect(() => {
@@ -240,7 +275,7 @@ function WildfireMap({ nodeData, mostRecentExpandedDeviceEui, expandedNodeIds, o
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
       />
       <MapUpdater setMapBounds={setMapBounds} />
-      {validNodes.map((node: NodeData, idx: number) => {
+      {validNodes.map((node: ShortNodeData, idx: number) => {
         const markerKey = `${node.device_eui}_${idx}`;
         return (
           <Marker
@@ -251,7 +286,8 @@ function WildfireMap({ nodeData, mostRecentExpandedDeviceEui, expandedNodeIds, o
               node.battery_level,
               node.device_eui,
               node.humidity_pct,
-              mostRecentExpandedDeviceEui,
+              node.temperature_c,
+              mostRecentExpandedNodeEui,
             )}
             eventHandlers={{
               click: () => onMarkerClick(node.device_eui),

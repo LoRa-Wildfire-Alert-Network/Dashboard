@@ -40,9 +40,14 @@ jobs:
           fi
           PR_NUM=${{ github.event.pull_request.number }}
           sed -i "s|VITE_API_URL=.*|VITE_API_URL=https://api-lora-${PR_NUM}.derekrgreene.com|" frontend/.env
+          (grep -q "VITE_DOCS_URL" frontend/.env && sed -i "s|VITE_DOCS_URL=.*|VITE_DOCS_URL=/docs/|" frontend/.env) || echo "VITE_DOCS_URL=/docs/" >> frontend/.env
 
       - name: Install frontend dependencies
         working-directory: ./frontend
+        run: npm ci
+
+      - name: Install docs-site dependencies
+        working-directory: ./docs-site
         run: npm ci
 
       - name: Run frontend ESLint

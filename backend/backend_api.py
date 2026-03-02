@@ -120,18 +120,26 @@ def ensure_user_row(user_id: str, email: str) -> None:
 def get_clerk_user(
     credentials: HTTPAuthorizationCredentials = Depends(bearer_scheme)
 ):
+def _decode_clerk_jwt(
+    credentials: HTTPAuthorizationCredentials = Depends(bearer_scheme),
+) -> dict:
     token = credentials.credentials
     try:
-        payload = pyjwt.decode(
+        return pyjwt.decode(
             token,
             CLERK_JWT_PUBLIC_KEY,
             algorithms=["RS256"],
             audience=None,
-            issuer=CLERK_JWT_ISSUER
+            issuer=CLERK_JWT_ISSUER,
         )
     except Exception as e:
         raise HTTPException(status_code=401, detail=f"Invalid Clerk JWT: {e}")
 
+
+def get_clerk_user_id(
+    request: Request,
+    payload: dict = Depends(_decode_clerk_jwt),
+) -> str:
     user_id = payload.get("sub") or payload.get("user_id")
     if not user_id:
         raise HTTPException(status_code=401, detail="No user_id in Clerk token")
@@ -160,6 +168,13 @@ def get_clerk_user(
     # If we got email (from token or DB), ensure/update the user row
     ensure_user_row(user_id, email)
     return {"user_id": user_id, "email": email}
+
+
+def get_clerk_org_id(
+    payload: dict = Depends(_decode_clerk_jwt),
+) -> str | None:
+    """Returns the active Clerk organization id, or None for personal accounts."""
+    return payload.get("org_id")
 
 # -------------------------
 #         ENDPOINTS

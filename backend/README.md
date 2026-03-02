@@ -32,9 +32,9 @@ This backend ingests live telemetry from LoRa sensor nodes, stores it in a local
 
 Create a `.env` file in the `backend/` directory (**do not commit this file**):
 
-```env
-LIVE_URL=
-ALLOWED_ORIGINS=*
+```bash
+cp .env.example .env
+# Edit .env and set LIVE_URL, CLERK_JWT_ISSUER
 ```
 
 ### Variables
@@ -154,6 +154,7 @@ backend/
 ├── init_sqlite_db.py    # SQLite initialization script
 ├── sqlite_schema.sql    # Database schema
 ├── requirements.txt     # Python dependencies
+├── .env.example         # Environment template
 ├── clerk_public_key.pem # Clerk JWT Public Key
 ├── Dockerfile           # Backend container
 ├── README.md

@@ -25,6 +25,8 @@ dist-ssr
 
 # Environment variables
 *.env
+!.env.example
+!*/.env.example
 
 # Python Virtual Environments
 .venv/

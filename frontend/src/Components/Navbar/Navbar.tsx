@@ -4,14 +4,28 @@ import {
   SignInButton,
   SignUpButton,
   UserButton,
+  OrganizationSwitcher,
 } from "@clerk/clerk-react";
+import { withGoto } from "../../lib/goto";
+
+const DOCS_URL = import.meta.env.VITE_DOCS_URL ?? "/docs/";
 
 const Navbar = () => {
   return (
     <div className="flex justify-between items-center w-full h-16 bg-slate-600">
-      <p className="text-white text-lg font-semibold p-6">
-        LoRa Wildfire Dashboard
-      </p>
+      <div className="flex items-center gap-6 p-6">
+        <p className="text-white text-lg font-semibold">
+          LoRa Wildfire Dashboard
+        </p>
+        <a
+          href={DOCS_URL}
+          target={DOCS_URL.startsWith("http") ? "_blank" : undefined}
+          rel={DOCS_URL.startsWith("http") ? "noopener noreferrer" : undefined}
+          className="text-white/90 text-base hover:text-white hover:underline"
+        >
+          Docs
+        </a>
+      </div>
       <div className="flex items-center gap-4 p-6">
         <SignedOut>
           <SignInButton mode="modal">
@@ -26,7 +40,16 @@ const Navbar = () => {
           </SignUpButton>
         </SignedOut>
         <SignedIn>
-          <UserButton afterSignOutUrl="/" />
+          <OrganizationSwitcher
+            hidePersonal={false}
+            appearance={{
+              elements: {
+                rootBox: "flex items-center",
+                organizationSwitcherTrigger: "text-white",
+              },
+            }}
+          />
+          <UserButton afterSignOutUrl={withGoto("/")} />
         </SignedIn>
       </div>
     </div>
