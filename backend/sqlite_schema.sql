@@ -45,12 +45,34 @@ JOIN (
 ON t.device_eui = latest.device_eui
 AND t.timestamp = latest.max_ts;
 
+-- -------------------------
+-- Users
+-- -------------------------
+CREATE TABLE IF NOT EXISTS users (
+  auth_sub TEXT PRIMARY KEY,
+  email TEXT NOT NULL,
+  created_at INTEGER NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_users_email
+ON users(email);
+
+-- -------------------------
+-- User Node Subscriptions
+-- -------------------------
 CREATE TABLE IF NOT EXISTS user_node_subscriptions (
   user_id TEXT NOT NULL,
   device_eui TEXT NOT NULL,
   PRIMARY KEY (user_id, device_eui),
+  FOREIGN KEY (user_id) REFERENCES users(auth_sub) ON DELETE CASCADE,
   FOREIGN KEY (device_eui) REFERENCES nodes(device_eui) ON DELETE CASCADE
 );
+
+CREATE INDEX IF NOT EXISTS idx_user_node_subs_user
+ON user_node_subscriptions(user_id);
+
+CREATE INDEX IF NOT EXISTS idx_user_node_subs_dev
+ON user_node_subscriptions(device_eui);
 
 -- -------------------------
 -- Alerts (events)
@@ -76,3 +98,58 @@ ON alerts(acknowledged);
 
 CREATE INDEX IF NOT EXISTS idx_alerts_type
 ON alerts(alert_type);
+
+-- -------------------------
+-- Alert Preferences
+-- -------------------------
+CREATE TABLE IF NOT EXISTS alert_preferences (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id TEXT NOT NULL,
+  dev_eui TEXT NOT NULL,
+
+  enabled INTEGER NOT NULL DEFAULT 1,
+
+  -- criteria (NULL means "ignore this condition")
+  temp_over_c REAL,
+  battery_below_pct REAL,
+  smoke_detected INTEGER,
+
+  -- cooldown per preference (prevents repeat notifications per user)
+  last_sent_at INTEGER,
+
+  created_at INTEGER NOT NULL,
+  updated_at INTEGER NOT NULL,
+
+  FOREIGN KEY (user_id) REFERENCES users(auth_sub) ON DELETE CASCADE,
+  FOREIGN KEY (dev_eui) REFERENCES nodes(device_eui) ON DELETE CASCADE
+);
+
+CREATE INDEX IF NOT EXISTS idx_alert_prefs_user
+ON alert_preferences(user_id);
+
+CREATE INDEX IF NOT EXISTS idx_alert_prefs_dev
+ON alert_preferences(dev_eui);
+
+CREATE INDEX IF NOT EXISTS idx_alert_prefs_enabled
+ON alert_preferences(enabled);
+
+-- -------------------------
+-- Alert Queue
+-- -------------------------
+CREATE TABLE IF NOT EXISTS alert_queue (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  email TEXT NOT NULL,
+  dev_eui TEXT NOT NULL,
+  alert_type TEXT NOT NULL,
+  message TEXT NOT NULL,
+  created_at INTEGER NOT NULL,
+
+  in_progress INTEGER NOT NULL DEFAULT 0,
+  in_progress_at INTEGER,
+
+  processed INTEGER NOT NULL DEFAULT 0,
+  processed_at INTEGER
+);
+
+CREATE INDEX IF NOT EXISTS idx_alert_queue_queueable
+ON alert_queue(processed, in_progress, created_at);

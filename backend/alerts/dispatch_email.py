@@ -8,23 +8,23 @@ load_dotenv()
 
 EMAIL = os.getenv("ALERT_EMAIL")
 PASSWORD = os.getenv("ALERT_PASS")
-TARGET = os.getenv("ALERT_TARGET")
 
 
-def send_email_alert(message: str) -> None:
-    if not EMAIL or not PASSWORD or not TARGET:
-        print("Alert email not configured (ALERT_EMAIL/ALERT_PASS/ALERT_TARGET).")
-        return
+def send_email_alert(to_email: str, message: str) -> None:
+    if not EMAIL or not PASSWORD:
+        raise RuntimeError("Alert email not configured (ALERT_EMAIL/ALERT_PASS).")
+
+    if not to_email:
+        raise ValueError("No recipient email provided.")
 
     msg = MIMEText(message)
     msg["From"] = EMAIL
-    msg["To"] = TARGET
+    msg["To"] = to_email
     msg["Subject"] = "Wildfire Alert"
 
     try:
         with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
             server.login(EMAIL, PASSWORD)
-            server.sendmail(EMAIL, TARGET, msg.as_string())
-        print("ALERT SENT")
+            server.sendmail(EMAIL, [to_email], msg.as_string())
     except Exception as e:
-        print("ALERT FAILED:", e)
+        raise RuntimeError(f"ALERT FAILED: {e}")
