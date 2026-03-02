@@ -11,6 +11,14 @@ A real-time monitoring dashboard for LoRa-based wildfire detection sensor nodes.
   - 🔴 Red: Smoke detected
 - **Node Details**: View detailed telemetry including temperature, humidity, battery level, and smoke detection status
 - **SQLite Database**: Lightweight embedded database for easy deployment and data persistence
+- **User Alert Preferences**: Users can configure alert rules per device (`dev_eui`), including temperature, battery, and smoke triggers
+- **Queued Email Notifications**:
+  - Alert events stored in `alerts`
+  - Matching user preferences evaluated
+  - Queue row created per matching user
+  - Email stored directly on the queue row
+  - Background workers send notifications
+  - Worker count configurable via `ALERT_WORKERS` environment variable
 
 ## Architecture
 
@@ -77,8 +85,11 @@ A real-time monitoring dashboard for LoRa-based wildfire detection sensor nodes.
 |----------|--------|-------------|
 | `/health` | GET | Health check |
 | `/nodes` | GET | List all sensor nodes |
-| `/nodes/{node_id}/latest` | GET | Get latest telemetry for a node |
+| `/nodes/{device_eui}/latest` | GET | Get latest telemetry for a node |
 | `/telemetry` | GET | Query telemetry history (supports filtering) |
+| `/alert-preferences` | POST | Create alert preference |
+| `/alert-preferences` | GET | List current user’s preferences |
+| `/alert-preferences/{id}` | PUT | Update alert preference |
 
 ### Example API Calls
 
@@ -90,7 +101,7 @@ curl http://localhost:8000/nodes
 curl http://localhost:8000/nodes/00c1ea6e/latest
 
 # Get telemetry with filters
-curl "http://localhost:8000/telemetry?node_id=00c1ea6e&limit=100"
+curl "http://localhost:8000/telemetry?device_eui=00c1ea6e&limit=100"
 ```
 
 ## Project Structure
@@ -104,7 +115,14 @@ Dashboard/
 │   ├── init_sqlite_db.py     # Database initialization script
 │   ├── sqlite_schema.sql     # SQLite database schema
 │   ├── requirements.txt      # Python dependencies
-│   └── Dockerfile
+│   ├── clerk_public_key.pem
+│   ├── Dockerfile
+│   ├── alerts/
+│   │  ├── engine.py             # AlertService logic
+│   │  ├── worker.py             # Background email workers
+│   │  ├── dispatch_email.py     # SMTP email sender
+│   │  ├── cooldown.py           # Alert cooldown logic
+│   └── lora.db                  # SQLite database (ignored)
 ├── frontend/
 │   ├── src/
 │   │   ├── Components/
@@ -164,6 +182,12 @@ npm run dev
 | `ALLOWED_ORIGINS` | CORS allowed origins | `*` |
 | `DB_NAME` | SQLite database filename | `lora.db` |
 | `CLERK_JWT_ISSUER` | Clerk JWT issuer URL (required) | — |
+| `ALERT_EMAIL` | SMTP sender email account | — |
+| `ALERT_PASS` | SMTP sender password/app password | — |
+| `ALERT_WORKERS` | Number of background email workers | `1` |
+| `ALERT_POLL_SECONDS` | Queue polling interval | `1.0` |
+| `ALERT_CLAIM_TTL_SECONDS` | Worker claim timeout (seconds) | `60` |
+| `ALERT_PREF_COOLDOWN_SECONDS` | Per-preference cooldown window (seconds) | `300` |
 
 Also requires `backend/clerk_public_key.pem` (Clerk JWT public key).
 
