@@ -117,9 +117,6 @@ def ensure_user_row(user_id: str, email: str) -> None:
         conn.commit()
 
 
-def get_clerk_user(
-    credentials: HTTPAuthorizationCredentials = Depends(bearer_scheme)
-):
 def _decode_clerk_jwt(
     credentials: HTTPAuthorizationCredentials = Depends(bearer_scheme),
 ) -> dict:
@@ -132,14 +129,13 @@ def _decode_clerk_jwt(
             audience=None,
             issuer=CLERK_JWT_ISSUER,
         )
-    except Exception as e:
-        raise HTTPException(status_code=401, detail=f"Invalid Clerk JWT: {e}")
+    except Exception:
+        raise HTTPException(status_code=401, detail="Invalid Clerk JWT")
 
 
-def get_clerk_user_id(
-    request: Request,
+def get_clerk_user(
     payload: dict = Depends(_decode_clerk_jwt),
-) -> str:
+) -> dict:
     user_id = payload.get("sub") or payload.get("user_id")
     if not user_id:
         raise HTTPException(status_code=401, detail="No user_id in Clerk token")
@@ -150,7 +146,6 @@ def get_clerk_user_id(
         or payload.get("primary_email_address")
     )
 
-    # If token doesn't include email, fall back to what we already recorded in DB
     if not email:
         with db() as conn:
             row = conn.execute(
@@ -165,7 +160,6 @@ def get_clerk_user_id(
                 detail="No email in Clerk token and no user record in DB for this user",
             )
 
-    # If we got email (from token or DB), ensure/update the user row
     ensure_user_row(user_id, email)
     return {"user_id": user_id, "email": email}
 
