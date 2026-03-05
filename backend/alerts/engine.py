@@ -202,20 +202,22 @@ class AlertService:
             if not pref_triggered and not fire_risk:
                 return
 
-            # If fallback triggered but no one has ANY enabled prefs for this node, do nothing
+            # If fallback triggered but no enabled prefs for this node, do nothing
             if fire_risk and not pref_triggered:
                 enabled_pref_row = conn.execute(
                     """
-                    SELECT COUNT(1) AS n
+                    SELECT 1
                     FROM alert_preferences ap
                     JOIN users u ON u.auth_sub = ap.user_id
                     WHERE ap.enabled = 1
                     AND ap.dev_eui = ?
                     AND u.email IS NOT NULL
+                    LIMIT 1
                     """,
                     (dev_eui,),
                 ).fetchone()
-                has_any_enabled_pref = (enabled_pref_row["n"] if enabled_pref_row else 0) > 0
+
+                has_any_enabled_pref = enabled_pref_row is not None
                 if not has_any_enabled_pref:
                     return
 
