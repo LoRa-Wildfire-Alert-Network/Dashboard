@@ -363,40 +363,41 @@ def get_alerts(
     limit: int = Query(50, ge=1, le=200),
     dev_eui: Optional[str] = Query(None),
     acknowledged: Optional[bool] = Query(None),
-    _user=Depends(get_clerk_user),
+    user=Depends(get_clerk_user),
 ):
-    """
-    Fetch recent alert events (newest first).
-    Optional filters:
-      - dev_eui
-      - acknowledged (true/false)
-      - limit (default 50)
-    """
-    clauses: List[str] = []
-    params: List[object] = []
+    user_id = user["user_id"]
+
+    clauses: List[str] = ["s.user_id = ?"]
+    params: List[object] = [user_id]
+
+    # Allow SYSTEM alerts for everyone
+    clauses.append("(a.dev_eui = 'SYSTEM' OR s.user_id = ?)")
+    params = [user_id, user_id]
 
     if dev_eui:
-        clauses.append("dev_eui = ?")
+        clauses.append("a.dev_eui = ?")
         params.append(dev_eui)
 
     if acknowledged is not None:
-        clauses.append("acknowledged = ?")
+        clauses.append("a.acknowledged = ?")
         params.append(1 if acknowledged else 0)
 
-    where = f"WHERE {' AND '.join(clauses)}" if clauses else ""
+    where = " AND ".join(clauses)
 
     q = f"""
         SELECT
-          id,
-          dev_eui,
-          alert_type,
-          message,
-          created_at,
-          acknowledged,
-          acknowledged_at
-        FROM alerts
-        {where}
-        ORDER BY created_at DESC
+          a.id,
+          a.dev_eui,
+          a.alert_type,
+          a.message,
+          a.created_at,
+          a.acknowledged,
+          a.acknowledged_at
+        FROM alerts a
+        JOIN user_node_subscriptions s
+          ON s.device_eui = a.dev_eui
+        WHERE {where}
+        ORDER BY a.created_at DESC
         LIMIT ?
     """
     params.append(limit)
@@ -425,8 +426,13 @@ def acknowledge_alert(
             SET acknowledged = 1,
                 acknowledged_at = ?
             WHERE id = ?
+            AND dev_eui IN (
+                SELECT device_eui
+                FROM user_node_subscriptions
+                WHERE user_id = ?
+            )
             """,
-            (ts, alert_id),
+            (ts, alert_id, _user["user_id"]),
         )
         conn.commit()
 
@@ -454,6 +460,17 @@ def update_alert_preference(
             raise HTTPException(status_code=404, detail="Preference not found")
         if existing["user_id"] != user_id:
             raise HTTPException(status_code=404, detail="Preference not found")
+
+        # Reject empty/no-op update bodies (don’t allow "update only updated_at")
+        has_update = (
+            ("dev_eui" in body.model_fields_set and body.dev_eui is not None)
+            or ("enabled" in body.model_fields_set and body.enabled is not None)
+            or ("temp_over_c" in body.model_fields_set)
+            or ("battery_below_pct" in body.model_fields_set)
+            or ("smoke_detected" in body.model_fields_set)
+        )
+        if not has_update:
+            raise HTTPException(status_code=422, detail="No updatable fields provided")
 
         # If dev_eui is changing, verify node exists
         if "dev_eui" in body.model_fields_set and body.dev_eui is not None:
@@ -494,15 +511,21 @@ def update_alert_preference(
         set_clauses.append("updated_at = ?")
         params.append(ts)
 
-        conn.execute(
-            f"""
-            UPDATE alert_preferences
-            SET {", ".join(set_clauses)}
-            WHERE id = ?
-            """,
-            (*params, pref_id),
-        )
-        conn.commit()
+        try:
+            conn.execute(
+                f"""
+                UPDATE alert_preferences
+                SET {", ".join(set_clauses)}
+                WHERE id = ?
+                """,
+                (*params, pref_id),
+            )
+            conn.commit()
+        except sqlite3.IntegrityError:
+            raise HTTPException(
+                status_code=409,
+                detail="Preference for this device already exists for this user",
+            )
 
         updated = conn.execute(
             """
