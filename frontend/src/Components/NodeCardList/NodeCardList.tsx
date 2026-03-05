@@ -21,7 +21,6 @@ const NodeCardList: React.FC<NodeCardListProps> = ({
   return (
     <div>
       {nodeData.length === 0 && <p>No nodes available.</p>}
-      {nodeData.length > 0 ? <h2>Nodes</h2> : null}
       {nodeData &&
         nodeData.map((nodeData) => (
           <NodeCard
