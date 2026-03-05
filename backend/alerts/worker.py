@@ -3,6 +3,7 @@ import time
 import sqlite3
 import threading
 import logging
+from contextlib import contextmanager
 
 from .dispatch_email import send_email_alert
 from dotenv import load_dotenv
@@ -22,11 +23,15 @@ POLL_SECONDS = float(os.getenv("ALERT_POLL_SECONDS", "1.0"))
 CLAIM_TTL_SECONDS = int(os.getenv("ALERT_CLAIM_TTL_SECONDS", "60"))
 
 
-def _db() -> sqlite3.Connection:
+@contextmanager
+def _db():
     conn = sqlite3.connect(DB_PATH, check_same_thread=False)
-    conn.row_factory = sqlite3.Row
-    conn.execute("PRAGMA foreign_keys = ON;")
-    return conn
+    try:
+        conn.row_factory = sqlite3.Row
+        conn.execute("PRAGMA foreign_keys = ON;")
+        yield conn
+    finally:
+        conn.close()
 
 
 def _claim_one(conn: sqlite3.Connection) -> sqlite3.Row | None:

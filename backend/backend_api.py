@@ -202,7 +202,6 @@ def fetch_clerk_email(user_id: str) -> str:
         email = emails[0].get("email_address")
 
     if not email:
-        # Greene said this basically can't happen in real Clerk accounts
         raise HTTPException(status_code=401, detail="No email on Clerk user")
 
     return email
@@ -216,8 +215,9 @@ def fetch_clerk_email(user_id: str) -> str:
 @app.post("/subscriptions/subscribe")
 def subscribe_node(
     body: NodeIdRequest,
-    user_id: str = Depends(get_clerk_user_id),
+    user=Depends(get_clerk_user),
 ):
+    user_id = user["user_id"]
     device_eui = body.device_eui
     with db() as conn:
         node = conn.execute(

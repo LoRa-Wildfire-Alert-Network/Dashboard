@@ -1,6 +1,7 @@
 import os
 import time
 import sqlite3
+from contextlib import contextmanager
 
 from .cooldown import can_send
 
@@ -18,11 +19,15 @@ class AlertService:
     def __init__(self, db_path: str):
         self.db_path = db_path
 
-    def _db(self) -> sqlite3.Connection:
+    @contextmanager
+    def _db(self):
         conn = sqlite3.connect(self.db_path, check_same_thread=False)
-        conn.row_factory = sqlite3.Row
-        conn.execute("PRAGMA foreign_keys = ON;")
-        return conn
+        try:
+            conn.row_factory = sqlite3.Row
+            conn.execute("PRAGMA foreign_keys = ON;")
+            yield conn
+        finally:
+            conn.close()
 
     def _insert_alert(
         self,
