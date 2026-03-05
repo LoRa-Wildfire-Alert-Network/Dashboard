@@ -151,7 +151,11 @@ def main():
                     upsert(conn, rows)
 
                     for r in rows:
-                        process_row_for_alerts(r)
+                        try:
+                            process_row_for_alerts(r)
+                        except Exception as alert_exc:
+                            # alert engine failed; don't treat as API fetch failure
+                            print("Error processing alerts for row:", alert_exc)
 
                     print(f"Inserted {len(rows)} row(s).")
                 finally:
