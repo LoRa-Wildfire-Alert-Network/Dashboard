@@ -1,11 +1,11 @@
 import os
-import datetime
-import requests
 import time
 import sqlite3
+import datetime
+import requests
 from dotenv import load_dotenv
-from alerts.engine import process_row_for_alerts
 from alerts.cooldown import can_send
+from alerts.engine import process_row_for_alerts
 
 HERE = os.path.abspath(os.path.dirname(__file__))
 load_dotenv(os.path.join(HERE, ".env"))
@@ -142,9 +142,6 @@ def main():
             objs = fetch_live()
             rows = extract_rows(objs)
 
-            for r in rows:
-                process_row_for_alerts(r)
-
             if not rows:
                 print("No data.")
             else:
@@ -152,6 +149,10 @@ def main():
                 try:
                     conn.execute("PRAGMA foreign_keys = ON;")
                     upsert(conn, rows)
+
+                    for r in rows:
+                        process_row_for_alerts(r)
+
                     print(f"Inserted {len(rows)} row(s).")
                 finally:
                     conn.close()

@@ -84,7 +84,8 @@ CREATE TABLE IF NOT EXISTS alerts (
   message TEXT NOT NULL,
   created_at INTEGER NOT NULL,
   acknowledged INTEGER NOT NULL DEFAULT 0,
-  acknowledged_at INTEGER
+  acknowledged_at INTEGER,
+  FOREIGN KEY (dev_eui) REFERENCES nodes(device_eui)
 );
 
 CREATE INDEX IF NOT EXISTS idx_alerts_created_at
@@ -121,7 +122,8 @@ CREATE TABLE IF NOT EXISTS alert_preferences (
   updated_at INTEGER NOT NULL,
 
   FOREIGN KEY (user_id) REFERENCES users(auth_sub) ON DELETE CASCADE,
-  FOREIGN KEY (dev_eui) REFERENCES nodes(device_eui) ON DELETE CASCADE
+  FOREIGN KEY (dev_eui) REFERENCES nodes(device_eui) ON DELETE CASCADE,
+  UNIQUE (user_id, dev_eui)
 );
 
 CREATE INDEX IF NOT EXISTS idx_alert_prefs_user

@@ -8,8 +8,8 @@ from .dispatch_email import send_email_alert
 from dotenv import load_dotenv
 load_dotenv()
 
-logging.basicConfig(level=os.getenv("LOG_LEVEL", "INFO"))
 log = logging.getLogger("alerts.worker")
+log.setLevel(os.getenv("LOG_LEVEL", "INFO"))
 
 
 HERE = os.path.abspath(os.path.dirname(__file__))
@@ -96,54 +96,66 @@ def _release_stale_claims(conn: sqlite3.Connection) -> int:
 
 def worker_loop(worker_id: int) -> None:
     while True:
-        with _db() as conn:
-            _release_stale_claims(conn)
-            row = _claim_one(conn)
-
-        if row:
-            log.info("[worker %s] claimed queue_id=%s", worker_id, row["id"])
-
-        if not row:
-            time.sleep(POLL_SECONDS)
-            continue
-
         try:
-            # Send email
-            send_email_alert(row["email"], row["message"])
-
-            # Mark processed only after successful send
             with _db() as conn:
-                conn.execute(
-                    """
-                    UPDATE alert_queue
-                    SET processed = 1,
-                        processed_at = ?,
-                        in_progress = 0,
-                        in_progress_at = NULL
-                    WHERE id = ?
-                    """,
-                    (int(time.time()), row["id"]),
-                )
-                conn.commit()
+                _release_stale_claims(conn)
+                row = _claim_one(conn)
 
-        except Exception as e:
-            log.exception("[worker %s] send failed queue_id=%s", worker_id, row["id"])
-            with _db() as conn:
-                _insert_system_alert(
-                    conn,
-                    "EMAIL_SEND_FAILED",
-                    f"queue_id={row['id']} email={row['email']} error={e}",
+            if row:
+                log.info("[worker %s] claimed queue_id=%s", worker_id, row["id"])
+
+            if not row:
+                time.sleep(POLL_SECONDS)
+                continue
+
+            try:
+                # Send email
+                send_email_alert(row["email"], row["message"])
+
+                # Mark processed only after successful send
+                with _db() as conn:
+                    conn.execute(
+                        """
+                        UPDATE alert_queue
+                        SET processed = 1,
+                            processed_at = ?,
+                            in_progress = 0,
+                            in_progress_at = NULL
+                        WHERE id = ?
+                        """,
+                        (int(time.time()), row["id"]),
+                    )
+                    conn.commit()
+
+            except Exception as e:
+                log.exception(
+                    "[worker %s] send failed queue_id=%s",
+                    worker_id,
+                    row["id"],
                 )
-                conn.execute(
-                    """
-                    UPDATE alert_queue
-                    SET in_progress = 0,
-                        in_progress_at = NULL
-                    WHERE id = ? AND processed = 0
-                    """,
-                    (row["id"],),
-                )
-                conn.commit()
+                with _db() as conn:
+                    _insert_system_alert(
+                        conn,
+                        "EMAIL_SEND_FAILED",
+                        f"queue_id={row['id']} email={row['email']} error={e}",
+                    )
+                    conn.execute(
+                        """
+                        UPDATE alert_queue
+                        SET in_progress = 0,
+                            in_progress_at = NULL
+                        WHERE id = ? AND processed = 0
+                        """,
+                        (row["id"],),
+                    )
+                    conn.commit()
+
+        except Exception:
+            log.exception(
+                "[worker %s] unexpected error in worker_loop iteration",
+                worker_id,
+            )
+            time.sleep(max(POLL_SECONDS, 5.0))
 
 
 def start_workers() -> None:

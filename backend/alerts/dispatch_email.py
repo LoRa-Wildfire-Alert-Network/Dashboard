@@ -23,7 +23,10 @@ def send_email_alert(to_email: str, message: str) -> None:
     msg["Subject"] = "Wildfire Alert"
 
     try:
-        with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
+        SMTP_HOST = os.getenv("ALERT_SMTP_HOST", "smtp.gmail.com")
+        SMTP_PORT = int(os.getenv("ALERT_SMTP_PORT", "465"))
+
+        with smtplib.SMTP_SSL(SMTP_HOST, SMTP_PORT) as server:
             server.login(EMAIL, PASSWORD)
             server.sendmail(EMAIL, [to_email], msg.as_string())
     except Exception as e:

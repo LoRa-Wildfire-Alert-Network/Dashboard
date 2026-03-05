@@ -39,7 +39,6 @@ class AlertService:
             """,
             (dev_eui, alert_type, message, int(now_ts)),
         )
-        conn.commit()
         alert_id = cur.lastrowid
         if alert_id is None:
             raise RuntimeError("Failed to insert alert row")
@@ -126,7 +125,6 @@ class AlertService:
             )
             inserted += 1
 
-        conn.commit()
         return inserted
 
     def process_row(self, row: dict) -> None:
@@ -203,18 +201,23 @@ class AlertService:
             if not can_send(conn, dev_eui, alert_type):
                 return
 
-            # Requirement order: store alert event first, then enqueue
-            self._insert_alert(conn, dev_eui, alert_type, msg, now_ts)
-
-            self._enqueue_matching_users(
-                conn,
-                dev_eui,
-                temp_c,
-                battery_level,
-                smoke,
-                msg,
-                now_ts,
-            )
+            # Requirement order: store alert event first, then enqueue (atomic)
+            try:
+                conn.execute("BEGIN")
+                self._insert_alert(conn, dev_eui, alert_type, msg, now_ts)
+                self._enqueue_matching_users(
+                    conn,
+                    dev_eui,
+                    temp_c,
+                    battery_level,
+                    smoke,
+                    msg,
+                    now_ts,
+                )
+                conn.commit()
+            except Exception:
+                conn.rollback()
+                raise
 
 
 _service = AlertService(DB_PATH)
