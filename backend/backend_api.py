@@ -261,6 +261,17 @@ def create_alert_preference(body: AlertPreferenceCreate, user=Depends(get_clerk_
     enabled = 1 if (body.enabled is None or body.enabled) else 0
     smoke = None if body.smoke_detected is None else (1 if body.smoke_detected else 0)
 
+    # New validation
+    if (
+        body.temp_over_c is None
+        and body.battery_below_pct is None
+        and body.smoke_detected is None
+    ):
+        raise HTTPException(
+            status_code=422,
+            detail="At least one alert condition must be set",
+        )
+
     with db() as conn:
         # verify node exists
         node = conn.execute(
@@ -369,10 +380,6 @@ def get_alerts(
 
     clauses: List[str] = ["s.user_id = ?"]
     params: List[object] = [user_id]
-
-    # Allow SYSTEM alerts for everyone
-    clauses.append("(a.dev_eui = 'SYSTEM' OR s.user_id = ?)")
-    params = [user_id, user_id]
 
     if dev_eui:
         clauses.append("a.dev_eui = ?")
