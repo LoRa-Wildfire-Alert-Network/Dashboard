@@ -7,7 +7,8 @@ A real-time monitoring dashboard for LoRa-based wildfire detection sensor nodes.
 - **Real-time Data Ingestion**: Continuously fetches sensor data from LoRa nodes via the live API
 - **Interactive Map**: Visualize node locations with color-coded markers indicating status
   - 🟢 Green: Normal operation
-  - 🟠 Orange: Low battery warning
+  - 🟠 Orange: Abnormal sensor readings
+  - 🟡 Yellow: Device complications
   - 🔴 Red: Smoke detected
 - **Node Details**: View detailed telemetry including temperature, humidity, battery level, and smoke detection status
 - **SQLite Database**: Lightweight embedded database for easy deployment and data persistence
