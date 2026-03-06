@@ -48,12 +48,13 @@ cp .env.example .env
 | `ALLOWED_ORIGINS` | CORS allowed origins | No (default `*`) |
 | `CLERK_JWT_ISSUER` | Clerk JWT issuer URL | Yes |
 | `DB_NAME` | SQLite database filename | No (default `lora.db`) |
+| `ALERTS_ENABLE_WORKERS` | Enable background alert workers | No |
 
 ---
 
 ## Local Development (Python)
 
-### 1) Set up virtual environment
+### 1) Set up a virtual environment
 
 ```bash
 cd backend
@@ -141,14 +142,15 @@ Authorization: Bearer <token>
 | Endpoint | Method | Description |
 |----------|--------|-------------|
 | `/latest` | GET | Latest telemetry for subscribed nodes |
+| `/alerts` | GET | List alert events for nodes the user is subscribed to |
 | `/subscriptions` | GET | List user subscriptions |
-| `/subscriptions/subscribe` | POST | Subscribe to a node |
-| `/subscriptions/unsubscribe` | POST | Unsubscribe from a node |
 | `/alert-preferences` | GET | List alert preferences |
 | `/alert-preferences` | POST | Create alert preference |
-| `/alert-preferences/{pref_id}` | PUT | Update alert preference |
-| `/alerts` | GET | List alert events |
+| `/subscriptions/subscribe` | POST | Subscribe to a node |
+| `/subscriptions/unsubscribe` | POST | Unsubscribe from a node |
 | `/alerts/{alert_id}/ack` | PUT | Acknowledge alert |
+| `/alert-preferences/{pref_id}` | PUT | Update alert preference |
+| `/alert-preferences/{pref_id}` | DELETE | Delete alert preference |
 
 ---
 
