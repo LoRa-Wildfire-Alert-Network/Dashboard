@@ -178,7 +178,11 @@ def fetch_clerk_email(user_id: str) -> str:
     )
 
     if r.status_code != 200:
-        raise HTTPException(status_code=502, detail="Failed to fetch user from Clerk")
+        log.warning("Clerk API error: status=%s body=%s", r.status_code, r.text[:200])
+        raise HTTPException(
+            status_code=502,
+            detail=f"Failed to fetch user from Clerk (status {r.status_code})",
+        )
 
     data: dict[str, Any] = r.json()
 
