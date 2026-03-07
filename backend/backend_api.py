@@ -149,7 +149,7 @@ def get_clerk_user_id(
     with db() as conn:
         row = conn.execute(
             "SELECT email FROM users WHERE auth_sub = ?",
-            (user_id,),
+            (user_id,)
         ).fetchone()
         if row and row["email"]:
             email = row["email"]
@@ -216,7 +216,7 @@ def subscribe_node(
     with db() as conn:
         node = conn.execute(
             "SELECT device_eui FROM nodes WHERE device_eui = ?",
-            (device_eui,),
+            (device_eui,)
         ).fetchone()
         if not node:
             raise HTTPException(status_code=404, detail="Node not found")
@@ -269,7 +269,7 @@ def create_alert_preference(
         # verify node exists
         node = conn.execute(
             "SELECT device_eui FROM nodes WHERE device_eui = ?",
-            (body.dev_eui,),
+            (body.dev_eui,)
         ).fetchone()
         if not node:
             raise HTTPException(status_code=404, detail="Node not found")
@@ -346,7 +346,7 @@ def get_user_subscriptions(
     with db() as conn:
         rows = conn.execute(
             "SELECT device_eui FROM user_node_subscriptions WHERE user_id = ?",
-            (user_id,),
+            (user_id,)
         ).fetchall()
     return [r[0] for r in rows]
 
@@ -436,7 +436,7 @@ def update_alert_preference(
     with db() as conn:
         existing = conn.execute(
             "SELECT * FROM alert_preferences WHERE id = ?",
-            (pref_id,),
+            (pref_id,)
         ).fetchone()
         if not existing:
             raise HTTPException(status_code=404, detail="Preference not found")
@@ -458,7 +458,7 @@ def update_alert_preference(
         if "dev_eui" in body.model_fields_set and body.dev_eui is not None:
             node = conn.execute(
                 "SELECT device_eui FROM nodes WHERE device_eui = ?",
-                (body.dev_eui,),
+                (body.dev_eui,)
             ).fetchone()
             if not node:
                 raise HTTPException(status_code=404, detail="Node not found")
@@ -518,7 +518,7 @@ def update_alert_preference(
             FROM alert_preferences
             WHERE id = ?
             """,
-            (pref_id,),
+            (pref_id,)
         ).fetchone()
 
     return dict(updated)
@@ -533,13 +533,13 @@ def delete_alert_preference(
     with db() as conn:
         existing = conn.execute(
             "SELECT user_id FROM alert_preferences WHERE id = ?",
-            (pref_id,),
+            (pref_id,)
         ).fetchone()
         if not existing or existing["user_id"] != user_id:
             raise HTTPException(status_code=404, detail="Preference not found")
         conn.execute(
             "DELETE FROM alert_preferences WHERE id = ?",
-            (pref_id,),
+            (pref_id,)
         )
         conn.commit()
 
@@ -662,7 +662,7 @@ def latest_all_nodes(
     with db() as conn:
         device_euis = conn.execute(
             "SELECT device_eui FROM user_node_subscriptions WHERE user_id = ?",
-            (user_id,),
+            (user_id,)
         ).fetchall()
         device_euis = [r[0] for r in device_euis]
         if not device_euis:
