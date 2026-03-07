@@ -74,7 +74,7 @@ async def lifespan(app: FastAPI):
     yield
 
 app = FastAPI(title="LoRa Wildfire Backend API", lifespan=lifespan)
-CLERK_SECRET_KEY = os.getenv("CLERK_SECRET_KEY")
+CLERK_SECRET_KEY = os.getenv("VITE_CLERK_PUBLISHABLE_KEY")
 
 app.add_middleware(
     CORSMiddleware,
