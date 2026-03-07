@@ -134,8 +134,8 @@ def _decode_clerk_jwt(
             audience=None,
             issuer=CLERK_JWT_ISSUER,
         )
-    except Exception:
-        raise HTTPException(status_code=401, detail="Invalid Clerk JWT")
+    except Exception as e:
+        raise HTTPException(status_code=401, detail=f"Invalid Clerk JWT: {e}")
 
 
 def get_clerk_user_id(payload: dict = Depends(_decode_clerk_jwt)) -> str:
