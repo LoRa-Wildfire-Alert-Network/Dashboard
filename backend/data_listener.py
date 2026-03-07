@@ -1,9 +1,11 @@
 import os
-import datetime
-import requests
 import time
 import sqlite3
+import datetime
+import requests
 from dotenv import load_dotenv
+from alerts.cooldown import can_send
+from alerts.engine import process_row_for_alerts
 
 HERE = os.path.abspath(os.path.dirname(__file__))
 load_dotenv(os.path.join(HERE, ".env"))
@@ -139,6 +141,7 @@ def main():
         try:
             objs = fetch_live()
             rows = extract_rows(objs)
+
             if not rows:
                 print("No data.")
             else:
@@ -146,10 +149,53 @@ def main():
                 try:
                     conn.execute("PRAGMA foreign_keys = ON;")
                     upsert(conn, rows)
+
+                    for r in rows:
+                        try:
+                            process_row_for_alerts(r)
+                        except Exception as alert_exc:
+                            # alert engine failed; don't treat as API fetch failure
+                            print("Error processing alerts for row:", alert_exc)
+
                     print(f"Inserted {len(rows)} row(s).")
                 finally:
                     conn.close()
         except Exception as e:
+            # Store as a DB alert so dashboard can show API problems
+            dev_eui = "SYSTEM"
+            alert_type = "API_ERROR"
+            now_ts = int(time.time())
+            err_name = type(e).__name__
+            err_msg = str(e).replace("\n", " ").strip()
+            err_msg = err_msg[:200]
+            msg = f"Live API error fetching telemetry. {err_name}: {err_msg}"
+
+            try:
+                conn = sqlite3.connect(DB_PATH, check_same_thread=False)
+                try:
+                    conn.execute("PRAGMA foreign_keys = ON;")
+                    if can_send(conn, dev_eui, alert_type):
+                        cur = conn.cursor()
+                        cur.execute(
+                            """
+                            INSERT INTO alerts (
+                                dev_eui,
+                                alert_type,
+                                message,
+                                created_at,
+                                acknowledged
+                            )
+                            VALUES (?, ?, ?, ?, 0)
+                            """,
+                            (dev_eui, alert_type, msg, now_ts),
+                        )
+                        conn.commit()
+                finally:
+                    conn.close()
+            except Exception:
+                # If logging to DB fails, don't crash the listener loop
+                pass
+
             print("Error:", e)
 
         time.sleep(3)

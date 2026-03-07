@@ -19,6 +19,15 @@ def main():
     conn = sqlite3.connect(DB_PATH)
     try:
         conn.executescript(schema_sql)
+
+        # ensure SYSTEM node exists for API error alerts
+        conn.execute(
+            """
+            INSERT OR IGNORE INTO nodes (device_eui, node_id)
+            VALUES ('SYSTEM', 'SYSTEM')
+            """
+        )
+
         conn.commit()
         print(f"SQLite DB created at: {DB_PATH}")
     finally:
