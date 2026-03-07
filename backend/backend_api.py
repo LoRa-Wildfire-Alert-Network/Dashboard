@@ -11,7 +11,7 @@ from typing import Optional, List, Any
 from alerts.worker import start_workers
 from contextlib import asynccontextmanager
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi import FastAPI, HTTPException, Query, Depends
+from fastapi import FastAPI, HTTPException, Query, Depends, Request
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 
 
@@ -145,26 +145,18 @@ def get_clerk_user_id(
     user_id = payload.get("sub") or payload.get("user_id")
     if not user_id:
         raise HTTPException(status_code=401, detail="No user_id in Clerk token")
-    return user_id
-
-
-def get_clerk_user(
-    user_id: str = Depends(get_clerk_user_id),
-) -> dict[str, str]:
-    # 1) try DB first
+    email = None
     with db() as conn:
         row = conn.execute(
             "SELECT email FROM users WHERE auth_sub = ?",
             (user_id,),
         ).fetchone()
-
-    if row and row["email"]:
-        return {"user_id": user_id, "email": row["email"]}
-
-    # 2) fallback to Clerk API
-    email = fetch_clerk_email(user_id)
-    ensure_user_row(user_id, email)
-    return {"user_id": user_id, "email": email}
+        if row and row["email"]:
+            email = row["email"]
+    if not email:
+        email = fetch_clerk_email(user_id)
+        ensure_user_row(user_id, email)
+    return user_id
 
 
 def get_clerk_org_id(
@@ -218,9 +210,8 @@ def fetch_clerk_email(user_id: str) -> str:
 @app.post("/subscriptions/subscribe")
 def subscribe_node(
     body: NodeIdRequest,
-    user=Depends(get_clerk_user),
+    user_id: str = Depends(get_clerk_user_id),
 ):
-    user_id = user["user_id"]
     device_eui = body.device_eui
     with db() as conn:
         node = conn.execute(
@@ -257,13 +248,13 @@ def unsubscribe_node(
 
 
 @app.post("/alert-preferences", status_code=201)
-def create_alert_preference(body: AlertPreferenceCreate, user=Depends(get_clerk_user)):
-    user_id = user["user_id"]
+def create_alert_preference(
+    body: AlertPreferenceCreate,
+    user_id: str = Depends(get_clerk_user_id),
+):
     ts = now_ts()
-
     enabled = 1 if (body.enabled is None or body.enabled) else 0
     smoke = None if body.smoke_detected is None else (1 if body.smoke_detected else 0)
-
     # New validation
     if (
         body.temp_over_c is None
@@ -274,7 +265,6 @@ def create_alert_preference(body: AlertPreferenceCreate, user=Depends(get_clerk_
             status_code=422,
             detail="At least one alert condition must be set",
         )
-
     with db() as conn:
         # verify node exists
         node = conn.execute(
@@ -287,13 +277,11 @@ def create_alert_preference(body: AlertPreferenceCreate, user=Depends(get_clerk_
             "SELECT id FROM alert_preferences WHERE user_id = ? AND dev_eui = ?",
             (user_id, body.dev_eui),
         ).fetchone()
-
         if existing:
             raise HTTPException(
                 status_code=400,
                 detail="Preference already exists for this node",
             )
-
         conn.execute(
             """
             INSERT INTO alert_preferences (
@@ -315,7 +303,6 @@ def create_alert_preference(body: AlertPreferenceCreate, user=Depends(get_clerk_
             ),
         )
         conn.commit()
-
         pref = conn.execute(
             """
             SELECT
@@ -326,14 +313,11 @@ def create_alert_preference(body: AlertPreferenceCreate, user=Depends(get_clerk_
             WHERE id = last_insert_rowid()
             """
         ).fetchone()
-
     return dict(pref)
 
 
 @app.get("/alert-preferences")
-def list_alert_preferences(user=Depends(get_clerk_user)):
-    user_id = user["user_id"]
-
+def list_alert_preferences(user_id: str = Depends(get_clerk_user_id)):
     q = """
         SELECT
           id,
@@ -377,23 +361,17 @@ def get_alerts(
     limit: int = Query(50, ge=1, le=200),
     dev_eui: Optional[str] = Query(None),
     acknowledged: Optional[bool] = Query(None),
-    user=Depends(get_clerk_user),
+    user_id: str = Depends(get_clerk_user_id),
 ):
-    user_id = user["user_id"]
-
     clauses: List[str] = ["s.user_id = ?"]
     params: List[object] = [user_id]
-
     if dev_eui:
         clauses.append("a.dev_eui = ?")
         params.append(dev_eui)
-
     if acknowledged is not None:
         clauses.append("a.acknowledged = ?")
         params.append(1 if acknowledged else 0)
-
     where = " AND ".join(clauses)
-
     q = f"""
         SELECT
           a.id,
@@ -411,23 +389,20 @@ def get_alerts(
         LIMIT ?
     """
     params.append(limit)
-
     with db() as conn:
         rows = conn.execute(q, tuple(params)).fetchall()
-
     return [dict(r) for r in rows]
 
 
 @app.put("/alerts/{alert_id}/ack")
 def acknowledge_alert(
     alert_id: int,
-    _user=Depends(get_clerk_user),
+    user_id: str = Depends(get_clerk_user_id),
 ):
     """
     Mark an alert as acknowledged.
     """
     ts = now_ts()
-
     with db() as conn:
         cur = conn.cursor()
         cur.execute(
@@ -442,13 +417,11 @@ def acknowledge_alert(
                 WHERE user_id = ?
             )
             """,
-            (ts, alert_id, _user["user_id"]),
+            (ts, alert_id, user_id),
         )
         conn.commit()
-
         if cur.rowcount == 0:
             raise HTTPException(status_code=404, detail="Alert not found")
-
     return {"status": "ok", "id": alert_id}
 
 
@@ -456,9 +429,8 @@ def acknowledge_alert(
 def update_alert_preference(
     pref_id: int,
     body: AlertPreferenceUpdate,
-    user=Depends(get_clerk_user),
+    user_id: str = Depends(get_clerk_user_id),
 ):
-    user_id = user["user_id"]
     ts = now_ts()
 
     with db() as conn:
@@ -555,19 +527,16 @@ def update_alert_preference(
 @app.delete("/alert-preferences/{pref_id}", status_code=204)
 def delete_alert_preference(
     pref_id: int,
-    user=Depends(get_clerk_user),
+    user_id: str = Depends(get_clerk_user_id),
 ):
-    user_id = user["user_id"]
 
     with db() as conn:
         existing = conn.execute(
             "SELECT user_id FROM alert_preferences WHERE id = ?",
             (pref_id,),
         ).fetchone()
-
         if not existing or existing["user_id"] != user_id:
             raise HTTPException(status_code=404, detail="Preference not found")
-
         conn.execute(
             "DELETE FROM alert_preferences WHERE id = ?",
             (pref_id,),
