@@ -85,7 +85,6 @@ CREATE TABLE IF NOT EXISTS alerts (
   created_at INTEGER NOT NULL,
   acknowledged INTEGER NOT NULL DEFAULT 0,
   acknowledged_at INTEGER,
-  CHECK (dev_eui = 'SYSTEM' OR dev_eui IN (SELECT device_eui FROM nodes)),
   FOREIGN KEY (dev_eui) REFERENCES nodes(device_eui)
 );
 
