@@ -18,4 +18,5 @@ Subscribing to a node adds it to your monitored list. Subscribed nodes appear on
 
 - **Map**: Only subscribed nodes are shown on the map
 - **Filtering**: Use the "Only show subscribed nodes" filter to limit the list to your subscriptions
+- **Alerts**: Subscribing creates default alert preferences (smoke, temp > 70°C, battery < 20%). See [Alerts](alerts.md) for details
 - **Updates**: Subscriptions are saved to your account and persist across sessions
