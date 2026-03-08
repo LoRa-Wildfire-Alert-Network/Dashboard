@@ -8,6 +8,7 @@ load_dotenv()
 
 EMAIL = os.getenv("ALERT_EMAIL")
 PASSWORD = os.getenv("ALERT_PASS")
+SMTP_LOGIN = os.getenv("ALERT_SMTP_LOGIN", "")
 
 
 def send_email_alert(to_email: str, message: str) -> None:
@@ -25,16 +26,16 @@ def send_email_alert(to_email: str, message: str) -> None:
     try:
         SMTP_HOST = os.getenv("ALERT_SMTP_HOST", "smtp.gmail.com")
         SMTP_PORT = int(os.getenv("ALERT_SMTP_PORT", "465"))
+        login = SMTP_LOGIN or EMAIL
 
         if SMTP_PORT == 587:
             with smtplib.SMTP(SMTP_HOST, SMTP_PORT) as server:
                 server.starttls()
-                server.login(EMAIL, PASSWORD)
+                server.login(login, PASSWORD)
                 server.sendmail(EMAIL, [to_email], msg.as_string())
         else:
-            # leaving incase we fix the gmail account
             with smtplib.SMTP_SSL(SMTP_HOST, SMTP_PORT) as server:
-                server.login(EMAIL, PASSWORD)
+                server.login(login, PASSWORD)
                 server.sendmail(EMAIL, [to_email], msg.as_string())
     except Exception as e:
         raise RuntimeError(f"ALERT FAILED: {e}")
