@@ -230,6 +230,16 @@ def subscribe_node(
                 "(user_id, device_eui) VALUES (?, ?)",
                 (user_id, device_eui),
             )
+            ts = now_ts()
+            # default alert preference: smoke, temp>70°C, battery<20% (until frontend supports config)
+            conn.execute(
+                """
+                INSERT OR IGNORE INTO alert_preferences
+                (user_id, dev_eui, enabled, temp_over_c, battery_below_pct, smoke_detected, created_at, updated_at)
+                VALUES (?, ?, 1, 70.0, 20.0, 1, ?, ?)
+                """,
+                (user_id, device_eui, ts, ts),
+            )
             conn.commit()
         except sqlite3.IntegrityError:
             raise HTTPException(status_code=400, detail="Already subscribed")
