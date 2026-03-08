@@ -259,6 +259,10 @@ def unsubscribe_node(
             "DELETE FROM user_node_subscriptions WHERE user_id = ? AND device_eui = ?",
             (user_id, device_eui),
         )
+        conn.execute(
+            "DELETE FROM alert_preferences WHERE user_id = ? AND dev_eui = ?",
+            (user_id, device_eui),
+        )
         conn.commit()
     return {"message": f"Unsubscribed from {device_eui}"}
 
