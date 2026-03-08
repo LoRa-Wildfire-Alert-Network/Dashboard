@@ -13,6 +13,7 @@ const sidebars: SidebarsConfig = {
       label: 'How-To Guides',
       items: [
         'how-to/subscribe-to-nodes',
+        'how-to/alerts',
         'how-to/view-node-details',
         'how-to/use-the-map',
         'how-to/filter-nodes',
