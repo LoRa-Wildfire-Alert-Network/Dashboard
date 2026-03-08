@@ -1,21 +1,49 @@
-from pydantic import BaseModel
 import os
-import datetime as dt
-from typing import Optional, List
 import sqlite3
+import uvicorn
+import logging
+import requests
+import jwt as pyjwt
+import datetime as dt
+from dotenv import load_dotenv
+from pydantic import BaseModel, Field
+from typing import Optional, List, Any
+from alerts.worker import start_workers
+from contextlib import asynccontextmanager
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi import FastAPI, HTTPException, Query, Depends, Request
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from fastapi.middleware.cors import CORSMiddleware
-from dotenv import load_dotenv
-import uvicorn
-import jwt as pyjwt
+
+
+def _env_bool(name: str, default: str = "0") -> bool:
+    return os.getenv(name, default).strip().lower() in ("1", "true", "yes", "on")
+
 
 HERE = os.path.abspath(os.path.dirname(__file__))
 load_dotenv(os.path.join(HERE, ".env"))
 
+logging.basicConfig(level=os.getenv("LOG_LEVEL", "INFO"))
+log = logging.getLogger("alerts")
+
 
 class NodeIdRequest(BaseModel):
     device_eui: str
+
+
+class AlertPreferenceCreate(BaseModel):
+    dev_eui: str
+    enabled: Optional[bool] = True
+    temp_over_c: Optional[float] = Field(default=None, ge=-50, le=150)
+    battery_below_pct: Optional[float] = Field(default=None, ge=0, le=100)
+    smoke_detected: Optional[bool] = None
+
+
+class AlertPreferenceUpdate(BaseModel):
+    dev_eui: Optional[str] = None
+    enabled: Optional[bool] = None
+    temp_over_c: Optional[float] = Field(default=None, ge=-50, le=150)
+    battery_below_pct: Optional[float] = Field(default=None, ge=0, le=100)
+    smoke_detected: Optional[bool] = None
 
 
 ALLOWED_ORIGINS = os.getenv("ALLOWED_ORIGINS", "*")
@@ -27,7 +55,26 @@ with open(os.path.join(HERE, "clerk_public_key.pem")) as f:
     CLERK_JWT_PUBLIC_KEY = f.read()
 
 bearer_scheme = HTTPBearer()
-app = FastAPI(title="LoRa Wildfire Backend API")
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Only start workers when explicitly enabled
+    if not _env_bool("ALERTS_ENABLE_WORKERS", "0"):
+        log.info("Alert workers disabled (set ALERTS_ENABLE_WORKERS=1 to enable).")
+        yield
+        return
+
+    try:
+        start_workers()
+        log.info("Alert workers started.")
+    except Exception:
+        log.exception("Failed to start alert workers")
+
+    yield
+
+app = FastAPI(title="LoRa Wildfire Backend API", lifespan=lifespan)
+CLERK_SECRET_KEY = os.getenv("VITE_CLERK_PUBLISHABLE_KEY")
 
 app.add_middleware(
     CORSMiddleware,
@@ -56,6 +103,25 @@ def parse_iso(ts: Optional[str]) -> Optional[dt.datetime]:
     return dt.datetime.fromisoformat(ts)
 
 
+def now_ts() -> int:
+    return int(dt.datetime.now(dt.UTC).timestamp())
+
+
+def ensure_user_row(user_id: str, email: str) -> None:
+    ts = now_ts()
+    with db() as conn:
+        conn.execute(
+            """
+            INSERT INTO users (auth_sub, email, created_at)
+            VALUES (?, ?, ?)
+            ON CONFLICT(auth_sub) DO UPDATE SET
+              email = excluded.email
+            """,
+            (user_id, email, ts),
+        )
+        conn.commit()
+
+
 def _decode_clerk_jwt(
     credentials: HTTPAuthorizationCredentials = Depends(bearer_scheme),
 ) -> dict:
@@ -79,6 +145,17 @@ def get_clerk_user_id(
     user_id = payload.get("sub") or payload.get("user_id")
     if not user_id:
         raise HTTPException(status_code=401, detail="No user_id in Clerk token")
+    email = None
+    with db() as conn:
+        row = conn.execute(
+            "SELECT email FROM users WHERE auth_sub = ?",
+            (user_id,)
+        ).fetchone()
+        if row and row["email"]:
+            email = row["email"]
+    if not email:
+        email = fetch_clerk_email(user_id)
+        ensure_user_row(user_id, email)
     return user_id
 
 
@@ -88,6 +165,47 @@ def get_clerk_org_id(
     """Returns the active Clerk organization id, or None for personal accounts."""
     return payload.get("org_id")
 
+
+def fetch_clerk_email(user_id: str) -> str:
+    if not CLERK_SECRET_KEY:
+        raise HTTPException(status_code=500, detail="Missing CLERK_SECRET_KEY")
+
+    url = f"https://api.clerk.com/v1/users/{user_id}"
+    r = requests.get(
+        url,
+        headers={"Authorization": f"Bearer {CLERK_SECRET_KEY}"},
+        timeout=10,
+    )
+
+    if r.status_code != 200:
+        log.warning("Clerk API error: status=%s body=%s", r.status_code, r.text[:200])
+        raise HTTPException(
+            status_code=502,
+            detail=f"Failed to fetch user from Clerk (status {r.status_code})",
+        )
+
+    data: dict[str, Any] = r.json()
+
+    # pick primary email if present, else first email
+    primary_id = data.get("primary_email_address_id")
+    emails = data.get("email_addresses") or []
+
+    email = None
+    if primary_id:
+        for e in emails:
+            if e.get("id") == primary_id:
+                email = e.get("email_address")
+                break
+
+    if not email and emails:
+        email = emails[0].get("email_address")
+
+    if not email:
+        raise HTTPException(status_code=401, detail="No email on Clerk user")
+
+    return email
+
+
 # -------------------------
 #         ENDPOINTS
 # -------------------------
@@ -96,7 +214,7 @@ def get_clerk_org_id(
 @app.post("/subscriptions/subscribe")
 def subscribe_node(
     body: NodeIdRequest,
-    user_id: str = Depends(get_clerk_user_id)
+    user_id: str = Depends(get_clerk_user_id),
 ):
     device_eui = body.device_eui
     with db() as conn:
@@ -110,33 +228,141 @@ def subscribe_node(
             conn.execute(
                 "INSERT INTO user_node_subscriptions "
                 "(user_id, device_eui) VALUES (?, ?)",
-                (user_id, device_eui)
+                (user_id, device_eui),
+            )
+            ts = now_ts()
+            # default alert preference: smoke, temp>70°C, battery<20%
+            # (until frontend supports config)
+            conn.execute(
+                """
+                INSERT OR IGNORE INTO alert_preferences
+                (user_id, dev_eui, enabled, temp_over_c,
+                battery_below_pct, smoke_detected, created_at, updated_at)
+                VALUES (?, ?, 1, 70.0, 20.0, 1, ?, ?)
+                """,
+                (user_id, device_eui, ts, ts),
             )
             conn.commit()
         except sqlite3.IntegrityError:
             raise HTTPException(status_code=400, detail="Already subscribed")
-    return {
-        "message": f"Subscribed to {device_eui}"
-    }
+    return {"message": f"Subscribed to {device_eui}"}
 
 
 @app.post("/subscriptions/unsubscribe")
-def unsubscribe_node(body: NodeIdRequest, user_id: str = Depends(get_clerk_user_id)):
+def unsubscribe_node(
+    body: NodeIdRequest,
+    user_id: str = Depends(get_clerk_user_id),
+):
     device_eui = body.device_eui
     with db() as conn:
         conn.execute(
-            "DELETE FROM user_node_subscriptions "
-            "WHERE user_id = ? AND device_eui = ?",
-            (user_id, device_eui)
+            "DELETE FROM user_node_subscriptions WHERE user_id = ? AND device_eui = ?",
+            (user_id, device_eui),
+        )
+        conn.execute(
+            "DELETE FROM alert_preferences WHERE user_id = ? AND dev_eui = ?",
+            (user_id, device_eui),
         )
         conn.commit()
-    return {
-        "message": f"Unsubscribed from {device_eui}"
-    }
+    return {"message": f"Unsubscribed from {device_eui}"}
+
+
+@app.post("/alert-preferences", status_code=201)
+def create_alert_preference(
+    body: AlertPreferenceCreate,
+    user_id: str = Depends(get_clerk_user_id),
+):
+    ts = now_ts()
+    enabled = 1 if (body.enabled is None or body.enabled) else 0
+    smoke = None if body.smoke_detected is None else (1 if body.smoke_detected else 0)
+    # New validation
+    if (
+        body.temp_over_c is None
+        and body.battery_below_pct is None
+        and body.smoke_detected is None
+    ):
+        raise HTTPException(
+            status_code=422,
+            detail="At least one alert condition must be set",
+        )
+    with db() as conn:
+        # verify node exists
+        node = conn.execute(
+            "SELECT device_eui FROM nodes WHERE device_eui = ?",
+            (body.dev_eui,)
+        ).fetchone()
+        if not node:
+            raise HTTPException(status_code=404, detail="Node not found")
+        existing = conn.execute(
+            "SELECT id FROM alert_preferences WHERE user_id = ? AND dev_eui = ?",
+            (user_id, body.dev_eui),
+        ).fetchone()
+        if existing:
+            raise HTTPException(
+                status_code=400,
+                detail="Preference already exists for this node",
+            )
+        conn.execute(
+            """
+            INSERT INTO alert_preferences (
+              user_id, dev_eui, enabled,
+              temp_over_c, battery_below_pct, smoke_detected,
+              last_sent_at, created_at, updated_at
+            )
+            VALUES (?, ?, ?, ?, ?, ?, NULL, ?, ?)
+            """,
+            (
+                user_id,
+                body.dev_eui,
+                enabled,
+                body.temp_over_c,
+                body.battery_below_pct,
+                smoke,
+                ts,
+                ts,
+            ),
+        )
+        conn.commit()
+        pref = conn.execute(
+            """
+            SELECT
+              id, user_id, dev_eui, enabled,
+              temp_over_c, battery_below_pct, smoke_detected,
+              last_sent_at, created_at, updated_at
+            FROM alert_preferences
+            WHERE id = last_insert_rowid()
+            """
+        ).fetchone()
+    return dict(pref)
+
+
+@app.get("/alert-preferences")
+def list_alert_preferences(user_id: str = Depends(get_clerk_user_id)):
+    q = """
+        SELECT
+          id,
+          user_id,
+          dev_eui,
+          enabled,
+          temp_over_c,
+          battery_below_pct,
+          smoke_detected,
+          last_sent_at,
+          created_at,
+          updated_at
+        FROM alert_preferences
+        WHERE user_id = ?
+        ORDER BY id DESC
+    """
+    with db() as conn:
+        rows = conn.execute(q, (user_id,)).fetchall()
+    return [dict(r) for r in rows]
 
 
 @app.get("/subscriptions")
-def get_user_subscriptions(user_id: str = Depends(get_clerk_user_id)):
+def get_user_subscriptions(
+    user_id: str = Depends(get_clerk_user_id),
+):
     with db() as conn:
         rows = conn.execute(
             "SELECT device_eui FROM user_node_subscriptions WHERE user_id = ?",
@@ -148,6 +374,194 @@ def get_user_subscriptions(user_id: str = Depends(get_clerk_user_id)):
 @app.get("/health")
 def health():
     return {"status": "ok"}
+
+
+@app.get("/alerts")
+def get_alerts(
+    limit: int = Query(50, ge=1, le=200),
+    dev_eui: Optional[str] = Query(None),
+    acknowledged: Optional[bool] = Query(None),
+    user_id: str = Depends(get_clerk_user_id),
+):
+    clauses: List[str] = ["s.user_id = ?"]
+    params: List[object] = [user_id]
+    if dev_eui:
+        clauses.append("a.dev_eui = ?")
+        params.append(dev_eui)
+    if acknowledged is not None:
+        clauses.append("a.acknowledged = ?")
+        params.append(1 if acknowledged else 0)
+    where = " AND ".join(clauses)
+    q = f"""
+        SELECT
+          a.id,
+          a.dev_eui,
+          a.alert_type,
+          a.message,
+          a.created_at,
+          a.acknowledged,
+          a.acknowledged_at
+        FROM alerts a
+        JOIN user_node_subscriptions s
+          ON s.device_eui = a.dev_eui
+        WHERE {where}
+        ORDER BY a.created_at DESC
+        LIMIT ?
+    """
+    params.append(limit)
+    with db() as conn:
+        rows = conn.execute(q, tuple(params)).fetchall()
+    return [dict(r) for r in rows]
+
+
+@app.put("/alerts/{alert_id}/ack")
+def acknowledge_alert(
+    alert_id: int,
+    user_id: str = Depends(get_clerk_user_id),
+):
+    """
+    Mark an alert as acknowledged.
+    """
+    ts = now_ts()
+    with db() as conn:
+        cur = conn.cursor()
+        cur.execute(
+            """
+            UPDATE alerts
+            SET acknowledged = 1,
+                acknowledged_at = ?
+            WHERE id = ?
+            AND dev_eui IN (
+                SELECT device_eui
+                FROM user_node_subscriptions
+                WHERE user_id = ?
+            )
+            """,
+            (ts, alert_id, user_id),
+        )
+        conn.commit()
+        if cur.rowcount == 0:
+            raise HTTPException(status_code=404, detail="Alert not found")
+    return {"status": "ok", "id": alert_id}
+
+
+@app.put("/alert-preferences/{pref_id}")
+def update_alert_preference(
+    pref_id: int,
+    body: AlertPreferenceUpdate,
+    user_id: str = Depends(get_clerk_user_id),
+):
+    ts = now_ts()
+
+    with db() as conn:
+        existing = conn.execute(
+            "SELECT * FROM alert_preferences WHERE id = ?",
+            (pref_id,)
+        ).fetchone()
+        if not existing:
+            raise HTTPException(status_code=404, detail="Preference not found")
+        if existing["user_id"] != user_id:
+            raise HTTPException(status_code=404, detail="Preference not found")
+
+        # Reject empty/no-op update bodies (don’t allow "update only updated_at")
+        has_update = (
+            ("dev_eui" in body.model_fields_set and body.dev_eui is not None)
+            or ("enabled" in body.model_fields_set and body.enabled is not None)
+            or ("temp_over_c" in body.model_fields_set)
+            or ("battery_below_pct" in body.model_fields_set)
+            or ("smoke_detected" in body.model_fields_set)
+        )
+        if not has_update:
+            raise HTTPException(status_code=422, detail="No updatable fields provided")
+
+        # If dev_eui is changing, verify node exists
+        if "dev_eui" in body.model_fields_set and body.dev_eui is not None:
+            node = conn.execute(
+                "SELECT device_eui FROM nodes WHERE device_eui = ?",
+                (body.dev_eui,)
+            ).fetchone()
+            if not node:
+                raise HTTPException(status_code=404, detail="Node not found")
+
+        set_clauses = []
+        params = []
+
+        if "dev_eui" in body.model_fields_set and body.dev_eui is not None:
+            set_clauses.append("dev_eui = ?")
+            params.append(body.dev_eui)
+
+        if "enabled" in body.model_fields_set and body.enabled is not None:
+            set_clauses.append("enabled = ?")
+            params.append(1 if body.enabled else 0)
+
+        if "temp_over_c" in body.model_fields_set:
+            set_clauses.append("temp_over_c = ?")
+            params.append(body.temp_over_c)
+
+        if "battery_below_pct" in body.model_fields_set:
+            set_clauses.append("battery_below_pct = ?")
+            params.append(body.battery_below_pct)
+
+        if "smoke_detected" in body.model_fields_set:
+            if body.smoke_detected is None:
+                smoke = None
+            else:
+                smoke = 1 if body.smoke_detected else 0
+            set_clauses.append("smoke_detected = ?")
+            params.append(smoke)
+
+        set_clauses.append("updated_at = ?")
+        params.append(ts)
+
+        try:
+            conn.execute(
+                f"""
+                UPDATE alert_preferences
+                SET {", ".join(set_clauses)}
+                WHERE id = ?
+                """,
+                (*params, pref_id),
+            )
+            conn.commit()
+        except sqlite3.IntegrityError:
+            raise HTTPException(
+                status_code=409,
+                detail="Preference for this device already exists for this user",
+            )
+
+        updated = conn.execute(
+            """
+            SELECT
+              id, user_id, dev_eui, enabled,
+              temp_over_c, battery_below_pct, smoke_detected,
+              last_sent_at, created_at, updated_at
+            FROM alert_preferences
+            WHERE id = ?
+            """,
+            (pref_id,)
+        ).fetchone()
+
+    return dict(updated)
+
+
+@app.delete("/alert-preferences/{pref_id}", status_code=204)
+def delete_alert_preference(
+    pref_id: int,
+    user_id: str = Depends(get_clerk_user_id),
+):
+
+    with db() as conn:
+        existing = conn.execute(
+            "SELECT user_id FROM alert_preferences WHERE id = ?",
+            (pref_id,)
+        ).fetchone()
+        if not existing or existing["user_id"] != user_id:
+            raise HTTPException(status_code=404, detail="Preference not found")
+        conn.execute(
+            "DELETE FROM alert_preferences WHERE id = ?",
+            (pref_id,)
+        )
+        conn.commit()
 
 
 @app.get("/nodes")
@@ -262,7 +676,9 @@ def get_telemetry(
 
 
 @app.get("/latest")
-def latest_all_nodes(user_id: str = Depends(get_clerk_user_id)):
+def latest_all_nodes(
+    user_id: str = Depends(get_clerk_user_id),
+):
     with db() as conn:
         device_euis = conn.execute(
             "SELECT device_eui FROM user_node_subscriptions WHERE user_id = ?",
@@ -271,6 +687,7 @@ def latest_all_nodes(user_id: str = Depends(get_clerk_user_id)):
         device_euis = [r[0] for r in device_euis]
         if not device_euis:
             return []
+
         placeholders = ",".join(["?"] * len(device_euis))
         q = f"""
             SELECT
