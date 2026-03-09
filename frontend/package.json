@@ -1,7 +1,7 @@
 {
   "name": "lora-dashboard",
   "private": true,
-  "version": "0.0.0",
+  "version": "0.1.0-alpha",
   "type": "module",
   "scripts": {
     "dev": "concurrently -n docs,web -c blue,green \"npm run dev:docs\" \"vite\"",
