@@ -41,6 +41,7 @@ jobs:
           context: ./backend
           file: ./backend/Dockerfile
           platforms: linux/amd64,linux/arm64
+          provenance: false
           push: true
           tags: |
             ${{ env.REGISTRY }}/${{ env.REGISTRY_OWNER }}/dashboard-backend:latest
@@ -55,6 +56,7 @@ jobs:
           context: .
           file: ./frontend/Dockerfile
           platforms: linux/amd64,linux/arm64
+          provenance: false
           push: true
           tags: |
             ${{ env.REGISTRY }}/${{ env.REGISTRY_OWNER }}/dashboard-frontend:latest
