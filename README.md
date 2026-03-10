@@ -61,16 +61,22 @@ A real-time monitoring dashboard for LoRa-based wildfire detection sensor nodes.
    docker-compose up -d
    ```
 
-4. **Run the data listener** (to fetch live sensor data)
-   ```bash
-   docker-compose exec backend python data_listener.py
-   ```
-
-5. **Access the application**
+4. **Access the application**
    - Frontend: http://localhost:8001
    - User docs: http://localhost:8001/docs/
    - Backend API: http://localhost:8000
    - API Docs: http://localhost:8000/docs
+
+### Using pre-built images from GitHub Container Registry
+
+Images are published to [GitHub Container Registry](https://github.com/LoRa-Wildfire-Alert-Network/Dashboard/pkgs/container/dashboard-backend) on push to `main` and on release. To pull:
+
+```bash
+docker pull ghcr.io/lorawildfirealertnetwork/dashboard-backend:latest
+docker pull ghcr.io/lorawildfirealertnetwork/dashboard-frontend:latest
+```
+
+For a specific release: `ghcr.io/lorawildfirealertnetwork/dashboard-backend:v0.1.0-alpha`
 
 ## API Endpoints
 
