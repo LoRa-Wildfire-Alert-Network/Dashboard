@@ -1,5 +1,9 @@
 FROM python:3.12-slim
 
+LABEL org.opencontainers.image.source=https://github.com/LoRa-Wildfire-Alert-Network/Dashboard
+LABEL org.opencontainers.image.description="LoRa Wildfire Dashboard backend API"
+LABEL org.opencontainers.image.licenses=MIT
+
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1
 
