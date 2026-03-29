@@ -1,13 +1,15 @@
-## v0.1.0-alpha — LoRa Wildfire Dashboard (Alpha)
+## v0.1.1-alpha — Security Patches
 
-Alpha release of the LoRa Wildfire Alert Network Dashboard. Real-time monitoring for LoRa-based wildfire detection sensor nodes.
+Dependency security updates for the LoRa Wildfire Alert Network Dashboard.
 
-### Features
+### Security Updates
 
-- **Interactive map** — Color-coded node status (🟢 normal, 🟠 abnormal, 🟡 device issues, 🔴 smoke detected)
-- **Node subscriptions** — Subscribe to nodes to track on map and receive alerts
-- **Alerts** — Default preferences when subscribing: smoke detected, temp > 70°C, battery < 20%
-- **Node filtering** — Filter by smoke, temperature, humidity, battery, subscription status
-- **Node details** — Current readings + last 50 historical telemetry entries
-- **Organizations** — Create orgs, invite team members, assign roles
-- **User docs** — Built-in documentation at `/docs/`
+- **cryptography 46.0.6** (backend) — patch security advisory
+- **requests 2.33.0** (backend) — patch security advisory
+- **PyJWT 2.12.0** (backend) — patch security advisory
+- **path-to-regexp 0.1.13** (docs-site) — patch security advisory
+- **brace-expansion 1.1.13** (docs-site) — patch security advisory
+- **picomatch 2.3.2** (docs-site) — patch security advisory
+- **flatted 3.4.2** (frontend) — patch security advisory
+
+No functional changes. Upgrade recommended for all deployments.
