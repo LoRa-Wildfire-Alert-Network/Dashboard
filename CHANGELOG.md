@@ -7,6 +7,31 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
+## [0.1.1-alpha] - 2026-03-29
+
+### Added
+
+- **MIT license** — Added `LICENSE` file
+
+### Changed
+
+- **Docker image publishing** — Updated Dockerfiles and Docker Compose for publishing to GitHub Container Registry (GHCR)
+- **README** — Added Docker package info
+
+### Fixed
+
+- **GHCR provenance** — Disabled provenance attestation to remove `unknown/unknown` from package page
+
+### Security
+
+- `cryptography` 46.0.5 → 46.0.6
+- `requests` 2.32.5 → 2.33.0
+- `pyjwt` 2.11.0 → 2.12.0
+- `path-to-regexp` 0.1.12 → 0.1.13
+- `brace-expansion` 1.1.12 → 1.1.13
+- `picomatch` 2.3.1 → 2.3.2
+- `flatted` 3.3.3 → 3.4.2
+
 ## [0.1.0-alpha] - 2026-03-9
 
 ### Added
@@ -35,5 +60,6 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 - React + Vite frontend
 - Vite proxy for docs in development
 
-[Unreleased]: https://github.com/LoRa-Wildfire-Alert-Network/Dashboard/compare/v0.1.0-alpha...HEAD
+[Unreleased]: https://github.com/LoRa-Wildfire-Alert-Network/Dashboard/compare/v0.1.1-alpha...HEAD
+[0.1.1-alpha]: https://github.com/LoRa-Wildfire-Alert-Network/Dashboard/compare/v0.1.0-alpha...v0.1.1-alpha
 [0.1.0-alpha]: https://github.com/LoRa-Wildfire-Alert-Network/Dashboard/releases/tag/v0.1.0-alpha
