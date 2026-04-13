@@ -1,9 +1,16 @@
 import { useState, useEffect } from "react";
-import type { DetailNodeData, ShortNodeData } from "../../types/nodeTypes";
+import { useAuth } from "@clerk/clerk-react";
+import type {
+  DetailNodeData,
+  ShortNodeData,
+  Alert,
+} from "../../types/nodeTypes";
 
 const NodeDetails: React.FC<{ nodeEui: string | null }> = ({ nodeEui }) => {
   const [nodeData, setNodeData] = useState<DetailNodeData | null>(null);
   const [historicalData, setHistoricalData] = useState<ShortNodeData[]>([]);
+  const [alerts, setAlerts] = useState<Alert[]>([]);
+  const { getToken } = useAuth();
 
   const API_URL: string =
     import.meta.env.VITE_API_URL || "http://localhost:8000";
@@ -39,11 +46,31 @@ const NodeDetails: React.FC<{ nodeEui: string | null }> = ({ nodeEui }) => {
       }
     };
 
+    const fetchNodeAlerts = async () => {
+      if (!nodeEui) {
+        setAlerts([]);
+        return;
+      }
+      try {
+        const token = await getToken();
+        const response = await fetch(`${API_URL}/alerts?dev_eui=${nodeEui}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const data = await response.json();
+        console.log("Fetched alerts:", data);
+        setAlerts(data);
+      } catch (error) {
+        console.error("Error fetching node alerts:", error);
+      }
+    };
+
     fetchCurrentNodeData();
     fetchHistoricalData();
+    fetchNodeAlerts();
     const interval = setInterval(fetchCurrentNodeData, 3000);
     return () => clearInterval(interval);
-  }, [API_URL, nodeEui]);
+  }, [API_URL, getToken, nodeEui]);
+
   return (
     <div className="flex-1 max-h-[30vh] md:max-h-full md:h-full lg:w-90 md:w-48 bg-slate-100 rounded-md p-4 overflow-y-auto">
       <h2 className="text-xl font-bold mb-4">
@@ -65,6 +92,25 @@ const NodeDetails: React.FC<{ nodeEui: string | null }> = ({ nodeEui }) => {
               <p> SNR: {nodeData.snr}</p>
               <p> Gateway ID: {nodeData.gateway_id}</p>
             </div>
+          </div>
+          <div>
+            <h3 className="text-lg font-bold mt-4">Alerts:</h3>
+            {alerts.length === 0 ? (
+              <p className="ml-4">No alerts for this node.</p>
+            ) : (
+              <ul className="ml-4">
+                {alerts.map((alert) => (
+                  <li key={alert.id} className="mb-2">
+                    <p className="font-semibold">
+                      [{new Date(alert.created_at).toLocaleString()}]{" "}
+                      {alert.alert_type}
+                    </p>
+                    <p> {alert.message}</p>
+                    <p>Acknowledged: {alert.acknowledged ? "Yes" : "No"}</p>
+                  </li>
+                ))}
+              </ul>
+            )}
           </div>
           <div>
             <h3 className="text-lg font-bold mt-4">Historical Data (50):</h3>
