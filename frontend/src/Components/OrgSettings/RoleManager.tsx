@@ -76,7 +76,7 @@ const RoleManager: React.FC<RoleManagerProps> = ({
   const togglePerm = (p: Permission) => {
     setForm((prev) => {
       const next = new Set(prev.permissions);
-      next.has(p) ? next.delete(p) : next.add(p);
+      if (next.has(p)) { next.delete(p); } else { next.add(p); }
       return { ...prev, permissions: next };
     });
   };

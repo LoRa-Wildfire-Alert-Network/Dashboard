@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import type { OrgMember, OrgRole } from "../../types/rbacTypes";
 
 interface MemberManagerProps {
@@ -14,16 +14,12 @@ const MemberManager: React.FC<MemberManagerProps> = ({ roles, apiBaseUrl, orgId,
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState<string | null>(null);
 
-  const authHeaders = async () => {
-    const token = await getAuthToken();
-    return { Authorization: `Bearer ${token}`, "X-Org-Id": orgId };
-  };
-
-  const fetchMembers = async () => {
+  const fetchMembers = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      const headers = await authHeaders();
+      const token = await getAuthToken();
+      const headers = { Authorization: `Bearer ${token}`, "X-Org-Id": orgId };
       const res = await fetch(`${apiBaseUrl}/org/members`, { headers });
       if (!res.ok) throw new Error((await res.json()).detail ?? "Failed to load members");
       setMembers(await res.json());
@@ -32,9 +28,9 @@ const MemberManager: React.FC<MemberManagerProps> = ({ roles, apiBaseUrl, orgId,
     } finally {
       setLoading(false);
     }
-  };
+  }, [apiBaseUrl, orgId, getAuthToken]);
 
-  useEffect(() => { fetchMembers(); }, []);
+  useEffect(() => { fetchMembers(); }, [fetchMembers]);
 
   const handleRoleChange = async (member: OrgMember, roleId: string) => {
     setSaving(member.user_id);

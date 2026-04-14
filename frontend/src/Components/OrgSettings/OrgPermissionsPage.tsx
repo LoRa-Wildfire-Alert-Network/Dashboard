@@ -61,7 +61,7 @@ const OrgPermissionsPage: React.FC = () => {
   const togglePerm = (roleSlug: string, perm: Permission) => {
     setSettings((prev) => {
       const current = new Set(prev[roleSlug] ?? []);
-      current.has(perm) ? current.delete(perm) : current.add(perm);
+      if (current.has(perm)) { current.delete(perm); } else { current.add(perm); }
       return { ...prev, [roleSlug]: current };
     });
   };

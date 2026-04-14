@@ -38,7 +38,7 @@ const Dashboard: React.FC = () => {
       setNodeData([]); // fallback to empty array on error
       console.error("Error fetching node data:", error);
     }
-  }, [API_URL]);
+  }, [API_URL, getToken]);
 
   const fetchSubscriptions = React.useCallback(async () => {
     try {

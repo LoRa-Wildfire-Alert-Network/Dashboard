@@ -254,7 +254,8 @@ def get_org_permissions(
         return set()
     with db() as conn:
         perms = conn.execute(
-            "SELECT permission FROM org_role_settings WHERE org_id = ? AND clerk_role = ?",
+            "SELECT permission FROM org_role_settings "
+            "WHERE org_id = ? AND clerk_role = ?",
             (org_id, org_role),
         ).fetchall()
     return {p["permission"] for p in perms}
@@ -926,7 +927,9 @@ def update_org_role_settings(
 ):
     invalid = set(body.permissions) - ALL_PERMISSIONS
     if invalid:
-        raise HTTPException(status_code=422, detail=f"Invalid permissions: {sorted(invalid)}")
+        raise HTTPException(
+            status_code=422, detail=f"Invalid permissions: {sorted(invalid)}"
+        )
     with db() as conn:
         conn.execute(
             "DELETE FROM org_role_settings WHERE org_id = ? AND clerk_role = ?",
@@ -934,11 +937,16 @@ def update_org_role_settings(
         )
         for perm in body.permissions:
             conn.execute(
-                "INSERT INTO org_role_settings (org_id, clerk_role, permission) VALUES (?, ?, ?)",
+                "INSERT INTO org_role_settings "
+                "(org_id, clerk_role, permission) VALUES (?, ?, ?)",
                 (org_id, clerk_role, perm),
             )
         conn.commit()
-    return {"org_id": org_id, "clerk_role": clerk_role, "permissions": sorted(body.permissions)}
+    return {
+        "org_id": org_id,
+        "clerk_role": clerk_role,
+        "permissions": sorted(body.permissions),
+    }
 
 
 @app.get("/org/me/permissions")
@@ -962,7 +970,9 @@ def list_org_roles(org_id: str = Depends(require_org_admin)):
                 "SELECT permission FROM org_role_permissions WHERE role_id = ?",
                 (role["id"],),
             ).fetchall()
-            result.append({**dict(role), "permissions": [p["permission"] for p in perms]})
+            result.append(
+                {**dict(role), "permissions": [p["permission"] for p in perms]}
+            )
     return result
 
 
@@ -973,7 +983,9 @@ def create_org_role(
 ):
     invalid = set(body.permissions) - ALL_PERMISSIONS
     if invalid:
-        raise HTTPException(status_code=422, detail=f"Invalid permissions: {sorted(invalid)}")
+        raise HTTPException(
+            status_code=422, detail=f"Invalid permissions: {sorted(invalid)}"
+        )
     ts = now_ts()
     with db() as conn:
         if body.is_default:
@@ -982,23 +994,29 @@ def create_org_role(
             )
         try:
             conn.execute(
-                """
-                INSERT INTO org_roles (org_id, name, description, is_default, created_at)
-                VALUES (?, ?, ?, ?, ?)
-                """,
-                (org_id, body.name.strip(), body.description, 1 if body.is_default else 0, ts),
+                "INSERT INTO org_roles "
+                "(org_id, name, description, is_default, created_at) "
+                "VALUES (?, ?, ?, ?, ?)",
+                (
+                    org_id, body.name.strip(), body.description,
+                    1 if body.is_default else 0, ts,
+                ),
             )
         except sqlite3.IntegrityError:
-            raise HTTPException(status_code=400, detail="Role name already exists in this org")
+            raise HTTPException(
+                status_code=400, detail="Role name already exists in this org"
+            )
         role_id = conn.execute("SELECT last_insert_rowid()").fetchone()[0]
         for perm in body.permissions:
             conn.execute(
-                "INSERT OR IGNORE INTO org_role_permissions (role_id, permission) VALUES (?, ?)",
+                "INSERT OR IGNORE INTO org_role_permissions "
+                "(role_id, permission) VALUES (?, ?)",
                 (role_id, perm),
             )
         conn.commit()
         role = conn.execute(
-            "SELECT id, org_id, name, description, is_default, created_at FROM org_roles WHERE id = ?",
+            "SELECT id, org_id, name, description, is_default, created_at "
+            "FROM org_roles WHERE id = ?",
             (role_id,),
         ).fetchone()
         perms = conn.execute(
@@ -1041,10 +1059,13 @@ def update_org_role(
                 (*params, role_id),
             )
         except sqlite3.IntegrityError:
-            raise HTTPException(status_code=400, detail="Role name already exists in this org")
+            raise HTTPException(
+                status_code=400, detail="Role name already exists in this org"
+            )
         conn.commit()
         role = conn.execute(
-            "SELECT id, org_id, name, description, is_default, created_at FROM org_roles WHERE id = ?",
+            "SELECT id, org_id, name, description, is_default, created_at "
+            "FROM org_roles WHERE id = ?",
             (role_id,),
         ).fetchone()
         perms = conn.execute(
@@ -1065,7 +1086,10 @@ def delete_org_role(role_id: int, org_id: str = Depends(require_org_admin)):
             "SELECT COUNT(*) AS cnt FROM org_member_roles WHERE role_id = ?", (role_id,)
         ).fetchone()
         if assigned["cnt"] > 0:
-            raise HTTPException(status_code=400, detail="Cannot delete a role that has members assigned")
+            raise HTTPException(
+                status_code=400,
+                detail="Cannot delete a role that has members assigned",
+            )
         conn.execute("DELETE FROM org_roles WHERE id = ?", (role_id,))
         conn.commit()
 
@@ -1085,7 +1109,8 @@ def add_role_permission(
         if not existing:
             raise HTTPException(status_code=404, detail="Role not found")
         conn.execute(
-            "INSERT OR IGNORE INTO org_role_permissions (role_id, permission) VALUES (?, ?)",
+            "INSERT OR IGNORE INTO org_role_permissions "
+            "(role_id, permission) VALUES (?, ?)",
             (role_id, perm),
         )
         conn.commit()
@@ -1121,7 +1146,10 @@ def list_org_members(org_id: str = Depends(require_org_admin)):
         timeout=10,
     )
     if r.status_code != 200:
-        log.warning("Clerk org memberships error: status=%s body=%s", r.status_code, r.text[:200])
+        log.warning(
+            "Clerk org memberships error: status=%s body=%s",
+            r.status_code, r.text[:200],
+        )
         raise HTTPException(
             status_code=502,
             detail=f"Failed to fetch org members from Clerk (status {r.status_code})",
@@ -1181,17 +1209,22 @@ def assign_member_role(
     ts = now_ts()
     with db() as conn:
         role = conn.execute(
-            "SELECT id FROM org_roles WHERE id = ? AND org_id = ?", (body.role_id, org_id)
+            "SELECT id FROM org_roles WHERE id = ? AND org_id = ?",
+            (body.role_id, org_id)
         ).fetchone()
         if not role:
-            raise HTTPException(status_code=404, detail="Role not found in this org")
+            raise HTTPException(
+                status_code=404, detail="Role not found in this org"
+            )
         conn.execute(
-            "INSERT OR IGNORE INTO users (auth_sub, email, created_at) VALUES (?, '', ?)",
+            "INSERT OR IGNORE INTO users (auth_sub, email, created_at) "
+            "VALUES (?, '', ?)",
             (member_user_id, ts),
         )
         conn.execute(
             """
-            INSERT INTO org_member_roles (org_id, user_id, role_id, assigned_at, assigned_by)
+            INSERT INTO org_member_roles
+              (org_id, user_id, role_id, assigned_at, assigned_by)
             VALUES (?, ?, ?, ?, ?)
             ON CONFLICT(org_id, user_id) DO UPDATE SET
               role_id = excluded.role_id,
