@@ -8,6 +8,7 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { fas } from "@fortawesome/free-solid-svg-icons";
 import WildfireMap from "../WildfireMap/WildfireMap";
 import NodeDetails from "../NodeDetails/NodeDetails";
+import { useAuthContext } from "../../providers/AuthContext";
 
 const Dashboard: React.FC = () => {
   const [nodeData, setNodeData] = useState<ShortNodeData[]>([]);
@@ -17,9 +18,13 @@ const Dashboard: React.FC = () => {
     import.meta.env.VITE_API_URL || "http://localhost:8000";
 
   const { getToken } = useAuth();
+  const { hasPermission } = useAuthContext();
   const fetchNodeData = React.useCallback(async () => {
     try {
-      const response = await fetch(`${API_URL}/summary`);
+      const token = await getToken();
+      const response = await fetch(`${API_URL}/summary`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
       let data = await response.json();
       if (!Array.isArray(data)) data = [];
       // Deduplicate by device_eui
@@ -154,6 +159,22 @@ const Dashboard: React.FC = () => {
   useEffect(() => {
     setFilteredNodeList(applyFilter(nodeData));
   }, [applyFilter, nodeData]);
+
+  if (!hasPermission("view_nodes")) {
+    return (
+      <div className="bg-slate-300 h-[calc(100vh-4rem)] flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-xl font-semibold mb-2">Access Restricted</p>
+          <p className="text-slate-600">
+            Your role does not have permission to view nodes and telemetry.
+          </p>
+          <p className="text-slate-500 text-sm mt-2">
+            Contact your org admin to request access.
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <>

@@ -136,6 +136,54 @@ CREATE INDEX IF NOT EXISTS idx_alert_prefs_enabled
 ON alert_preferences(enabled);
 
 -- -------------------------
+-- RBAC: Clerk-role permission settings per org
+-- Maps a Clerk role slug (e.g. 'org:member') to the permissions it has in an org
+-- -------------------------
+CREATE TABLE IF NOT EXISTS org_role_settings (
+  org_id     TEXT NOT NULL,
+  clerk_role TEXT NOT NULL,
+  permission TEXT NOT NULL,
+  PRIMARY KEY (org_id, clerk_role, permission)
+);
+
+CREATE INDEX IF NOT EXISTS idx_org_role_settings_org
+ON org_role_settings(org_id, clerk_role);
+
+-- -------------------------
+-- Custom Org Roles & Permissions (for future use)
+-- -------------------------
+CREATE TABLE IF NOT EXISTS org_roles (
+  id          INTEGER PRIMARY KEY AUTOINCREMENT,
+  org_id      TEXT NOT NULL,
+  name        TEXT NOT NULL,
+  description TEXT,
+  is_default  INTEGER NOT NULL DEFAULT 0,
+  created_at  INTEGER NOT NULL,
+  UNIQUE(org_id, name)
+);
+
+CREATE TABLE IF NOT EXISTS org_role_permissions (
+  role_id    INTEGER NOT NULL REFERENCES org_roles(id) ON DELETE CASCADE,
+  permission TEXT NOT NULL,
+  PRIMARY KEY (role_id, permission)
+);
+
+CREATE TABLE IF NOT EXISTS org_member_roles (
+  org_id      TEXT NOT NULL,
+  user_id     TEXT NOT NULL REFERENCES users(auth_sub),
+  role_id     INTEGER NOT NULL REFERENCES org_roles(id) ON DELETE CASCADE,
+  assigned_at INTEGER NOT NULL,
+  assigned_by TEXT NOT NULL,
+  PRIMARY KEY (org_id, user_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_org_roles_org
+ON org_roles(org_id);
+
+CREATE INDEX IF NOT EXISTS idx_org_member_roles_org_user
+ON org_member_roles(org_id, user_id);
+
+-- -------------------------
 -- Alert Queue
 -- -------------------------
 CREATE TABLE IF NOT EXISTS alert_queue (

@@ -1,4 +1,5 @@
 import os
+import time
 import sqlite3
 import uvicorn
 import logging
@@ -46,6 +47,27 @@ class AlertPreferenceUpdate(BaseModel):
     smoke_detected: Optional[bool] = None
 
 
+class OrgRoleCreate(BaseModel):
+    name: str
+    description: Optional[str] = None
+    is_default: bool = False
+    permissions: List[str] = []
+
+
+class OrgRoleUpdate(BaseModel):
+    name: Optional[str] = None
+    description: Optional[str] = None
+    is_default: Optional[bool] = None
+
+
+class AssignRoleRequest(BaseModel):
+    role_id: int
+
+
+class RoleSettingsUpdate(BaseModel):
+    permissions: List[str]
+
+
 ALLOWED_ORIGINS = os.getenv("ALLOWED_ORIGINS", "*")
 CLERK_JWT_ISSUER = os.getenv(
     "CLERK_JWT_ISSUER",
@@ -75,6 +97,11 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title="LoRa Wildfire Backend API", lifespan=lifespan)
 CLERK_SECRET_KEY = os.getenv("VITE_CLERK_PUBLISHABLE_KEY")
+
+ALL_PERMISSIONS: set[str] = {
+    "view_nodes",
+    "subscribe_nodes",
+}
 
 app.add_middleware(
     CORSMiddleware,
@@ -160,10 +187,99 @@ def get_clerk_user_id(
 
 
 def get_clerk_org_id(
+    request: Request,
     payload: dict = Depends(_decode_clerk_jwt),
 ) -> str | None:
-    """Returns the active Clerk organization id, or None for personal accounts."""
-    return payload.get("org_id")
+    return payload.get("org_id") or request.headers.get("x-org-id")
+
+
+_org_role_cache: dict[tuple[str, str], tuple[str | None, float]] = {}
+_ORG_ROLE_CACHE_TTL = 300  # 5 minutes
+
+
+def _fetch_user_org_role(user_id: str, org_id: str) -> str | None:
+    cache_key = (user_id, org_id)
+    cached = _org_role_cache.get(cache_key)
+    if cached and time.time() - cached[1] < _ORG_ROLE_CACHE_TTL:
+        return cached[0]
+
+    if not CLERK_SECRET_KEY:
+        return None
+    result: str | None = None
+    try:
+        r = requests.get(
+            f"https://api.clerk.com/v1/users/{user_id}/organization_memberships",
+            params={"limit": 50},
+            headers={"Authorization": f"Bearer {CLERK_SECRET_KEY}"},
+            timeout=10,
+        )
+        if r.status_code != 200:
+            log.warning("Clerk memberships API error: status=%s", r.status_code)
+        else:
+            for m in r.json().get("data", []):
+                if m.get("organization", {}).get("id") == org_id:
+                    result = m.get("role")
+                    break
+    except Exception:
+        log.exception("Failed to fetch user org role from Clerk")
+
+    _org_role_cache[cache_key] = (result, time.time())
+    return result
+
+
+def get_clerk_org_role(
+    request: Request,
+    user_id: str = Depends(get_clerk_user_id),
+    org_id: str | None = Depends(get_clerk_org_id),
+    payload: dict = Depends(_decode_clerk_jwt),
+) -> str | None:
+    jwt_role = payload.get("org_role")
+    if jwt_role:
+        return jwt_role
+    if org_id:
+        return _fetch_user_org_role(user_id, org_id)
+    return None
+
+
+def get_org_permissions(
+    user_id: str = Depends(get_clerk_user_id),
+    org_id: str | None = Depends(get_clerk_org_id),
+    org_role: str | None = Depends(get_clerk_org_role),
+) -> set[str]:
+    if not org_id:
+        return ALL_PERMISSIONS
+    if org_role == "org:admin":
+        return ALL_PERMISSIONS
+    if not org_role:
+        return set()
+    with db() as conn:
+        perms = conn.execute(
+            "SELECT permission FROM org_role_settings WHERE org_id = ? AND clerk_role = ?",
+            (org_id, org_role),
+        ).fetchall()
+    return {p["permission"] for p in perms}
+
+
+def _require_perm(perm: str):
+    def _check(permissions: set = Depends(get_org_permissions)) -> None:
+        if perm not in permissions:
+            raise HTTPException(status_code=403, detail=f"Permission denied: {perm}")
+    return _check
+
+
+def require_permission(perm: str):
+    return Depends(_require_perm(perm))
+
+
+def require_org_admin(
+    org_id: str | None = Depends(get_clerk_org_id),
+    org_role: str | None = Depends(get_clerk_org_role),
+) -> str:
+    if not org_id:
+        raise HTTPException(status_code=403, detail="Must be in an org context")
+    if org_role != "org:admin":
+        raise HTTPException(status_code=403, detail="Org admin required")
+    return org_id
 
 
 def fetch_clerk_email(user_id: str) -> str:
@@ -215,6 +331,7 @@ def fetch_clerk_email(user_id: str) -> str:
 def subscribe_node(
     body: NodeIdRequest,
     user_id: str = Depends(get_clerk_user_id),
+    _perm: None = require_permission("subscribe_nodes"),
 ):
     device_eui = body.device_eui
     with db() as conn:
@@ -252,6 +369,7 @@ def subscribe_node(
 def unsubscribe_node(
     body: NodeIdRequest,
     user_id: str = Depends(get_clerk_user_id),
+    _perm: None = require_permission("subscribe_nodes"),
 ):
     device_eui = body.device_eui
     with db() as conn:
@@ -565,7 +683,7 @@ def delete_alert_preference(
 
 
 @app.get("/nodes")
-def list_nodes():
+def list_nodes(_perm: None = require_permission("view_nodes")):
     """
     Returns: [{device_eui, node_id, last_seen}]
     """
@@ -580,7 +698,7 @@ def list_nodes():
 
 
 @app.get("/nodes/{device_eui}/latest")
-def node_latest(device_eui: str):
+def node_latest(device_eui: str, _perm: None = require_permission("view_nodes")):
     """
     Latest telemetry row for a device_eui.
     """
@@ -613,6 +731,7 @@ def node_latest(device_eui: str):
 
 @app.get("/telemetry")
 def get_telemetry(
+    _perm: None = require_permission("view_nodes"),
     device_eui: Optional[str] = None,
     t_from: Optional[str] = Query(
         None,
@@ -678,6 +797,7 @@ def get_telemetry(
 @app.get("/latest")
 def latest_all_nodes(
     user_id: str = Depends(get_clerk_user_id),
+    _perm: None = require_permission("view_nodes"),
 ):
     with db() as conn:
         device_euis = conn.execute(
@@ -713,7 +833,7 @@ def latest_all_nodes(
 
 
 @app.get("/summary")
-def summary_all_nodes():
+def summary_all_nodes(_perm: None = require_permission("view_nodes")):
     """
     Compact payload for map: latest row per device.
     """
@@ -737,6 +857,7 @@ def summary_all_nodes():
 
 @app.get("/map/nodes")
 def map_nodes(
+    _perm: None = require_permission("view_nodes"),
     min_lat: Optional[float] = Query(None),
     max_lat: Optional[float] = Query(None),
     min_lon: Optional[float] = Query(None),
@@ -778,6 +899,322 @@ def map_nodes(
     with db() as conn:
         rows = conn.execute(q, tuple(params)).fetchall()
     return [dict(r) for r in rows]
+
+
+# -------------------------
+#      ORG / RBAC ENDPOINTS
+# -------------------------
+
+@app.get("/org/role-settings")
+def get_org_role_settings(org_id: str = Depends(require_org_admin)):
+    with db() as conn:
+        rows = conn.execute(
+            "SELECT clerk_role, permission FROM org_role_settings WHERE org_id = ?",
+            (org_id,),
+        ).fetchall()
+    result: dict[str, list[str]] = {}
+    for row in rows:
+        result.setdefault(row["clerk_role"], []).append(row["permission"])
+    return result
+
+
+@app.put("/org/role-settings/{clerk_role}")
+def update_org_role_settings(
+    clerk_role: str,
+    body: RoleSettingsUpdate,
+    org_id: str = Depends(require_org_admin),
+):
+    invalid = set(body.permissions) - ALL_PERMISSIONS
+    if invalid:
+        raise HTTPException(status_code=422, detail=f"Invalid permissions: {sorted(invalid)}")
+    with db() as conn:
+        conn.execute(
+            "DELETE FROM org_role_settings WHERE org_id = ? AND clerk_role = ?",
+            (org_id, clerk_role),
+        )
+        for perm in body.permissions:
+            conn.execute(
+                "INSERT INTO org_role_settings (org_id, clerk_role, permission) VALUES (?, ?, ?)",
+                (org_id, clerk_role, perm),
+            )
+        conn.commit()
+    return {"org_id": org_id, "clerk_role": clerk_role, "permissions": sorted(body.permissions)}
+
+
+@app.get("/org/me/permissions")
+def get_my_permissions(permissions: set = Depends(get_org_permissions)):
+    return {"permissions": sorted(permissions)}
+
+
+@app.get("/org/roles")
+def list_org_roles(org_id: str = Depends(require_org_admin)):
+    with db() as conn:
+        roles = conn.execute(
+            """
+            SELECT id, org_id, name, description, is_default, created_at
+            FROM org_roles WHERE org_id = ? ORDER BY name
+            """,
+            (org_id,),
+        ).fetchall()
+        result = []
+        for role in roles:
+            perms = conn.execute(
+                "SELECT permission FROM org_role_permissions WHERE role_id = ?",
+                (role["id"],),
+            ).fetchall()
+            result.append({**dict(role), "permissions": [p["permission"] for p in perms]})
+    return result
+
+
+@app.post("/org/roles", status_code=201)
+def create_org_role(
+    body: OrgRoleCreate,
+    org_id: str = Depends(require_org_admin),
+):
+    invalid = set(body.permissions) - ALL_PERMISSIONS
+    if invalid:
+        raise HTTPException(status_code=422, detail=f"Invalid permissions: {sorted(invalid)}")
+    ts = now_ts()
+    with db() as conn:
+        if body.is_default:
+            conn.execute(
+                "UPDATE org_roles SET is_default = 0 WHERE org_id = ?", (org_id,)
+            )
+        try:
+            conn.execute(
+                """
+                INSERT INTO org_roles (org_id, name, description, is_default, created_at)
+                VALUES (?, ?, ?, ?, ?)
+                """,
+                (org_id, body.name.strip(), body.description, 1 if body.is_default else 0, ts),
+            )
+        except sqlite3.IntegrityError:
+            raise HTTPException(status_code=400, detail="Role name already exists in this org")
+        role_id = conn.execute("SELECT last_insert_rowid()").fetchone()[0]
+        for perm in body.permissions:
+            conn.execute(
+                "INSERT OR IGNORE INTO org_role_permissions (role_id, permission) VALUES (?, ?)",
+                (role_id, perm),
+            )
+        conn.commit()
+        role = conn.execute(
+            "SELECT id, org_id, name, description, is_default, created_at FROM org_roles WHERE id = ?",
+            (role_id,),
+        ).fetchone()
+        perms = conn.execute(
+            "SELECT permission FROM org_role_permissions WHERE role_id = ?", (role_id,)
+        ).fetchall()
+    return {**dict(role), "permissions": [p["permission"] for p in perms]}
+
+
+@app.put("/org/roles/{role_id}")
+def update_org_role(
+    role_id: int,
+    body: OrgRoleUpdate,
+    org_id: str = Depends(require_org_admin),
+):
+    with db() as conn:
+        existing = conn.execute(
+            "SELECT id FROM org_roles WHERE id = ? AND org_id = ?", (role_id, org_id)
+        ).fetchone()
+        if not existing:
+            raise HTTPException(status_code=404, detail="Role not found")
+        set_clauses, params = [], []
+        if body.name is not None:
+            set_clauses.append("name = ?")
+            params.append(body.name.strip())
+        if body.description is not None:
+            set_clauses.append("description = ?")
+            params.append(body.description)
+        if body.is_default is not None:
+            if body.is_default:
+                conn.execute(
+                    "UPDATE org_roles SET is_default = 0 WHERE org_id = ?", (org_id,)
+                )
+            set_clauses.append("is_default = ?")
+            params.append(1 if body.is_default else 0)
+        if not set_clauses:
+            raise HTTPException(status_code=422, detail="No updatable fields provided")
+        try:
+            conn.execute(
+                f"UPDATE org_roles SET {', '.join(set_clauses)} WHERE id = ?",
+                (*params, role_id),
+            )
+        except sqlite3.IntegrityError:
+            raise HTTPException(status_code=400, detail="Role name already exists in this org")
+        conn.commit()
+        role = conn.execute(
+            "SELECT id, org_id, name, description, is_default, created_at FROM org_roles WHERE id = ?",
+            (role_id,),
+        ).fetchone()
+        perms = conn.execute(
+            "SELECT permission FROM org_role_permissions WHERE role_id = ?", (role_id,)
+        ).fetchall()
+    return {**dict(role), "permissions": [p["permission"] for p in perms]}
+
+
+@app.delete("/org/roles/{role_id}", status_code=204)
+def delete_org_role(role_id: int, org_id: str = Depends(require_org_admin)):
+    with db() as conn:
+        existing = conn.execute(
+            "SELECT id FROM org_roles WHERE id = ? AND org_id = ?", (role_id, org_id)
+        ).fetchone()
+        if not existing:
+            raise HTTPException(status_code=404, detail="Role not found")
+        assigned = conn.execute(
+            "SELECT COUNT(*) AS cnt FROM org_member_roles WHERE role_id = ?", (role_id,)
+        ).fetchone()
+        if assigned["cnt"] > 0:
+            raise HTTPException(status_code=400, detail="Cannot delete a role that has members assigned")
+        conn.execute("DELETE FROM org_roles WHERE id = ?", (role_id,))
+        conn.commit()
+
+
+@app.post("/org/roles/{role_id}/permissions/{perm}", status_code=201)
+def add_role_permission(
+    role_id: int,
+    perm: str,
+    org_id: str = Depends(require_org_admin),
+):
+    if perm not in ALL_PERMISSIONS:
+        raise HTTPException(status_code=422, detail=f"Invalid permission: {perm}")
+    with db() as conn:
+        existing = conn.execute(
+            "SELECT id FROM org_roles WHERE id = ? AND org_id = ?", (role_id, org_id)
+        ).fetchone()
+        if not existing:
+            raise HTTPException(status_code=404, detail="Role not found")
+        conn.execute(
+            "INSERT OR IGNORE INTO org_role_permissions (role_id, permission) VALUES (?, ?)",
+            (role_id, perm),
+        )
+        conn.commit()
+    return {"role_id": role_id, "permission": perm}
+
+
+@app.delete("/org/roles/{role_id}/permissions/{perm}", status_code=204)
+def remove_role_permission(
+    role_id: int,
+    perm: str,
+    org_id: str = Depends(require_org_admin),
+):
+    with db() as conn:
+        existing = conn.execute(
+            "SELECT id FROM org_roles WHERE id = ? AND org_id = ?", (role_id, org_id)
+        ).fetchone()
+        if not existing:
+            raise HTTPException(status_code=404, detail="Role not found")
+        conn.execute(
+            "DELETE FROM org_role_permissions WHERE role_id = ? AND permission = ?",
+            (role_id, perm),
+        )
+        conn.commit()
+
+
+@app.get("/org/members")
+def list_org_members(org_id: str = Depends(require_org_admin)):
+    if not CLERK_SECRET_KEY:
+        raise HTTPException(status_code=500, detail="Missing CLERK_SECRET_KEY")
+    r = requests.get(
+        f"https://api.clerk.com/v1/organizations/{org_id}/memberships?limit=100",
+        headers={"Authorization": f"Bearer {CLERK_SECRET_KEY}"},
+        timeout=10,
+    )
+    if r.status_code != 200:
+        log.warning("Clerk org memberships error: status=%s body=%s", r.status_code, r.text[:200])
+        raise HTTPException(
+            status_code=502,
+            detail=f"Failed to fetch org members from Clerk (status {r.status_code})",
+        )
+    clerk_members = r.json().get("data", [])
+
+    with db() as conn:
+        member_role_rows = conn.execute(
+            """
+            SELECT mr.user_id, mr.role_id, r.name AS role_name,
+                   r.description AS role_description, r.is_default
+            FROM org_member_roles mr
+            JOIN org_roles r ON r.id = mr.role_id
+            WHERE mr.org_id = ?
+            """,
+            (org_id,),
+        ).fetchall()
+        role_map = {row["user_id"]: dict(row) for row in member_role_rows}
+        perm_map: dict[str, list[str]] = {}
+        for row in member_role_rows:
+            perms = conn.execute(
+                "SELECT permission FROM org_role_permissions WHERE role_id = ?",
+                (row["role_id"],),
+            ).fetchall()
+            perm_map[row["user_id"]] = [p["permission"] for p in perms]
+
+    result = []
+    for m in clerk_members:
+        pub = m.get("public_user_data", {})
+        user_id = pub.get("user_id")
+        first = pub.get("first_name") or ""
+        last = pub.get("last_name") or ""
+        assigned = role_map.get(user_id)
+        result.append({
+            "user_id": user_id,
+            "email": pub.get("identifier", ""),
+            "name": f"{first} {last}".strip() or None,
+            "clerk_role": m.get("role"),
+            "assigned_role": {
+                "id": assigned["role_id"],
+                "name": assigned["role_name"],
+                "description": assigned["role_description"],
+                "is_default": bool(assigned["is_default"]),
+                "permissions": perm_map.get(user_id, []),
+            } if assigned else None,
+        })
+    return result
+
+
+@app.put("/org/members/{member_user_id}/role")
+def assign_member_role(
+    member_user_id: str,
+    body: AssignRoleRequest,
+    org_id: str = Depends(require_org_admin),
+    admin_id: str = Depends(get_clerk_user_id),
+):
+    ts = now_ts()
+    with db() as conn:
+        role = conn.execute(
+            "SELECT id FROM org_roles WHERE id = ? AND org_id = ?", (body.role_id, org_id)
+        ).fetchone()
+        if not role:
+            raise HTTPException(status_code=404, detail="Role not found in this org")
+        conn.execute(
+            "INSERT OR IGNORE INTO users (auth_sub, email, created_at) VALUES (?, '', ?)",
+            (member_user_id, ts),
+        )
+        conn.execute(
+            """
+            INSERT INTO org_member_roles (org_id, user_id, role_id, assigned_at, assigned_by)
+            VALUES (?, ?, ?, ?, ?)
+            ON CONFLICT(org_id, user_id) DO UPDATE SET
+              role_id = excluded.role_id,
+              assigned_at = excluded.assigned_at,
+              assigned_by = excluded.assigned_by
+            """,
+            (org_id, member_user_id, body.role_id, ts, admin_id),
+        )
+        conn.commit()
+    return {"org_id": org_id, "user_id": member_user_id, "role_id": body.role_id}
+
+
+@app.delete("/org/members/{member_user_id}/role", status_code=204)
+def remove_member_role(
+    member_user_id: str,
+    org_id: str = Depends(require_org_admin),
+):
+    with db() as conn:
+        conn.execute(
+            "DELETE FROM org_member_roles WHERE org_id = ? AND user_id = ?",
+            (org_id, member_user_id),
+        )
+        conn.commit()
 
 
 if __name__ == "__main__":
