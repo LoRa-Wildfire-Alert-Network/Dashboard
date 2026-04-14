@@ -35,7 +35,8 @@ const MemberManager: React.FC<MemberManagerProps> = ({ roles, apiBaseUrl, orgId,
   const handleRoleChange = async (member: OrgMember, roleId: string) => {
     setSaving(member.user_id);
     try {
-      const headers = await authHeaders();
+      const token = await getAuthToken();
+      const headers = { Authorization: `Bearer ${token}`, "X-Org-Id": orgId };
       if (roleId === "") {
         const res = await fetch(`${apiBaseUrl}/org/members/${member.user_id}/role`, {
           method: "DELETE",
