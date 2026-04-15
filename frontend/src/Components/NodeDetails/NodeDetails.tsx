@@ -97,7 +97,7 @@ const NodeDetails: React.FC<{ nodeEui: string | null }> = ({ nodeEui }) => {
           <div>
             <h3 className="text-lg font-bold mt-4">Alerts:</h3>
             {alerts.length === 0 ? (
-              <p className="ml-4">No alerts for this node.</p>
+              <p className="ml-4">Subscribe to this node to receive alerts.</p>
             ) : (
               <ul className="ml-4">
                 {alerts.map((alert) => (

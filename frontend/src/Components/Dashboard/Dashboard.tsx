@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useAuth } from "@clerk/clerk-react";
 import NodeSubscriptionButton from "../NodeSubscriptionModal/NodeSubscriptionButton";
 import NodeCardList from "../NodeCardList/NodeCardList";
-import type { ShortNodeData } from "./../../types/nodeTypes";
+import type { ShortNodeData, Alert } from "./../../types/nodeTypes";
 import NodeFilter, { type NodeFilterState } from "../NodeFilter/NodeFilter";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { fas } from "@fortawesome/free-solid-svg-icons";
@@ -12,6 +12,7 @@ import NodeDetails from "../NodeDetails/NodeDetails";
 const Dashboard: React.FC = () => {
   const [nodeData, setNodeData] = useState<ShortNodeData[]>([]);
   const [userSubscriptions, setUserSubscriptions] = useState<string[]>([]);
+  const [alerts, setAlerts] = useState<Alert[]>([]);
 
   const API_URL: string =
     import.meta.env.VITE_API_URL || "http://localhost:8000";
@@ -48,12 +49,26 @@ const Dashboard: React.FC = () => {
     }
   }, [API_URL, getToken]);
 
+  const fetchAlerts = React.useCallback(async () => {
+    try {
+      const token = await getToken();
+      const response = await fetch(`${API_URL}/alerts`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await response.json();
+      if (Array.isArray(data)) setAlerts(data);
+    } catch (error) {
+      console.error("Error fetching alerts:", error);
+    }
+  }, [API_URL, getToken]);
+
   useEffect(() => {
     fetchNodeData();
     fetchSubscriptions();
+    fetchAlerts();
     const interval = setInterval(fetchNodeData, 3000);
     return () => clearInterval(interval);
-  }, [fetchNodeData, fetchSubscriptions]);
+  }, [fetchNodeData, fetchSubscriptions, fetchAlerts]);
 
   /////////////////////////////////////////////////////////////////////////////////////////
   //
@@ -162,7 +177,36 @@ const Dashboard: React.FC = () => {
           <div
             className={`w-11/12 mx-auto md:w-auto md:mx-0 order-3 md:order-1 py-2 md:py-0 grow transition-all duration-200`}
           >
-            <NodeDetails nodeEui={mostRecentExpandedNodeEui} />
+            {mostRecentExpandedNodeEui ? (
+              <NodeDetails nodeEui={mostRecentExpandedNodeEui} />
+            ) : alerts.length > 0 ? (
+              <div className="flex-1 max-h-[30vh] md:max-h-full md:h-full lg:w-90 md:w-48 bg-slate-100 rounded-md p-4 overflow-y-auto">
+                <h2 className="text-xl font-bold mb-4">Recent Alerts</h2>
+                <ul className="space-y-2 overflow-y-auto">
+                  {alerts.map((alert) => (
+                    <li key={alert.id} className="border-b pb-2">
+                      <p>
+                        <strong>Node:</strong> {alert.dev_eui}
+                      </p>
+                      <p>
+                        <strong>Type:</strong> {alert.alert_type}
+                      </p>
+                      <p>{alert.message}</p>
+                      <p className="text-sm text-gray-500">
+                        {new Date(alert.created_at).toLocaleString()}
+                      </p>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ) : (
+              <div className="flex-1 md:max-h-full md:h-full lg:w-90 md:w-48 bg-slate-100 rounded-md p-4 overflow-y-auto">
+                <h2 className="text-xl font-bold mb-4">No Node Selected</h2>
+                <p className="text-gray-600">
+                  Click on a node card or map marker to see details here.
+                </p>
+              </div>
+            )}
           </div>
           <div className="w-11/12 mx-auto md:mx-4 min-h-[30vh] h-full py-2 md:py-0 order-1 md:order-2">
             <WildfireMap
