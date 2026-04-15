@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "@clerk/clerk-react";
+import AlertAckButton from "../Alerts/AlertAckButton";
 import type {
   DetailNodeData,
   ShortNodeData,
@@ -106,7 +107,17 @@ const NodeDetails: React.FC<{ nodeEui: string | null }> = ({ nodeEui }) => {
                       {alert.alert_type}
                     </p>
                     <p> {alert.message}</p>
-                    <p>Acknowledged: {alert.acknowledged ? "Yes" : "No"}</p>
+                    <AlertAckButton
+                      alertId={alert.id}
+                      acknowledged={alert.acknowledged}
+                      onAckChange={(acknowledged) => {
+                        setAlerts((prevAlerts) =>
+                          prevAlerts.map((a) =>
+                            a.id === alert.id ? { ...a, acknowledged } : a,
+                          ),
+                        );
+                      }}
+                    />
                   </li>
                 ))}
               </ul>
