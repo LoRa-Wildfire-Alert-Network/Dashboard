@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from "react";
 import { useAuth } from "@clerk/clerk-react";
-import NodeSubscriptionButton from "../NodeSubscriptionModal/NodeSubscriptionButton";
 import NodeCardList from "../NodeCardList/NodeCardList";
 import type { ShortNodeData } from "./../../types/nodeTypes";
 import NodeFilter, { type NodeFilterState } from "../NodeFilter/NodeFilter";
@@ -19,6 +18,7 @@ const Dashboard: React.FC = () => {
 
   const { getToken } = useAuth();
   const { hasPermission } = useAuthContext();
+
   const fetchNodeData = React.useCallback(async () => {
     try {
       const token = await getToken();
@@ -200,13 +200,6 @@ const Dashboard: React.FC = () => {
             <div className="flex flex-row items-center justify-between mb-4">
               <h1 className="text-xl font-bold">Node List</h1>
               <div className="flex flex-row gap-2 items-center">
-                <NodeSubscriptionButton
-                  apiBaseUrl={API_URL}
-                  onSubscriptionsChange={() => {
-                    fetchNodeData();
-                    fetchSubscriptions();
-                  }}
-                />
                 <FontAwesomeIcon
                   icon={fas.faFilter}
                   className="text-black mr-2 hover:cursor-pointer"
