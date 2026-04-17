@@ -101,6 +101,8 @@ CLERK_SECRET_KEY = os.getenv("VITE_CLERK_PUBLISHABLE_KEY")
 ALL_PERMISSIONS: set[str] = {
     "view_nodes",
     "subscribe_nodes",
+    "ack_alerts",
+    "manage_alert_preferences",
 }
 
 app.add_middleware(
@@ -930,22 +932,73 @@ def update_org_role_settings(
         raise HTTPException(
             status_code=422, detail=f"Invalid permissions: {sorted(invalid)}"
         )
+
+    new_perms = set(body.permissions)
     with db() as conn:
+        old_perms = {
+            row["permission"]
+            for row in conn.execute(
+                "SELECT permission FROM org_role_settings "
+                "WHERE org_id = ? AND clerk_role = ?",
+                (org_id, clerk_role),
+            ).fetchall()
+        }
+
         conn.execute(
             "DELETE FROM org_role_settings WHERE org_id = ? AND clerk_role = ?",
             (org_id, clerk_role),
         )
-        for perm in body.permissions:
+        for perm in new_perms:
             conn.execute(
                 "INSERT INTO org_role_settings "
                 "(org_id, clerk_role, permission) VALUES (?, ?, ?)",
                 (org_id, clerk_role, perm),
             )
         conn.commit()
+
+    subscribe_revoked = (
+        "subscribe_nodes" in old_perms and "subscribe_nodes" not in new_perms
+    )
+    if subscribe_revoked and CLERK_SECRET_KEY:
+        try:
+            r = requests.get(
+                f"https://api.clerk.com/v1/organizations/{org_id}/memberships",
+                params={"limit": 500},
+                headers={"Authorization": f"Bearer {CLERK_SECRET_KEY}"},
+                timeout=10,
+            )
+            if r.status_code == 200:
+                affected_user_ids = [
+                    m["public_user_data"]["user_id"]
+                    for m in r.json().get("data", [])
+                    if m.get("role") == clerk_role
+                ]
+                if affected_user_ids:
+                    with db() as conn:
+                        conn.executemany(
+                            "DELETE FROM user_node_subscriptions WHERE user_id = ?",
+                            [(uid,) for uid in affected_user_ids],
+                        )
+                        conn.commit()
+                    log.info(
+                        "Auto-unsubscribed %d user(s) in org %s "
+                        "(role %s lost subscribe_nodes)",
+                        len(affected_user_ids), org_id, clerk_role,
+                    )
+            else:
+                log.warning(
+                    "Could not fetch org members to auto-unsubscribe: "
+                    "status=%s", r.status_code
+                )
+        except Exception:
+            log.exception(
+                "Failed to auto-unsubscribe users after subscribe_nodes revocation"
+            )
+
     return {
         "org_id": org_id,
         "clerk_role": clerk_role,
-        "permissions": sorted(body.permissions),
+        "permissions": sorted(new_perms),
     }
 
 
