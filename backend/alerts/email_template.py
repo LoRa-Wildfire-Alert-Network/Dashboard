@@ -1,5 +1,56 @@
 import datetime
 
+# ---------------------------------------------------------------------------
+# Style constants — keeps f-string lines under 88 chars
+# ---------------------------------------------------------------------------
+
+_S_BODY = (
+    "margin:0;padding:0;"
+    "background-color:#f3f4f6;"
+    "font-family:-apple-system,BlinkMacSystemFont,"
+    "'Segoe UI',Roboto,sans-serif;"
+)
+_S_OUTER_TABLE = "background-color:#f3f4f6;padding:32px 16px;"
+_S_INNER_TABLE = "max-width:560px;"
+_S_HEADER_H1 = (
+    "margin:0;color:#ffffff;font-size:22px;"
+    "font-weight:700;letter-spacing:-0.3px;"
+)
+_S_BADGE_TD = (
+    "background-color:#ffffff;"
+    "padding:20px 32px 0 32px;"
+    "text-align:center;"
+)
+_S_BODY_TD = (
+    "background-color:#ffffff;"
+    "padding:16px 32px 20px 32px;"
+    "text-align:center;"
+)
+_S_BODY_P = "margin:0;color:#374151;font-size:15px;line-height:1.6;"
+_S_DATA_OUTER_TD = "background-color:#ffffff;padding:0 32px 24px 32px;"
+_S_DATA_TABLE = (
+    "border:1px solid #e5e7eb;"
+    "border-radius:6px;"
+    "overflow:hidden;"
+)
+_S_FOOTER_P = "margin:0;color:#9ca3af;font-size:12px;line-height:1.5;"
+_S_FOOTER_STRONG = "color:#6b7280;"
+_S_LABEL_TD = (
+    "padding:10px 16px;"
+    "color:#6b7280;"
+    "font-size:13px;"
+    "white-space:nowrap;"
+    "border-bottom:1px solid #f3f4f6;"
+)
+_S_VAL_TD = (
+    "padding:10px 16px;"
+    "font-size:13px;"
+    "font-weight:600;"
+    "border-bottom:1px solid #f3f4f6;"
+)
+
+# ---------------------------------------------------------------------------
+
 
 def _parse_message(message: str) -> dict:
     """Extract key/value pairs from the plain-text alert message body."""
@@ -56,10 +107,38 @@ def render_alert_email(
         ("Timestamp", timestamp),
     ]
 
+    # Dynamic styles that depend on runtime values
+    header_td_style = (
+        f"background-color:{color};"
+        "border-radius:8px 8px 0 0;"
+        "padding:28px 32px;"
+        "text-align:center;"
+    )
+    badge_span_style = (
+        "display:inline-block;"
+        f"background-color:{color}1a;"
+        f"color:{color};"
+        f"border:1px solid {color}33;"
+        "border-radius:999px;"
+        "padding:4px 14px;"
+        "font-size:12px;"
+        "font-weight:700;"
+        "letter-spacing:0.5px;"
+        "text-transform:uppercase;"
+    )
+    footer_td_style = (
+        "background-color:#f9fafb;"
+        "border-top:1px solid #e5e7eb;"
+        "border-radius:0 0 8px 8px;"
+        "padding:16px 32px;"
+        "text-align:center;"
+    )
+
     def row_html(r):
-        label_td = f'<td style="padding:10px 16px;color:#6b7280;font-size:13px;white-space:nowrap;border-bottom:1px solid #f3f4f6;">{r[0]}</td>'
+        label_td = f'<td style="{_S_LABEL_TD}">{r[0]}</td>'
         val_color = r[2] if len(r) > 2 else "#111827"
-        val_td = f'<td style="padding:10px 16px;font-size:13px;font-weight:600;color:{val_color};border-bottom:1px solid #f3f4f6;">{r[1]}</td>'
+        val_style = f"{_S_VAL_TD}color:{val_color};"
+        val_td = f'<td style="{val_style}">{r[1]}</td>'
         return f"<tr>{label_td}{val_td}</tr>"
 
     table_rows = "\n".join(row_html(r) for r in rows)
@@ -71,17 +150,17 @@ def render_alert_email(
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>LoRa Wildfire Alert</title>
 </head>
-<body style="margin:0;padding:0;background-color:#f3f4f6;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
-  <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#f3f4f6;padding:32px 16px;">
+<body style="{_S_BODY}">
+  <table width="100%" cellpadding="0" cellspacing="0" style="{_S_OUTER_TABLE}">
     <tr>
       <td align="center">
-        <table width="100%" style="max-width:560px;" cellpadding="0" cellspacing="0">
+        <table width="100%" style="{_S_INNER_TABLE}" cellpadding="0" cellspacing="0">
 
           <!-- Header -->
           <tr>
-            <td style="background-color:{color};border-radius:8px 8px 0 0;padding:28px 32px;text-align:center;">
+            <td style="{header_td_style}">
               <p style="margin:0 0 8px 0;font-size:26px;">🔥</p>
-              <h1 style="margin:0;color:#ffffff;font-size:22px;font-weight:700;letter-spacing:-0.3px;">
+              <h1 style="{_S_HEADER_H1}">
                 Wildfire Alert
               </h1>
               <p style="margin:8px 0 0 0;color:rgba(255,255,255,0.85);font-size:14px;">
@@ -92,8 +171,8 @@ def render_alert_email(
 
           <!-- Alert type badge -->
           <tr>
-            <td style="background-color:#ffffff;padding:20px 32px 0 32px;text-align:center;">
-              <span style="display:inline-block;background-color:{color}1a;color:{color};border:1px solid {color}33;border-radius:999px;padding:4px 14px;font-size:12px;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;">
+            <td style="{_S_BADGE_TD}">
+              <span style="{badge_span_style}">
                 {label}
               </span>
             </td>
@@ -101,9 +180,10 @@ def render_alert_email(
 
           <!-- Body text -->
           <tr>
-            <td style="background-color:#ffffff;padding:16px 32px 20px 32px;text-align:center;">
-              <p style="margin:0;color:#374151;font-size:15px;line-height:1.6;">
-                A sensor on your network has triggered a <strong>{label}</strong> alert.
+            <td style="{_S_BODY_TD}">
+              <p style="{_S_BODY_P}">
+                A sensor on your network has triggered a
+                <strong>{label}</strong> alert.
                 Review the readings below and take action if needed.
               </p>
             </td>
@@ -111,9 +191,9 @@ def render_alert_email(
 
           <!-- Data table -->
           <tr>
-            <td style="background-color:#ffffff;padding:0 32px 24px 32px;">
+            <td style="{_S_DATA_OUTER_TD}">
               <table width="100%" cellpadding="0" cellspacing="0"
-                     style="border:1px solid #e5e7eb;border-radius:6px;overflow:hidden;">
+                     style="{_S_DATA_TABLE}">
                 {table_rows}
               </table>
             </td>
@@ -121,10 +201,10 @@ def render_alert_email(
 
           <!-- Footer -->
           <tr>
-            <td style="background-color:#f9fafb;border-top:1px solid #e5e7eb;border-radius:0 0 8px 8px;padding:16px 32px;text-align:center;">
-              <p style="margin:0;color:#9ca3af;font-size:12px;line-height:1.5;">
+            <td style="{footer_td_style}">
+              <p style="{_S_FOOTER_P}">
                 You received this alert because you are subscribed to node
-                <strong style="color:#6b7280;">{dev_eui}</strong>.<br>
+                <strong style="{_S_FOOTER_STRONG}">{dev_eui}</strong>.<br>
                 Manage your alert preferences in the LoRa Dashboard.
               </p>
             </td>
