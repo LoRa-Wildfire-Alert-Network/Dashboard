@@ -7,10 +7,15 @@ import type {
   Alert,
 } from "../../types/nodeTypes";
 
-const NodeDetails: React.FC<{ nodeEui: string | null }> = ({ nodeEui }) => {
+const NodeDetails: React.FC<{
+  nodeEui: string | null;
+  showAcked: boolean;
+  setShowAcked: (v: boolean) => void;
+}> = ({ nodeEui, showAcked, setShowAcked }) => {
   const [nodeData, setNodeData] = useState<DetailNodeData | null>(null);
   const [historicalData, setHistoricalData] = useState<ShortNodeData[]>([]);
   const [alerts, setAlerts] = useState<Alert[]>([]);
+  const [displayedAlerts, setDisplayedAlerts] = useState<Alert[]>([]);
   const { getToken } = useAuth();
 
   const API_URL: string =
@@ -58,7 +63,6 @@ const NodeDetails: React.FC<{ nodeEui: string | null }> = ({ nodeEui }) => {
           headers: { Authorization: `Bearer ${token}` },
         });
         const data = await response.json();
-        console.log("Fetched alerts:", data);
         setAlerts(data);
       } catch (error) {
         console.error("Error fetching node alerts:", error);
@@ -68,9 +72,23 @@ const NodeDetails: React.FC<{ nodeEui: string | null }> = ({ nodeEui }) => {
     fetchCurrentNodeData();
     fetchHistoricalData();
     fetchNodeAlerts();
-    const interval = setInterval(fetchCurrentNodeData, 3000);
-    return () => clearInterval(interval);
+    const nodeDataInterval = setInterval(fetchCurrentNodeData, 3000);
+    const alertsInterval = setInterval(fetchNodeAlerts, 3000);
+    const historicalDataInterval = setInterval(fetchHistoricalData, 30000);
+    return () => {
+      clearInterval(nodeDataInterval);
+      clearInterval(alertsInterval);
+      clearInterval(historicalDataInterval);
+    };
   }, [API_URL, getToken, nodeEui]);
+
+  useEffect(() => {
+    if (showAcked) {
+      setDisplayedAlerts(alerts);
+    } else {
+      setDisplayedAlerts(alerts.filter((alert) => !alert.acknowledged));
+    }
+  }, [alerts, showAcked]);
 
   return (
     <div className="flex-1 max-h-[30vh] md:max-h-full md:h-full lg:w-90 md:w-48 bg-slate-100 rounded-md p-4 overflow-y-auto">
@@ -95,12 +113,30 @@ const NodeDetails: React.FC<{ nodeEui: string | null }> = ({ nodeEui }) => {
             </div>
           </div>
           <div>
-            <h3 className="text-lg font-bold mt-4">Alerts:</h3>
-            {alerts.length === 0 ? (
+            <div className="flex items-center justify-between mt-4">
+              <h3 className="text-lg font-bold">Alerts:</h3>
+              <button
+                onClick={() => setShowAcked(!showAcked)}
+                className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold border transition-all duration-200 ${
+                  showAcked
+                    ? "bg-slate-600 text-white border-slate-600 shadow-inner"
+                    : "bg-white text-slate-500 border-slate-300 hover:border-slate-500 hover:text-slate-700"
+                }`}
+              >
+                <span
+                  className={`w-2 h-2 rounded-full transition-colors duration-200 ${
+                    showAcked ? "bg-green-400" : "bg-slate-300"
+                  }`}
+                />
+                {showAcked ? "Showing Acknowledged" : "Show Acknowledged"}
+              </button>
+            </div>
+
+            {displayedAlerts.length === 0 ? (
               <p className="ml-4">Subscribe to this node to receive alerts.</p>
             ) : (
               <ul className="ml-4">
-                {alerts.map((alert) => (
+                {displayedAlerts.map((alert) => (
                   <li key={alert.id} className="mb-2">
                     <p className="font-semibold">
                       [{new Date(alert.created_at).toLocaleString()}]{" "}

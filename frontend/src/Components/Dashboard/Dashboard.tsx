@@ -13,6 +13,8 @@ const Dashboard: React.FC = () => {
   const [nodeData, setNodeData] = useState<ShortNodeData[]>([]);
   const [userSubscriptions, setUserSubscriptions] = useState<string[]>([]);
   const [alerts, setAlerts] = useState<Alert[]>([]);
+  const [showAcked, setShowAcked] = useState<boolean>(false);
+  const [displayedAlerts, setDisplayedAlerts] = useState<Alert[]>([]);
 
   const API_URL: string =
     import.meta.env.VITE_API_URL || "http://localhost:8000";
@@ -66,8 +68,14 @@ const Dashboard: React.FC = () => {
     fetchNodeData();
     fetchSubscriptions();
     fetchAlerts();
-    const interval = setInterval(fetchNodeData, 3000);
-    return () => clearInterval(interval);
+    const nodeDataInterval = setInterval(fetchNodeData, 3000);
+    const alertsInterval = setInterval(fetchAlerts, 3000);
+    const subscriptionsInterval = setInterval(fetchSubscriptions, 30000);
+    return () => {
+      clearInterval(nodeDataInterval);
+      clearInterval(alertsInterval);
+      clearInterval(subscriptionsInterval);
+    };
   }, [fetchNodeData, fetchSubscriptions, fetchAlerts]);
 
   /////////////////////////////////////////////////////////////////////////////////////////
@@ -170,6 +178,14 @@ const Dashboard: React.FC = () => {
     setFilteredNodeList(applyFilter(nodeData));
   }, [applyFilter, nodeData]);
 
+  useEffect(() => {
+    if (showAcked) {
+      setDisplayedAlerts(alerts);
+    } else {
+      setDisplayedAlerts(alerts.filter((alert) => !alert.acknowledged));
+    }
+  }, [alerts, showAcked]);
+
   return (
     <>
       <div className="bg-slate-300 h-[calc(100vh-4rem)] overflow-hidden">
@@ -178,12 +194,34 @@ const Dashboard: React.FC = () => {
             className={`w-11/12 mx-auto md:w-auto md:mx-0 order-3 md:order-1 py-2 md:py-0 grow transition-all duration-200`}
           >
             {mostRecentExpandedNodeEui ? (
-              <NodeDetails nodeEui={mostRecentExpandedNodeEui} />
+              <NodeDetails
+                nodeEui={mostRecentExpandedNodeEui}
+                showAcked={showAcked}
+                setShowAcked={setShowAcked}
+              />
             ) : alerts.length > 0 ? (
               <div className="flex-1 max-h-[30vh] md:max-h-full md:h-full lg:w-90 md:w-48 bg-slate-100 rounded-md p-4 overflow-y-auto">
-                <h2 className="text-xl font-bold mb-4">Recent Alerts</h2>
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-xl font-bold">Recent Alerts</h2>
+                  <button
+                    onClick={() => setShowAcked(!showAcked)}
+                    className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold border transition-all duration-200 ${
+                      showAcked
+                        ? "bg-slate-600 text-white border-slate-600 shadow-inner"
+                        : "bg-white text-slate-500 border-slate-300 hover:border-slate-500 hover:text-slate-700"
+                    }`}
+                  >
+                    <span
+                      className={`w-2 h-2 rounded-full transition-colors duration-200 ${
+                        showAcked ? "bg-green-400" : "bg-slate-300"
+                      }`}
+                    />
+                    {showAcked ? "Showing Acknowledged" : "Show Acknowledged"}
+                  </button>
+                </div>
+
                 <ul className="space-y-2 overflow-y-auto">
-                  {alerts.map((alert) => (
+                  {displayedAlerts.map((alert) => (
                     <li key={alert.id} className="border-b pb-2">
                       <p>
                         <strong>Node:</strong> {alert.dev_eui}
