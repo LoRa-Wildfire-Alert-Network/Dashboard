@@ -3,7 +3,7 @@ import { useAuth } from "@clerk/clerk-react";
 import type { ShortNodeData, Alert } from "./../../types/nodeTypes";
 import WildfireMap from "../WildfireMap/WildfireMap";
 import NodeDetails from "../NodeDetails/NodeDetails";
-import NodeListPanel from "../NodeCardList/NodeListPanel";
+import NodeListPanel from "../NodeListPanel/NodeListPanel";
 import { useAuthContext } from "../../providers/AuthContext";
 import ShowAckedButton from "../Alerts/ShowAckedButton";
 
