@@ -974,15 +974,21 @@ def update_org_role_settings(
                     if m.get("role") == clerk_role
                 ]
                 if affected_user_ids:
+                    uid_params = [(uid,) for uid in affected_user_ids]
                     with db() as conn:
                         conn.executemany(
                             "DELETE FROM user_node_subscriptions WHERE user_id = ?",
-                            [(uid,) for uid in affected_user_ids],
+                            uid_params,
+                        )
+                        conn.executemany(
+                            "DELETE FROM alert_preferences WHERE user_id = ?",
+                            uid_params,
                         )
                         conn.commit()
                     log.info(
                         "Auto-unsubscribed %d user(s) in org %s "
-                        "(role %s lost subscribe_nodes)",
+                        "(role %s lost subscribe_nodes); "
+                        "removed matching alert preferences",
                         len(affected_user_ids), org_id, clerk_role,
                     )
             else:
