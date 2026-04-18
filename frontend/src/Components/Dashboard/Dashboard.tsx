@@ -1,12 +1,9 @@
-import React, { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useAuth } from "@clerk/clerk-react";
-import NodeCardList from "../NodeCardList/NodeCardList";
 import type { ShortNodeData, Alert } from "./../../types/nodeTypes";
-import NodeFilter, { type NodeFilterState } from "../NodeFilter/NodeFilter";
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { fas } from "@fortawesome/free-solid-svg-icons";
 import WildfireMap from "../WildfireMap/WildfireMap";
 import NodeDetails from "../NodeDetails/NodeDetails";
+import NodeListPanel from "../NodeCardList/NodeListPanel";
 import { useAuthContext } from "../../providers/AuthContext";
 import ShowAckedButton from "../Alerts/ShowAckedButton";
 
@@ -23,7 +20,7 @@ const Dashboard: React.FC = () => {
   const { getToken } = useAuth();
   const { hasPermission } = useAuthContext();
 
-  const fetchNodeData = React.useCallback(async () => {
+  const fetchNodeData = useCallback(async () => {
     try {
       const token = await getToken();
       const response = await fetch(`${API_URL}/summary`, {
@@ -39,12 +36,12 @@ const Dashboard: React.FC = () => {
       );
       setNodeData(uniqueNodes);
     } catch (error) {
-      setNodeData([]); // fallback to empty array on error
+      setNodeData([]);
       console.error("Error fetching node data:", error);
     }
   }, [API_URL, getToken]);
 
-  const fetchSubscriptions = React.useCallback(async () => {
+  const fetchSubscriptions = useCallback(async () => {
     try {
       const token = await getToken();
       const response = await fetch(`${API_URL}/subscriptions`, {
@@ -57,7 +54,7 @@ const Dashboard: React.FC = () => {
     }
   }, [API_URL, getToken]);
 
-  const fetchAlerts = React.useCallback(async () => {
+  const fetchAlerts = useCallback(async () => {
     try {
       const token = await getToken();
       const response = await fetch(`${API_URL}/alerts`, {
@@ -98,8 +95,6 @@ const Dashboard: React.FC = () => {
   //    clicking a Marker expands that marker and corresponding NodeCard
   //      all other expanded markers and NodeCards collapse.
   //
-  //
-  //
   /////////////////////////////////////////////////////////////////////////////////////////
 
   const [expandedNodeEuis, setExpandedNodeEuis] = useState<string[]>([]);
@@ -109,7 +104,7 @@ const Dashboard: React.FC = () => {
 
   const toggleExpandFromCard = (nodeEui: string) => {
     if (expandedNodeEuis.includes(nodeEui)) {
-      setExpandedNodeEuis(expandedNodeEuis.filter((Eui) => Eui !== nodeEui));
+      setExpandedNodeEuis(expandedNodeEuis.filter((eui) => eui !== nodeEui));
       setMostRecentExpandedNodeEui(null);
     } else {
       setExpandedNodeEuis([...expandedNodeEuis, nodeEui]);
@@ -127,62 +122,7 @@ const Dashboard: React.FC = () => {
     }
   };
 
-  // End of STATE AND HANDLERS block //////////////////////////////////////////////////////
-
-  const [filteredNodeList, setFilteredNodeList] = useState<ShortNodeData[]>([]);
-  const [showFilter, setShowFilter] = useState<boolean>(false);
-  const [smokeDetected, setSmokeDetected] =
-    useState<NodeFilterState["smokeDetected"]>();
-  const [tempAbove, setTempAbove] = useState<NodeFilterState["tempAbove"]>();
-  const [humidityBelow, setHumidityBelow] =
-    useState<NodeFilterState["humidityBelow"]>();
-  const [lowBattery, setLowBattery] = useState<NodeFilterState["lowBattery"]>();
-  // Please leave; Not implemented yet, would require backend support
-  /*   const [timeSinceLastSeen, setTimeSinceLastSeen] =
-    useState<NodeFilterState["timeSinceLastSeen"]>(); */
-  const [onlySubscribed, setOnlySubscribed] = useState<boolean>(false);
-
-  const applyFilter = React.useCallback(
-    (nodes: ShortNodeData[]): ShortNodeData[] => {
-      let filteredNodes = [...nodes];
-
-      if (onlySubscribed) {
-        filteredNodes = filteredNodes.filter((node) =>
-          userSubscriptions.includes(node.device_eui),
-        );
-      }
-      if (smokeDetected) {
-        filteredNodes = filteredNodes.filter((node) => node.smoke_detected);
-      }
-      if (tempAbove !== undefined) {
-        filteredNodes = filteredNodes.filter(
-          (node) => node.temperature_c > tempAbove,
-        );
-      }
-      if (humidityBelow !== undefined) {
-        filteredNodes = filteredNodes.filter(
-          (node) => node.humidity_pct < humidityBelow,
-        );
-      }
-      if (lowBattery) {
-        filteredNodes = filteredNodes.filter((node) => node.battery_level < 20);
-      }
-
-      return filteredNodes;
-    },
-    [
-      smokeDetected,
-      tempAbove,
-      humidityBelow,
-      lowBattery,
-      onlySubscribed,
-      userSubscriptions,
-    ],
-  );
-
-  useEffect(() => {
-    setFilteredNodeList(applyFilter(nodeData));
-  }, [applyFilter, nodeData]);
+// End of STATE AND HANDLERS block //////////////////////////////////////////////////////
 
   useEffect(() => {
     if (showAcked) {
@@ -208,55 +148,63 @@ const Dashboard: React.FC = () => {
     );
   }
 
+  const unacknowledgedCount = alerts.filter((a) => !a.acknowledged).length;
+
   return (
     <>
       <div className="bg-slate-300 h-[calc(100vh-4rem)] overflow-hidden">
         <div className="flex flex-col md:flex-row justify-center space-x-4 w-full h-full py-2 p-4">
-          <div
-            className={`w-11/12 mx-auto md:w-auto md:mx-0 order-3 md:order-1 py-2 md:py-0 grow transition-all duration-200`}
-          >
+          {/* Left: alert count always on top, NodeDetails below when a node is selected */}
+          <div className="w-11/12 mx-auto md:w-auto md:mx-0 order-3 md:order-1 py-2 md:py-0 flex flex-col gap-2 grow transition-all duration-200">
+            <div className="lg:w-90 md:w-48 bg-slate-100 rounded-md p-4">
+              <div className="flex items-center justify-between mb-1">
+                <h2 className="text-xl font-bold">Alerts</h2>
+                <ShowAckedButton
+                  showAcked={showAcked}
+                  setShowAcked={setShowAcked}
+                />
+              </div>
+              <div className="flex items-baseline gap-2">
+                <span className="text-4xl font-bold">
+                  {unacknowledgedCount}
+                </span>
+                <span className="text-slate-500 text-sm">unacknowledged</span>
+              </div>
+            </div>
+
             {mostRecentExpandedNodeEui ? (
               <NodeDetails
                 nodeEui={mostRecentExpandedNodeEui}
                 showAcked={showAcked}
                 setShowAcked={setShowAcked}
               />
-            ) : alerts.length > 0 ? (
-              <div className="flex-1 max-h-[30vh] md:max-h-full md:h-full lg:w-90 md:w-48 bg-slate-100 rounded-md p-4 overflow-y-auto">
-                <div className="flex items-center justify-between mb-4">
-                  <h2 className="text-xl font-bold">Recent Alerts</h2>
-                  <ShowAckedButton
-                    showAcked={showAcked}
-                    setShowAcked={setShowAcked}
-                  />
-                </div>
-
-                <ul className="space-y-2 overflow-y-auto">
-                  {displayedAlerts.map((alert) => (
-                    <li key={alert.id} className="border-b pb-2">
-                      <p>
-                        <strong>Node:</strong> {alert.dev_eui}
-                      </p>
-                      <p>
-                        <strong>Type:</strong> {alert.alert_type}
-                      </p>
-                      <p>{alert.message}</p>
-                      <p className="text-sm text-gray-500">
-                        {new Date(alert.created_at).toLocaleString()}
-                      </p>
-                    </li>
-                  ))}
-                </ul>
-              </div>
             ) : (
-              <div className="flex-1 md:max-h-full md:h-full lg:w-90 md:w-48 bg-slate-100 rounded-md p-4 overflow-y-auto">
-                <h2 className="text-xl font-bold mb-4">No Node Selected</h2>
-                <p className="text-gray-600">
-                  Click on a node card or map marker to see details here.
-                </p>
+              <div className="lg:w-90 md:w-48 bg-slate-100 rounded-md p-4 overflow-y-auto flex-1">
+                {displayedAlerts.length === 0 ? (
+                  <p className="text-gray-600">No alerts to display.</p>
+                ) : (
+                  <ul className="space-y-2">
+                    {displayedAlerts.map((alert) => (
+                      <li key={alert.id} className="border-b pb-2">
+                        <p>
+                          <strong>Node:</strong> {alert.dev_eui}
+                        </p>
+                        <p>
+                          <strong>Type:</strong> {alert.alert_type}
+                        </p>
+                        <p>{alert.message}</p>
+                        <p className="text-sm text-gray-500">
+                          {new Date(alert.created_at).toLocaleString()}
+                        </p>
+                      </li>
+                    ))}
+                  </ul>
+                )}
               </div>
             )}
           </div>
+
+          {/* Center: map */}
           <div className="w-11/12 mx-auto md:mx-4 min-h-[30vh] h-full py-2 md:py-0 order-1 md:order-2">
             <WildfireMap
               nodeData={nodeData.filter((node) =>
@@ -268,39 +216,16 @@ const Dashboard: React.FC = () => {
               setMapBounds={() => {}}
             />
           </div>
-          <div className="flex flex-col overflow-y-auto w-11/12 mx-auto md:w-100 lg:w-120 md:mx-0 bg-slate-400 rounded-md py-2 px-4 order-2 md:order-3">
-            <div className="flex flex-row items-center justify-between mb-4">
-              <h1 className="text-xl font-bold">Node List</h1>
-              <div className="flex flex-row gap-2 items-center">
-                <FontAwesomeIcon
-                  icon={fas.faFilter}
-                  className="text-black mr-2 hover:cursor-pointer"
-                  onClick={() => {
-                    setShowFilter((s) => !s);
-                  }}
-                />
-              </div>
-            </div>
-            {showFilter && (
-              <NodeFilter
-                onChange={(filters) => {
-                  setSmokeDetected(filters.smokeDetected);
-                  setTempAbove(filters.tempAbove);
-                  setHumidityBelow(filters.humidityBelow);
-                  setLowBattery(filters.lowBattery);
-                  setOnlySubscribed(!!filters.onlySubscribed);
-                }}
-              />
-            )}
-            <NodeCardList
-              nodeData={filteredNodeList}
+
+          {/* Right: NodeListPanel always visible */}
+          <div className="w-11/12 mx-auto md:w-100 lg:w-120 md:mx-0 md:h-full py-2 md:py-0 order-2 md:order-3">
+            <NodeListPanel
+              nodeData={nodeData}
+              userSubscriptions={userSubscriptions}
               expandedNodeEuis={expandedNodeEuis}
               onCardClick={toggleExpandFromCard}
               apiBaseUrl={API_URL}
-              subscribedNodeIds={userSubscriptions}
-              onSubscriptionsChange={(subs) => {
-                setUserSubscriptions(subs);
-              }}
+              onSubscriptionsChange={(subs) => setUserSubscriptions(subs)}
             />
           </div>
         </div>
