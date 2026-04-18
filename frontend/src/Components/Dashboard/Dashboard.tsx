@@ -154,7 +154,6 @@ const Dashboard: React.FC = () => {
     <>
       <div className="bg-slate-300 h-[calc(100vh-4rem)] overflow-hidden">
         <div className="flex flex-col md:flex-row md:space-x-4 w-full h-full p-4 gap-2 md:gap-0">
-          {/* Left: alert count always on top, NodeDetails below when a node is selected */}
           <div className="w-11/12 mx-auto md:w-auto md:mx-0 order-1 flex flex-col gap-2">
             <div className="lg:w-90 md:w-48 bg-slate-100 rounded-md p-4">
               <div className="flex items-center justify-between mb-1">
@@ -204,8 +203,7 @@ const Dashboard: React.FC = () => {
             )}
           </div>
 
-          {/* Center: map */}
-          <div className="w-11/12 mx-auto md:mx-4 h-44 md:h-full md:flex-1 order-2">
+          <div className="w-11/12 mx-auto md:mx-4 h-150 md:h-full md:flex-1 order-2">
             <WildfireMap
               nodeData={nodeData.filter((node) =>
                 userSubscriptions.includes(node.device_eui),
@@ -217,7 +215,6 @@ const Dashboard: React.FC = () => {
             />
           </div>
 
-          {/* Right: NodeListPanel always visible */}
           <div className="w-11/12 mx-auto md:w-80 md:mx-0 grow min-h-0 md:grow-0 md:shrink-0 md:h-full order-3">
             <NodeListPanel
               nodeData={nodeData}
