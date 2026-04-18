@@ -20,6 +20,7 @@ const NodeDetails: React.FC<{
 
   const API_URL: string =
     import.meta.env.VITE_API_URL || "http://localhost:8000";
+  const { getToken } = useAuth();
 
   useEffect(() => {
     const fetchCurrentNodeData = async () => {
@@ -28,7 +29,10 @@ const NodeDetails: React.FC<{
         return;
       }
       try {
-        const response = await fetch(`${API_URL}/nodes/${nodeEui}/latest`);
+        const token = await getToken();
+        const response = await fetch(`${API_URL}/nodes/${nodeEui}/latest`, {
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
+        });
         const data = await response.json();
         setNodeData(data);
       } catch (error) {
@@ -42,8 +46,10 @@ const NodeDetails: React.FC<{
         return;
       }
       try {
+        const token = await getToken();
         const response = await fetch(
           `${API_URL}/telemetry?device_eui=${nodeEui}&limit=50`,
+          { headers: token ? { Authorization: `Bearer ${token}` } : {} },
         );
         const data = await response.json();
         setHistoricalData(data);

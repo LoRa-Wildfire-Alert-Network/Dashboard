@@ -8,11 +8,20 @@ import {
   OrganizationSwitcher,
 } from "@clerk/clerk-react";
 import { withGoto } from "../../lib/goto";
+import OrgPermissionsPage from "../OrgSettings/OrgPermissionsPage";
+import { useAuthContext } from "../../providers/AuthContext";
 
 const DOCS_URL = import.meta.env.VITE_DOCS_URL ?? "/docs/";
 
+const ShieldIcon = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} style={{ width: 16, height: 16 }}>
+    <path strokeLinecap="round" strokeLinejoin="round" d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+  </svg>
+);
+
 const Navbar = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const { isOrgAdmin } = useAuthContext();
 
   return (
     <div className="relative">
@@ -24,28 +33,14 @@ const Navbar = () => {
             className="text-white md:hidden"
             onClick={() => setMobileMenuOpen((s) => !s)}
           >
-            <svg
-              className="w-6 h-6"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M4 6h16M4 12h16M4 18h16"
-              />
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
             </svg>
           </button>
-
           <a
             href={DOCS_URL}
             target={DOCS_URL.startsWith("http") ? "_blank" : undefined}
-            rel={
-              DOCS_URL.startsWith("http") ? "noopener noreferrer" : undefined
-            }
+            rel={DOCS_URL.startsWith("http") ? "noopener noreferrer" : undefined}
             className="hidden md:inline text-white/90 text-base hover:text-white hover:underline"
           >
             Docs
@@ -55,19 +50,15 @@ const Navbar = () => {
         {/* Center: title */}
         <p className="text-white text-lg font-semibold">LoRa Dashboard</p>
 
-        {/* Right: user actions; on mobile show only UserButton, other actions are in dropdown */}
+        {/* Right: user actions */}
         <div className="flex items-center gap-4 p-4">
           <div className="hidden md:flex items-center gap-4">
             <SignedOut>
               <SignInButton mode="modal">
-                <button className="text-white text-lg font-semibold hover:underline hover:cursor-pointer">
-                  Sign In
-                </button>
+                <button className="text-white text-lg font-semibold hover:underline hover:cursor-pointer">Sign In</button>
               </SignInButton>
               <SignUpButton mode="modal">
-                <button className="text-white text-lg font-semibold hover:underline hover:cursor-pointer">
-                  Sign Up
-                </button>
+                <button className="text-white text-lg font-semibold hover:underline hover:cursor-pointer">Sign Up</button>
               </SignUpButton>
             </SignedOut>
             <SignedIn>
@@ -79,7 +70,17 @@ const Navbar = () => {
                     organizationSwitcherTrigger: "text-white",
                   },
                 }}
-              />
+              >
+                {isOrgAdmin && (
+                  <OrganizationSwitcher.OrganizationProfilePage
+                    label="Permissions"
+                    url="permissions"
+                    labelIcon={<ShieldIcon />}
+                  >
+                    <OrgPermissionsPage />
+                  </OrganizationSwitcher.OrganizationProfilePage>
+                )}
+              </OrganizationSwitcher>
             </SignedIn>
           </div>
           <SignedIn>
@@ -88,7 +89,7 @@ const Navbar = () => {
         </div>
       </div>
 
-      {/* Mobile dropdown/menu (only visible on small screens) */}
+      {/* Mobile dropdown */}
       {mobileMenuOpen && (
         <div className="md:hidden absolute left-0 right-0 bg-slate-700 text-white z-40">
           <div className="flex flex-col p-4 gap-3">
@@ -102,38 +103,34 @@ const Navbar = () => {
                       organizationSwitcherTrigger: "text-white",
                     },
                   }}
-                />
+                >
+                  {isOrgAdmin && (
+                    <OrganizationSwitcher.OrganizationProfilePage
+                      label="Permissions"
+                      url="permissions"
+                      labelIcon={<ShieldIcon />}
+                    >
+                      <OrgPermissionsPage />
+                    </OrganizationSwitcher.OrganizationProfilePage>
+                  )}
+                </OrganizationSwitcher>
               </div>
             </SignedIn>
-
             <a
               href={DOCS_URL}
               target={DOCS_URL.startsWith("http") ? "_blank" : undefined}
-              rel={
-                DOCS_URL.startsWith("http") ? "noopener noreferrer" : undefined
-              }
+              rel={DOCS_URL.startsWith("http") ? "noopener noreferrer" : undefined}
               className="text-base hover:underline"
               onClick={() => setMobileMenuOpen(false)}
             >
               Docs
             </a>
-
             <SignedOut>
               <SignInButton mode="modal">
-                <button
-                  className="text-base text-left hover:underline"
-                  onClick={() => setMobileMenuOpen(false)}
-                >
-                  Sign In
-                </button>
+                <button className="text-base text-left hover:underline" onClick={() => setMobileMenuOpen(false)}>Sign In</button>
               </SignInButton>
               <SignUpButton mode="modal">
-                <button
-                  className="text-base text-left hover:underline"
-                  onClick={() => setMobileMenuOpen(false)}
-                >
-                  Sign Up
-                </button>
+                <button className="text-base text-left hover:underline" onClick={() => setMobileMenuOpen(false)}>Sign Up</button>
               </SignUpButton>
             </SignedOut>
           </div>
