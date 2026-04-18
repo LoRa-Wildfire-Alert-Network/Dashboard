@@ -8,6 +8,7 @@ import { fas } from "@fortawesome/free-solid-svg-icons";
 import WildfireMap from "../WildfireMap/WildfireMap";
 import NodeDetails from "../NodeDetails/NodeDetails";
 import { useAuthContext } from "../../providers/AuthContext";
+import ShowAckedButton from "../Alerts/ShowAckedButton";
 
 const Dashboard: React.FC = () => {
   const [nodeData, setNodeData] = useState<ShortNodeData[]>([]);
@@ -224,21 +225,10 @@ const Dashboard: React.FC = () => {
               <div className="flex-1 max-h-[30vh] md:max-h-full md:h-full lg:w-90 md:w-48 bg-slate-100 rounded-md p-4 overflow-y-auto">
                 <div className="flex items-center justify-between mb-4">
                   <h2 className="text-xl font-bold">Recent Alerts</h2>
-                  <button
-                    onClick={() => setShowAcked(!showAcked)}
-                    className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold border transition-all duration-200 ${
-                      showAcked
-                        ? "bg-slate-600 text-white border-slate-600 shadow-inner"
-                        : "bg-white text-slate-500 border-slate-300 hover:border-slate-500 hover:text-slate-700"
-                    }`}
-                  >
-                    <span
-                      className={`w-2 h-2 rounded-full transition-colors duration-200 ${
-                        showAcked ? "bg-green-400" : "bg-slate-300"
-                      }`}
-                    />
-                    {showAcked ? "Showing Acknowledged" : "Show Acknowledged"}
-                  </button>
+                  <ShowAckedButton
+                    showAcked={showAcked}
+                    setShowAcked={setShowAcked}
+                  />
                 </div>
 
                 <ul className="space-y-2 overflow-y-auto">

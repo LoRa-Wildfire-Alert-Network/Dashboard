@@ -6,6 +6,7 @@ import type {
   ShortNodeData,
   Alert,
 } from "../../types/nodeTypes";
+import ShowAckedButton from "../Alerts/ShowAckedButton";
 
 const NodeDetails: React.FC<{
   nodeEui: string | null;
@@ -120,25 +121,17 @@ const NodeDetails: React.FC<{
           <div>
             <div className="flex items-center justify-between mt-4">
               <h3 className="text-lg font-bold">Alerts:</h3>
-              <button
-                onClick={() => setShowAcked(!showAcked)}
-                className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold border transition-all duration-200 ${
-                  showAcked
-                    ? "bg-slate-600 text-white border-slate-600 shadow-inner"
-                    : "bg-white text-slate-500 border-slate-300 hover:border-slate-500 hover:text-slate-700"
-                }`}
-              >
-                <span
-                  className={`w-2 h-2 rounded-full transition-colors duration-200 ${
-                    showAcked ? "bg-green-400" : "bg-slate-300"
-                  }`}
-                />
-                {showAcked ? "Showing Acknowledged" : "Show Acknowledged"}
-              </button>
+              <ShowAckedButton
+                showAcked={showAcked}
+                setShowAcked={setShowAcked}
+              />
             </div>
 
             {displayedAlerts.length === 0 ? (
-              <p className="ml-4">Subscribe to this node to receive alerts.</p>
+              <p className="ml-4">
+                No alerts to display. Check to see if you are subscribed to this
+                node.
+              </p>
             ) : (
               <ul className="ml-4">
                 {displayedAlerts.map((alert) => (
