@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useAuth } from "@clerk/clerk-react";
 import type { DetailNodeData, ShortNodeData } from "../../types/nodeTypes";
 
 const NodeDetails: React.FC<{ nodeEui: string | null }> = ({ nodeEui }) => {
@@ -7,6 +8,7 @@ const NodeDetails: React.FC<{ nodeEui: string | null }> = ({ nodeEui }) => {
 
   const API_URL: string =
     import.meta.env.VITE_API_URL || "http://localhost:8000";
+  const { getToken } = useAuth();
 
   useEffect(() => {
     const fetchCurrentNodeData = async () => {
@@ -15,7 +17,10 @@ const NodeDetails: React.FC<{ nodeEui: string | null }> = ({ nodeEui }) => {
         return;
       }
       try {
-        const response = await fetch(`${API_URL}/nodes/${nodeEui}/latest`);
+        const token = await getToken();
+        const response = await fetch(`${API_URL}/nodes/${nodeEui}/latest`, {
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
+        });
         const data = await response.json();
         setNodeData(data);
       } catch (error) {
@@ -29,8 +34,10 @@ const NodeDetails: React.FC<{ nodeEui: string | null }> = ({ nodeEui }) => {
         return;
       }
       try {
+        const token = await getToken();
         const response = await fetch(
           `${API_URL}/telemetry?device_eui=${nodeEui}&limit=50`,
+          { headers: token ? { Authorization: `Bearer ${token}` } : {} },
         );
         const data = await response.json();
         setHistoricalData(data);
@@ -43,7 +50,7 @@ const NodeDetails: React.FC<{ nodeEui: string | null }> = ({ nodeEui }) => {
     fetchHistoricalData();
     const interval = setInterval(fetchCurrentNodeData, 3000);
     return () => clearInterval(interval);
-  }, [API_URL, nodeEui]);
+  }, [API_URL, nodeEui, getToken]);
   return (
     <div className="flex-1 max-h-[30vh] md:max-h-full md:h-full lg:w-90 md:w-48 bg-slate-100 rounded-md p-4 overflow-y-auto">
       <h2 className="text-xl font-bold mb-4">
