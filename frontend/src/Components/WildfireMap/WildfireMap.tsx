@@ -5,6 +5,12 @@ import { GestureHandling } from "leaflet-gesture-handling";
 import type { ShortNodeData } from "../../types/nodeTypes";
 import { useEffect, useRef, useState, useMemo } from "react";
 
+declare module "leaflet" {
+  interface MapOptions {
+    gestureHandling?: boolean;
+  }
+}
+
 export interface MapProps {
   nodeData: ShortNodeData[];
   mostRecentExpandedNodeEui: string | null;
