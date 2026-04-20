@@ -19,11 +19,8 @@ const AlertAckButton: React.FC<{
       });
       if (response.ok) {
         onAckChange(!acknowledged);
-      } else {
-        console.error("Failed to toggle acknowledgment");
       }
-    } catch (error) {
-      console.error("Error toggling acknowledgment:", error);
+    } catch {
     }
   };
 
