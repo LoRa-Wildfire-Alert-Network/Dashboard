@@ -88,7 +88,7 @@ def render_alert_email(
     fields = _parse_message(message)
     label = _alert_type_label(alert_type)
     color = _alert_color(alert_type)
-    timestamp = datetime.datetime.utcnow().strftime("%Y-%m-%d %H:%M UTC")
+    timestamp = datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
 
     smoke_raw = fields.get("Smoke", "0")
     smoke_display = "Yes" if smoke_raw in ("1", "True", "true") else "No"
