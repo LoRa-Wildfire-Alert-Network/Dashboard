@@ -28,7 +28,7 @@ const NodeCard: React.FC<NodeCardProps> = ({
   const { getToken } = useAuth();
   const { hasPermission } = useAuthContext();
   const canSubscribe = hasPermission("subscribe_nodes");
-  const handleToggle = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleToggle = async (e: React.MouseEvent<HTMLButtonElement>) => {
     e.stopPropagation();
 
     const optimisticSubs = isSubscribed
@@ -60,18 +60,14 @@ const NodeCard: React.FC<NodeCardProps> = ({
       className="flex flex-row items-center justify-center bg-slate-700 text-white rounded-md my-2 p-2 hover:cursor-pointer"
       onClick={onCardClick}
     >
-      {canSubscribe && (
-        <input
-          type="checkbox"
-          checked={isSubscribed}
-          onChange={handleToggle}
-          disabled={loading}
-          style={{ marginRight: 8 }}
-          onClick={(e) => e.stopPropagation()}
-        />
-      )}
       {expandedNodeEuis.includes(nodeData.device_eui) ? (
-        <CardLongData nodeData={nodeData} />
+        <CardLongData
+          nodeData={nodeData}
+          onClick={handleToggle}
+          loading={loading}
+          canSubscribe={canSubscribe}
+          isSubscribed={isSubscribed}
+        />
       ) : (
         <CardShortData nodeData={nodeData} />
       )}
