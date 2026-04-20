@@ -1,6 +1,7 @@
 import * as L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import { MapContainer, TileLayer, Marker, useMap } from "react-leaflet";
+import { GestureHandling } from "leaflet-gesture-handling";
 import type { ShortNodeData } from "../../types/nodeTypes";
 import { useEffect, useRef, useState, useMemo } from "react";
 
@@ -157,39 +158,6 @@ function selectIconColor(
   }
 }
 
-function MobileGestureHandler() {
-  const map = useMap();
-
-  useEffect(() => {
-    const container = map.getContainer();
-
-    const onTouchStart = (e: TouchEvent) => {
-      if (e.touches.length < 2) {
-        map.dragging.disable();
-        container.style.touchAction = "pan-y";
-      } else {
-        map.dragging.enable();
-        container.style.touchAction = "none";
-      }
-    };
-
-    const onTouchEnd = () => {
-      map.dragging.enable();
-      container.style.touchAction = "none";
-    };
-
-    container.addEventListener("touchstart", onTouchStart, { passive: true });
-    container.addEventListener("touchend", onTouchEnd, { passive: true });
-
-    return () => {
-      container.removeEventListener("touchstart", onTouchStart);
-      container.removeEventListener("touchend", onTouchEnd);
-    };
-  }, [map]);
-
-  return null;
-}
-
 function MapUpdater({
   setMapBounds,
 }: {
@@ -214,6 +182,8 @@ function MapUpdater({
 
   return null;
 }
+
+L.Map.addInitHook("addHandler", "gestureHandling", GestureHandling);
 
 function WildfireMap({
   nodeData,
@@ -300,10 +270,10 @@ function WildfireMap({
       center={defaultCenter}
       zoom={12}
       scrollWheelZoom={true}
+      gestureHandling={true}
       className="shadow-lg rounded-md p-4 flex-1 h-full"
     >
       <MapRefSetter />
-      <MobileGestureHandler />
       <TileLayer
         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
