@@ -104,8 +104,9 @@ const Dashboard: React.FC = () => {
 
   const toggleExpandFromCard = (nodeEui: string) => {
     if (expandedNodeEuis.includes(nodeEui)) {
-      setExpandedNodeEuis(expandedNodeEuis.filter((eui) => eui !== nodeEui));
-      setMostRecentExpandedNodeEui(null);
+      const remaining = expandedNodeEuis.filter((eui) => eui !== nodeEui);
+      setExpandedNodeEuis(remaining);
+      setMostRecentExpandedNodeEui(remaining.length === 1 ? remaining[0] : null);
     } else {
       setExpandedNodeEuis([...expandedNodeEuis, nodeEui]);
       setMostRecentExpandedNodeEui(nodeEui);
