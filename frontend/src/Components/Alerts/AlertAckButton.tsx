@@ -21,6 +21,7 @@ const AlertAckButton: React.FC<{
         onAckChange(!acknowledged);
       }
     } catch {
+      alert("Failed to update alert acknowledgment status. Please try again.");
     }
   };
 

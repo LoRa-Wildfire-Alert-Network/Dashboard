@@ -7,6 +7,7 @@ import NodeListPanel from "../NodeListPanel/NodeListPanel";
 import { useAuthContext } from "../../providers/AuthContext";
 import ShowAckedButton from "../Alerts/ShowAckedButton";
 import type { NodeFilterState } from "../NodeFilter/NodeFilter";
+import AlertAckButton from "../Alerts/AlertAckButton";
 
 const Dashboard: React.FC = () => {
   const [nodeData, setNodeData] = useState<ShortNodeData[]>([]);
@@ -224,6 +225,19 @@ const Dashboard: React.FC = () => {
                           <p className="text-sm text-gray-500">
                             {new Date(alert.created_at).toLocaleString()}
                           </p>
+                          <AlertAckButton
+                            alertId={alert.id}
+                            acknowledged={alert.acknowledged}
+                            onAckChange={(acknowledged) => {
+                              setAlerts((prevAlerts) =>
+                                prevAlerts.map((a) =>
+                                  a.id === alert.id
+                                    ? { ...a, acknowledged }
+                                    : a,
+                                ),
+                              );
+                            }}
+                          />
                         </li>
                       ))}
                     </ul>
