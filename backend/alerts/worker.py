@@ -115,7 +115,12 @@ def worker_loop(worker_id: int) -> None:
 
             try:
                 # Send email
-                send_email_alert(row["email"], row["message"])
+                send_email_alert(
+                    row["email"],
+                    row["message"],
+                    dev_eui=row["dev_eui"],
+                    alert_type=row["alert_type"],
+                )
 
                 # Mark processed only after successful send
                 with _db() as conn:

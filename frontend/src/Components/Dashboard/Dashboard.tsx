@@ -1,17 +1,41 @@
-import React, { useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useAuth } from "@clerk/clerk-react";
-import NodeCardList from "../NodeCardList/NodeCardList";
-import type { ShortNodeData } from "./../../types/nodeTypes";
-import NodeFilter, { type NodeFilterState } from "../NodeFilter/NodeFilter";
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { fas } from "@fortawesome/free-solid-svg-icons";
+import type { ShortNodeData, Alert } from "./../../types/nodeTypes";
 import WildfireMap from "../WildfireMap/WildfireMap";
 import NodeDetails from "../NodeDetails/NodeDetails";
+import NodeListPanel from "../NodeListPanel/NodeListPanel";
 import { useAuthContext } from "../../providers/AuthContext";
+import ShowAckedButton from "../Alerts/ShowAckedButton";
+import type { NodeFilterState } from "../NodeFilter/NodeFilter";
+import AlertAckButton from "../Alerts/AlertAckButton";
 
 const Dashboard: React.FC = () => {
   const [nodeData, setNodeData] = useState<ShortNodeData[]>([]);
   const [userSubscriptions, setUserSubscriptions] = useState<string[]>([]);
+  const [alerts, setAlerts] = useState<Alert[]>([]);
+  const [showAcked, setShowAcked] = useState<boolean>(false);
+  const [displayedAlerts, setDisplayedAlerts] = useState<Alert[]>([]);
+  const [filterState, setFilterState] = useState<NodeFilterState>({});
+
+  const filteredNodeData = useMemo(() => {
+    let nodes = [...nodeData];
+    if (filterState.onlySubscribed) {
+      nodes = nodes.filter((n) => userSubscriptions.includes(n.device_eui));
+    }
+    if (filterState.smokeDetected) {
+      nodes = nodes.filter((n) => n.smoke_detected);
+    }
+    if (filterState.tempAbove !== undefined) {
+      nodes = nodes.filter((n) => n.temperature_c > filterState.tempAbove!);
+    }
+    if (filterState.humidityBelow !== undefined) {
+      nodes = nodes.filter((n) => n.humidity_pct < filterState.humidityBelow!);
+    }
+    if (filterState.lowBattery) {
+      nodes = nodes.filter((n) => n.battery_level < 20);
+    }
+    return nodes;
+  }, [nodeData, userSubscriptions, filterState]);
 
   const API_URL: string =
     import.meta.env.VITE_API_URL || "http://localhost:8000";
@@ -19,7 +43,7 @@ const Dashboard: React.FC = () => {
   const { getToken } = useAuth();
   const { hasPermission } = useAuthContext();
 
-  const fetchNodeData = React.useCallback(async () => {
+  const fetchNodeData = useCallback(async () => {
     try {
       const token = await getToken();
       const response = await fetch(`${API_URL}/summary`, {
@@ -35,12 +59,12 @@ const Dashboard: React.FC = () => {
       );
       setNodeData(uniqueNodes);
     } catch (error) {
-      setNodeData([]); // fallback to empty array on error
+      setNodeData([]);
       console.error("Error fetching node data:", error);
     }
   }, [API_URL, getToken]);
 
-  const fetchSubscriptions = React.useCallback(async () => {
+  const fetchSubscriptions = useCallback(async () => {
     try {
       const token = await getToken();
       const response = await fetch(`${API_URL}/subscriptions`, {
@@ -53,12 +77,32 @@ const Dashboard: React.FC = () => {
     }
   }, [API_URL, getToken]);
 
+  const fetchAlerts = useCallback(async () => {
+    try {
+      const token = await getToken();
+      const response = await fetch(`${API_URL}/alerts`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await response.json();
+      if (Array.isArray(data)) setAlerts(data);
+    } catch (error) {
+      console.error("Error fetching alerts:", error);
+    }
+  }, [API_URL, getToken]);
+
   useEffect(() => {
     fetchNodeData();
     fetchSubscriptions();
-    const interval = setInterval(fetchNodeData, 3000);
-    return () => clearInterval(interval);
-  }, [fetchNodeData, fetchSubscriptions]);
+    fetchAlerts();
+    const nodeDataInterval = setInterval(fetchNodeData, 3000);
+    const alertsInterval = setInterval(fetchAlerts, 3000);
+    const subscriptionsInterval = setInterval(fetchSubscriptions, 30000);
+    return () => {
+      clearInterval(nodeDataInterval);
+      clearInterval(alertsInterval);
+      clearInterval(subscriptionsInterval);
+    };
+  }, [fetchNodeData, fetchSubscriptions, fetchAlerts]);
 
   /////////////////////////////////////////////////////////////////////////////////////////
   //
@@ -74,8 +118,6 @@ const Dashboard: React.FC = () => {
   //    clicking a Marker expands that marker and corresponding NodeCard
   //      all other expanded markers and NodeCards collapse.
   //
-  //
-  //
   /////////////////////////////////////////////////////////////////////////////////////////
 
   const [expandedNodeEuis, setExpandedNodeEuis] = useState<string[]>([]);
@@ -85,8 +127,11 @@ const Dashboard: React.FC = () => {
 
   const toggleExpandFromCard = (nodeEui: string) => {
     if (expandedNodeEuis.includes(nodeEui)) {
-      setExpandedNodeEuis(expandedNodeEuis.filter((Eui) => Eui !== nodeEui));
-      setMostRecentExpandedNodeEui(null);
+      const remaining = expandedNodeEuis.filter((eui) => eui !== nodeEui);
+      setExpandedNodeEuis(remaining);
+      setMostRecentExpandedNodeEui(
+        remaining.length === 1 ? remaining[0] : null,
+      );
     } else {
       setExpandedNodeEuis([...expandedNodeEuis, nodeEui]);
       setMostRecentExpandedNodeEui(nodeEui);
@@ -105,60 +150,13 @@ const Dashboard: React.FC = () => {
 
   // End of STATE AND HANDLERS block //////////////////////////////////////////////////////
 
-  const [filteredNodeList, setFilteredNodeList] = useState<ShortNodeData[]>([]);
-  const [showFilter, setShowFilter] = useState<boolean>(false);
-  const [smokeDetected, setSmokeDetected] =
-    useState<NodeFilterState["smokeDetected"]>();
-  const [tempAbove, setTempAbove] = useState<NodeFilterState["tempAbove"]>();
-  const [humidityBelow, setHumidityBelow] =
-    useState<NodeFilterState["humidityBelow"]>();
-  const [lowBattery, setLowBattery] = useState<NodeFilterState["lowBattery"]>();
-  // Please leave; Not implemented yet, would require backend support
-  /*   const [timeSinceLastSeen, setTimeSinceLastSeen] =
-    useState<NodeFilterState["timeSinceLastSeen"]>(); */
-  const [onlySubscribed, setOnlySubscribed] = useState<boolean>(false);
-
-  const applyFilter = React.useCallback(
-    (nodes: ShortNodeData[]): ShortNodeData[] => {
-      let filteredNodes = [...nodes];
-
-      if (onlySubscribed) {
-        filteredNodes = filteredNodes.filter((node) =>
-          userSubscriptions.includes(node.device_eui),
-        );
-      }
-      if (smokeDetected) {
-        filteredNodes = filteredNodes.filter((node) => node.smoke_detected);
-      }
-      if (tempAbove !== undefined) {
-        filteredNodes = filteredNodes.filter(
-          (node) => node.temperature_c > tempAbove,
-        );
-      }
-      if (humidityBelow !== undefined) {
-        filteredNodes = filteredNodes.filter(
-          (node) => node.humidity_pct < humidityBelow,
-        );
-      }
-      if (lowBattery) {
-        filteredNodes = filteredNodes.filter((node) => node.battery_level < 20);
-      }
-
-      return filteredNodes;
-    },
-    [
-      smokeDetected,
-      tempAbove,
-      humidityBelow,
-      lowBattery,
-      onlySubscribed,
-      userSubscriptions,
-    ],
-  );
-
   useEffect(() => {
-    setFilteredNodeList(applyFilter(nodeData));
-  }, [applyFilter, nodeData]);
+    if (showAcked) {
+      setDisplayedAlerts(alerts);
+    } else {
+      setDisplayedAlerts(alerts.filter((alert) => !alert.acknowledged));
+    }
+  }, [alerts, showAcked]);
 
   if (!hasPermission("view_nodes")) {
     return (
@@ -176,59 +174,106 @@ const Dashboard: React.FC = () => {
     );
   }
 
+  const unacknowledgedCount = alerts.filter((a) => !a.acknowledged).length;
+
   return (
     <>
-      <div className="bg-slate-300 h-[calc(100vh-4rem)] overflow-hidden">
-        <div className="flex flex-col md:flex-row justify-center space-x-4 w-full h-full py-2 p-4">
-          <div
-            className={`w-11/12 mx-auto md:w-auto md:mx-0 order-3 md:order-1 py-2 md:py-0 grow transition-all duration-200`}
-          >
-            <NodeDetails nodeEui={mostRecentExpandedNodeEui} />
-          </div>
-          <div className="w-11/12 mx-auto md:mx-4 min-h-[30vh] h-full py-2 md:py-0 order-1 md:order-2">
-            <WildfireMap
-              nodeData={nodeData.filter((node) =>
-                userSubscriptions.includes(node.device_eui),
+      <div className="bg-slate-300 overflow-auto md:overflow-hidden md:h-[calc(100vh-4rem)]">
+        <div className="flex flex-col md:flex-row md:space-x-4 w-full md:h-full p-4 gap-4 md:gap-0">
+          {/* Left column: transparent wrapper on mobile (children get individual order),
+              flex-col on desktop to stack alert count above NodeDetails */}
+          <div className="contents md:flex md:flex-col md:gap-2 md:w-auto md:mx-0 md:h-full">
+            {/* 1 — Alert count */}
+            <div className="order-1 w-11/12 mx-auto md:w-auto md:mx-0 lg:w-90 bg-slate-100 rounded-md p-4">
+              <div className="flex items-center justify-between mb-1">
+                <h2 className="text-xl font-bold">All Alerts</h2>
+              </div>
+              <div className="flex items-baseline gap-2">
+                <span className="text-4xl font-bold">
+                  {unacknowledgedCount}
+                </span>
+                <span className="text-slate-500 text-sm">unacknowledged</span>
+              </div>
+            </div>
+
+            {/* 4 — NodeDetails or alert list */}
+            <div className="order-4 w-11/12 mx-auto md:w-auto md:mx-0 md:flex-1 md:min-h-0 md:flex md:flex-col">
+              {mostRecentExpandedNodeEui ? (
+                <NodeDetails
+                  nodeEui={mostRecentExpandedNodeEui}
+                  showAcked={showAcked}
+                  setShowAcked={setShowAcked}
+                />
+              ) : (
+                <div className="lg:w-90 md:w-48 bg-slate-100 rounded-md p-4 overflow-y-auto md:flex-1">
+                  {displayedAlerts.length === 0 ? (
+                    <p className="text-gray-600">No alerts to display.</p>
+                  ) : (
+                    <>
+                      <div className="flex flex-row items-center justify-between mb-2">
+                        <h2 className="text-xl font-bold">Recent Alerts</h2>
+                        <ShowAckedButton
+                          showAcked={showAcked}
+                          setShowAcked={setShowAcked}
+                        />
+                      </div>
+                      <ul className="space-y-2">
+                        {displayedAlerts.map((alert) => (
+                          <li key={alert.id} className="border-b pb-2">
+                            <p>
+                              <strong>Node:</strong> {alert.dev_eui}
+                            </p>
+                            <p>
+                              <strong>Type:</strong> {alert.alert_type}
+                            </p>
+                            <p>{alert.message}</p>
+                            <p className="text-sm text-gray-500">
+                              {new Date(alert.created_at).toLocaleString()}
+                            </p>
+                            <AlertAckButton
+                              alertId={alert.id}
+                              acknowledged={alert.acknowledged}
+                              onAckChange={(acknowledged) => {
+                                setAlerts((prevAlerts) =>
+                                  prevAlerts.map((a) =>
+                                    a.id === alert.id
+                                      ? { ...a, acknowledged }
+                                      : a,
+                                  ),
+                                );
+                              }}
+                            />
+                          </li>
+                        ))}
+                      </ul>
+                    </>
+                  )}
+                </div>
               )}
+            </div>
+          </div>
+
+          {/* 2 — Map */}
+          <div className="order-2 w-11/12 mx-auto md:mx-4 h-[55vh] md:h-full md:flex-1">
+            <WildfireMap
+              nodeData={filteredNodeData}
               mostRecentExpandedNodeEui={mostRecentExpandedNodeEui}
               expandedNodeEuis={expandedNodeEuis}
               onMarkerClick={toggleExpandFromMap}
               setMapBounds={() => {}}
             />
           </div>
-          <div className="flex flex-col overflow-y-auto w-11/12 mx-auto md:w-100 lg:w-120 md:mx-0 bg-slate-400 rounded-md py-2 px-4 order-2 md:order-3">
-            <div className="flex flex-row items-center justify-between mb-4">
-              <h1 className="text-xl font-bold">Node List</h1>
-              <div className="flex flex-row gap-2 items-center">
-                <FontAwesomeIcon
-                  icon={fas.faFilter}
-                  className="text-black mr-2 hover:cursor-pointer"
-                  onClick={() => {
-                    setShowFilter((s) => !s);
-                  }}
-                />
-              </div>
-            </div>
-            {showFilter && (
-              <NodeFilter
-                onChange={(filters) => {
-                  setSmokeDetected(filters.smokeDetected);
-                  setTempAbove(filters.tempAbove);
-                  setHumidityBelow(filters.humidityBelow);
-                  setLowBattery(filters.lowBattery);
-                  setOnlySubscribed(!!filters.onlySubscribed);
-                }}
-              />
-            )}
-            <NodeCardList
-              nodeData={filteredNodeList}
+
+          {/* 3 — NodeListPanel */}
+          <div className="order-3 w-11/12 mx-auto md:w-80 md:mx-0 h-[65vh] md:h-full md:grow-0 md:shrink-0">
+            <NodeListPanel
+              nodeData={filteredNodeData}
+              userSubscriptions={userSubscriptions}
               expandedNodeEuis={expandedNodeEuis}
               onCardClick={toggleExpandFromCard}
               apiBaseUrl={API_URL}
-              subscribedNodeIds={userSubscriptions}
-              onSubscriptionsChange={(subs) => {
-                setUserSubscriptions(subs);
-              }}
+              onSubscriptionsChange={(subs) => setUserSubscriptions(subs)}
+              onFilterChange={setFilterState}
             />
           </div>
         </div>

@@ -1,14 +1,26 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "@clerk/clerk-react";
-import type { DetailNodeData, ShortNodeData } from "../../types/nodeTypes";
+import AlertAckButton from "../Alerts/AlertAckButton";
+import type {
+  DetailNodeData,
+  ShortNodeData,
+  Alert,
+} from "../../types/nodeTypes";
+import ShowAckedButton from "../Alerts/ShowAckedButton";
 
-const NodeDetails: React.FC<{ nodeEui: string | null }> = ({ nodeEui }) => {
+const NodeDetails: React.FC<{
+  nodeEui: string | null;
+  showAcked: boolean;
+  setShowAcked: (v: boolean) => void;
+}> = ({ nodeEui, showAcked, setShowAcked }) => {
   const [nodeData, setNodeData] = useState<DetailNodeData | null>(null);
   const [historicalData, setHistoricalData] = useState<ShortNodeData[]>([]);
+  const [alerts, setAlerts] = useState<Alert[]>([]);
+  const [displayedAlerts, setDisplayedAlerts] = useState<Alert[]>([]);
+  const { getToken } = useAuth();
 
   const API_URL: string =
     import.meta.env.VITE_API_URL || "http://localhost:8000";
-  const { getToken } = useAuth();
 
   useEffect(() => {
     const fetchCurrentNodeData = async () => {
@@ -46,13 +58,46 @@ const NodeDetails: React.FC<{ nodeEui: string | null }> = ({ nodeEui }) => {
       }
     };
 
+    const fetchNodeAlerts = async () => {
+      if (!nodeEui) {
+        setAlerts([]);
+        return;
+      }
+      try {
+        const token = await getToken();
+        const response = await fetch(`${API_URL}/alerts?dev_eui=${nodeEui}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const data = await response.json();
+        setAlerts(data);
+      } catch (error) {
+        console.error("Error fetching node alerts:", error);
+      }
+    };
+
     fetchCurrentNodeData();
     fetchHistoricalData();
-    const interval = setInterval(fetchCurrentNodeData, 3000);
-    return () => clearInterval(interval);
-  }, [API_URL, nodeEui, getToken]);
+    fetchNodeAlerts();
+    const nodeDataInterval = setInterval(fetchCurrentNodeData, 3000);
+    const alertsInterval = setInterval(fetchNodeAlerts, 3000);
+    const historicalDataInterval = setInterval(fetchHistoricalData, 30000);
+    return () => {
+      clearInterval(nodeDataInterval);
+      clearInterval(alertsInterval);
+      clearInterval(historicalDataInterval);
+    };
+  }, [API_URL, getToken, nodeEui]);
+
+  useEffect(() => {
+    if (showAcked) {
+      setDisplayedAlerts(alerts);
+    } else {
+      setDisplayedAlerts(alerts.filter((alert) => !alert.acknowledged));
+    }
+  }, [alerts, showAcked]);
+
   return (
-    <div className="flex-1 max-h-[30vh] md:max-h-full md:h-full lg:w-90 md:w-48 bg-slate-100 rounded-md p-4 overflow-y-auto">
+    <div className="lg:w-90 md:w-48 bg-slate-100 rounded-md p-4 overflow-y-auto max-h-[60vh] md:max-h-none md:flex-1">
       <h2 className="text-xl font-bold mb-4">
         Node EUI: {nodeEui ? nodeEui : "None Selected"}
       </h2>
@@ -72,6 +117,45 @@ const NodeDetails: React.FC<{ nodeEui: string | null }> = ({ nodeEui }) => {
               <p> SNR: {nodeData.snr}</p>
               <p> Gateway ID: {nodeData.gateway_id}</p>
             </div>
+          </div>
+          <div>
+            <div className="flex items-center justify-between mt-4">
+              <h3 className="text-lg font-bold">Alerts:</h3>
+              <ShowAckedButton
+                showAcked={showAcked}
+                setShowAcked={setShowAcked}
+              />
+            </div>
+
+            {displayedAlerts.length === 0 ? (
+              <p className="ml-4">
+                No alerts to display. Check to see if you are subscribed to this
+                node.
+              </p>
+            ) : (
+              <ul className="ml-4">
+                {displayedAlerts.map((alert) => (
+                  <li key={alert.id} className="mb-2">
+                    <p className="font-semibold">
+                      [{new Date(alert.created_at).toLocaleString()}]{" "}
+                      {alert.alert_type}
+                    </p>
+                    <p> {alert.message}</p>
+                    <AlertAckButton
+                      alertId={alert.id}
+                      acknowledged={alert.acknowledged}
+                      onAckChange={(acknowledged) => {
+                        setAlerts((prevAlerts) =>
+                          prevAlerts.map((a) =>
+                            a.id === alert.id ? { ...a, acknowledged } : a,
+                          ),
+                        );
+                      }}
+                    />
+                  </li>
+                ))}
+              </ul>
+            )}
           </div>
           <div>
             <h3 className="text-lg font-bold mt-4">Historical Data (50):</h3>

@@ -5,6 +5,10 @@ import { fas } from "@fortawesome/free-solid-svg-icons";
 
 interface NodeCardProps {
   nodeData: ShortNodeData;
+  onClick: (e: React.MouseEvent<HTMLButtonElement>) => void;
+  loading: boolean;
+  canSubscribe: boolean;
+  isSubscribed: boolean;
 }
 
 function decideIndicator(
@@ -31,7 +35,13 @@ function decideIndicator(
   }
 }
 
-const CardLongData: React.FC<NodeCardProps> = ({ nodeData }) => {
+const CardLongData: React.FC<NodeCardProps> = ({
+  nodeData,
+  onClick,
+  loading,
+  canSubscribe,
+  isSubscribed,
+}) => {
   return (
     <>
       {decideIndicator(
@@ -40,7 +50,7 @@ const CardLongData: React.FC<NodeCardProps> = ({ nodeData }) => {
         nodeData.humidity_pct,
         nodeData.temperature_c,
       )}
-      <div className="flex flex-col w-full h-24 justify-center my-4">
+      <div className="flex flex-col w-80 h-24 justify-center my-4">
         <h3 className="text-sm mb-2">EUI: {nodeData.device_eui}</h3>
         <div className="flex flex-row items-center">
           {nodeData.smoke_detected ? (
@@ -87,6 +97,30 @@ const CardLongData: React.FC<NodeCardProps> = ({ nodeData }) => {
             <div className="ml-8" />
           )}
           <p className="text-sm">Battery Level: {nodeData.battery_level} %</p>
+        </div>
+        <div>
+          {canSubscribe && (
+            <button
+              onClick={onClick}
+              disabled={loading}
+              className={`inline-flex items-center w-5/6 gap-2 px-3 py-1 rounded-md text-xs font-semibold border transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed ${
+                isSubscribed
+                  ? "bg-slate-500 text-white border-slate-600 shadow-inner"
+                  : "bg-white text-slate-500 border-slate-300 hover:border-slate-500 hover:text-slate-700"
+              }`}
+            >
+              <span
+                className={`w-2 h-2 rounded-full transition-colors duration-200 ${
+                  isSubscribed ? "bg-green-400" : "bg-slate-300"
+                }`}
+              />
+              {loading
+                ? "Updating..."
+                : isSubscribed
+                  ? "Subscribed"
+                  : "Subscribe"}
+            </button>
+          )}
         </div>
       </div>
     </>

@@ -17,3 +17,13 @@ export type DetailNodeData = ShortNodeData & {
   rssi: number;
   snr: number;
 };
+
+export type Alert = {
+  id: number;
+  dev_eui: string;
+  alert_type: string;
+  message: string;
+  created_at: string;
+  acknowledged: boolean;
+  acknowledged_at?: number | null;
+};
