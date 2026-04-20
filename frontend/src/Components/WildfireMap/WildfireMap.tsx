@@ -1,8 +1,15 @@
 import * as L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import { MapContainer, TileLayer, Marker, useMap } from "react-leaflet";
+import { GestureHandling } from "leaflet-gesture-handling";
 import type { ShortNodeData } from "../../types/nodeTypes";
 import { useEffect, useRef, useState, useMemo } from "react";
+
+declare module "leaflet" {
+  interface MapOptions {
+    gestureHandling?: boolean;
+  }
+}
 
 export interface MapProps {
   nodeData: ShortNodeData[];
@@ -182,6 +189,8 @@ function MapUpdater({
   return null;
 }
 
+L.Map.addInitHook("addHandler", "gestureHandling", GestureHandling);
+
 function WildfireMap({
   nodeData,
   mostRecentExpandedNodeEui,
@@ -242,7 +251,7 @@ function WildfireMap({
     );
     if (selectedNodes.length === 1) {
       const node = selectedNodes[0];
-      mapRef.current.setView([node.latitude, node.longitude], 10, {
+      mapRef.current.setView([node.latitude, node.longitude], 8, {
         animate: true,
       });
     } else if (selectedNodes.length > 1) {
@@ -258,7 +267,7 @@ function WildfireMap({
   const [initialCenterSet, setInitialCenterSet] = useState(false);
   useEffect(() => {
     if (!mapReady || !mapRef.current || initialCenterSet) return;
-    mapRef.current.setView(defaultCenter, 10);
+    mapRef.current.setView(defaultCenter, 8);
     setInitialCenterSet(true);
   }, [mapReady, defaultCenter, initialCenterSet]);
 
@@ -267,6 +276,7 @@ function WildfireMap({
       center={defaultCenter}
       zoom={12}
       scrollWheelZoom={true}
+      gestureHandling={true}
       className="shadow-lg rounded-md p-4 flex-1 h-full"
     >
       <MapRefSetter />

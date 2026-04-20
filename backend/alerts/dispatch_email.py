@@ -1,8 +1,11 @@
 import os
 import smtplib
+from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 
 from dotenv import load_dotenv
+
+from .email_template import render_alert_email
 
 load_dotenv()
 
@@ -11,17 +14,25 @@ PASSWORD = os.getenv("ALERT_PASS")
 SMTP_LOGIN = os.getenv("ALERT_SMTP_LOGIN", "")
 
 
-def send_email_alert(to_email: str, message: str) -> None:
+def send_email_alert(
+    to_email: str,
+    message: str,
+    dev_eui: str = "",
+    alert_type: str = "FIRE_RISK",
+) -> None:
     if not EMAIL or not PASSWORD:
         raise RuntimeError("Alert email not configured (ALERT_EMAIL/ALERT_PASS).")
 
     if not to_email:
         raise ValueError("No recipient email provided.")
 
-    msg = MIMEText(message)
+    msg = MIMEMultipart("alternative")
     msg["From"] = EMAIL
     msg["To"] = to_email
-    msg["Subject"] = "Wildfire Alert"
+    msg["Subject"] = "🔥 Wildfire Alert — Action May Be Required"
+
+    msg.attach(MIMEText(message, "plain"))
+    msg.attach(MIMEText(render_alert_email(dev_eui, alert_type, message), "html"))
 
     try:
         SMTP_HOST = os.getenv("ALERT_SMTP_HOST", "smtp.gmail.com")
