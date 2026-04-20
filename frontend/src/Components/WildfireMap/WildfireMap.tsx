@@ -157,6 +157,36 @@ function selectIconColor(
   }
 }
 
+function MobileGestureHandler() {
+  const map = useMap();
+
+  useEffect(() => {
+    const container = map.getContainer();
+
+    const onTouchStart = (e: TouchEvent) => {
+      if (e.touches.length < 2) {
+        map.dragging.disable();
+      } else {
+        map.dragging.enable();
+      }
+    };
+
+    const onTouchEnd = () => {
+      map.dragging.enable();
+    };
+
+    container.addEventListener("touchstart", onTouchStart, { passive: true });
+    container.addEventListener("touchend", onTouchEnd, { passive: true });
+
+    return () => {
+      container.removeEventListener("touchstart", onTouchStart);
+      container.removeEventListener("touchend", onTouchEnd);
+    };
+  }, [map]);
+
+  return null;
+}
+
 function MapUpdater({
   setMapBounds,
 }: {
@@ -270,6 +300,7 @@ function WildfireMap({
       className="shadow-lg rounded-md p-4 flex-1 h-full"
     >
       <MapRefSetter />
+      <MobileGestureHandler />
       <TileLayer
         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"

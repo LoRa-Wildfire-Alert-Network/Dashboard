@@ -97,7 +97,7 @@ const NodeDetails: React.FC<{
   }, [alerts, showAcked]);
 
   return (
-    <div className="lg:w-90 md:w-48 bg-slate-100 rounded-md p-4 overflow-y-auto max-h-[30vh] md:max-h-none md:flex-1">
+    <div className="lg:w-90 md:w-48 bg-slate-100 rounded-md p-4 overflow-y-auto max-h-[60vh] md:max-h-none md:flex-1">
       <h2 className="text-xl font-bold mb-4">
         Node EUI: {nodeEui ? nodeEui : "None Selected"}
       </h2>

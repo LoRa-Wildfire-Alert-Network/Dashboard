@@ -178,10 +178,13 @@ const Dashboard: React.FC = () => {
 
   return (
     <>
-      <div className="bg-slate-300 h-[calc(100vh-4rem)] overflow-hidden">
-        <div className="flex flex-col md:flex-row md:space-x-4 w-full h-full p-4 gap-2 md:gap-0">
-          <div className="w-11/12 mx-auto md:w-auto md:mx-0 order-1 flex flex-col gap-2">
-            <div className="lg:w-90 md:w-48 bg-slate-100 rounded-md p-4">
+      <div className="bg-slate-300 overflow-auto md:overflow-hidden md:h-[calc(100vh-4rem)]">
+        <div className="flex flex-col md:flex-row md:space-x-4 w-full md:h-full p-4 gap-4 md:gap-0">
+          {/* Left column: transparent wrapper on mobile (children get individual order),
+              flex-col on desktop to stack alert count above NodeDetails */}
+          <div className="contents md:flex md:flex-col md:gap-2 md:w-auto md:mx-0 md:h-full">
+            {/* 1 — Alert count */}
+            <div className="order-1 w-11/12 mx-auto md:w-auto md:mx-0 lg:w-90 bg-slate-100 rounded-md p-4">
               <div className="flex items-center justify-between mb-1">
                 <h2 className="text-xl font-bold">All Alerts</h2>
               </div>
@@ -193,61 +196,65 @@ const Dashboard: React.FC = () => {
               </div>
             </div>
 
-            {mostRecentExpandedNodeEui ? (
-              <NodeDetails
-                nodeEui={mostRecentExpandedNodeEui}
-                showAcked={showAcked}
-                setShowAcked={setShowAcked}
-              />
-            ) : (
-              <div className="lg:w-90 md:w-48 bg-slate-100 rounded-md p-4 overflow-y-auto max-h-[20vh] md:max-h-none md:flex-1">
-                {displayedAlerts.length === 0 ? (
-                  <p className="text-gray-600">No alerts to display.</p>
-                ) : (
-                  <>
-                    <div className="flex flex-row items-center justify-between mb-2">
-                      <h2 className="text-xl font-bold">Recent Alerts</h2>
-                      <ShowAckedButton
-                        showAcked={showAcked}
-                        setShowAcked={setShowAcked}
-                      />
-                    </div>
-                    <ul className="space-y-2">
-                      {displayedAlerts.map((alert) => (
-                        <li key={alert.id} className="border-b pb-2">
-                          <p>
-                            <strong>Node:</strong> {alert.dev_eui}
-                          </p>
-                          <p>
-                            <strong>Type:</strong> {alert.alert_type}
-                          </p>
-                          <p>{alert.message}</p>
-                          <p className="text-sm text-gray-500">
-                            {new Date(alert.created_at).toLocaleString()}
-                          </p>
-                          <AlertAckButton
-                            alertId={alert.id}
-                            acknowledged={alert.acknowledged}
-                            onAckChange={(acknowledged) => {
-                              setAlerts((prevAlerts) =>
-                                prevAlerts.map((a) =>
-                                  a.id === alert.id
-                                    ? { ...a, acknowledged }
-                                    : a,
-                                ),
-                              );
-                            }}
-                          />
-                        </li>
-                      ))}
-                    </ul>
-                  </>
-                )}
-              </div>
-            )}
+            {/* 4 — NodeDetails or alert list */}
+            <div className="order-4 w-11/12 mx-auto md:w-auto md:mx-0 md:flex-1 md:min-h-0 md:flex md:flex-col">
+              {mostRecentExpandedNodeEui ? (
+                <NodeDetails
+                  nodeEui={mostRecentExpandedNodeEui}
+                  showAcked={showAcked}
+                  setShowAcked={setShowAcked}
+                />
+              ) : (
+                <div className="lg:w-90 md:w-48 bg-slate-100 rounded-md p-4 overflow-y-auto md:flex-1">
+                  {displayedAlerts.length === 0 ? (
+                    <p className="text-gray-600">No alerts to display.</p>
+                  ) : (
+                    <>
+                      <div className="flex flex-row items-center justify-between mb-2">
+                        <h2 className="text-xl font-bold">Recent Alerts</h2>
+                        <ShowAckedButton
+                          showAcked={showAcked}
+                          setShowAcked={setShowAcked}
+                        />
+                      </div>
+                      <ul className="space-y-2">
+                        {displayedAlerts.map((alert) => (
+                          <li key={alert.id} className="border-b pb-2">
+                            <p>
+                              <strong>Node:</strong> {alert.dev_eui}
+                            </p>
+                            <p>
+                              <strong>Type:</strong> {alert.alert_type}
+                            </p>
+                            <p>{alert.message}</p>
+                            <p className="text-sm text-gray-500">
+                              {new Date(alert.created_at).toLocaleString()}
+                            </p>
+                            <AlertAckButton
+                              alertId={alert.id}
+                              acknowledged={alert.acknowledged}
+                              onAckChange={(acknowledged) => {
+                                setAlerts((prevAlerts) =>
+                                  prevAlerts.map((a) =>
+                                    a.id === alert.id
+                                      ? { ...a, acknowledged }
+                                      : a,
+                                  ),
+                                );
+                              }}
+                            />
+                          </li>
+                        ))}
+                      </ul>
+                    </>
+                  )}
+                </div>
+              )}
+            </div>
           </div>
 
-          <div className="w-11/12 mx-auto md:mx-4 h-150 md:h-full md:flex-1 order-2">
+          {/* 2 — Map */}
+          <div className="order-2 w-11/12 mx-auto md:mx-4 h-[55vh] md:h-full md:flex-1">
             <WildfireMap
               nodeData={filteredNodeData}
               mostRecentExpandedNodeEui={mostRecentExpandedNodeEui}
@@ -257,7 +264,8 @@ const Dashboard: React.FC = () => {
             />
           </div>
 
-          <div className="w-11/12 mx-auto md:w-80 md:mx-0 grow min-h-0 md:grow-0 md:shrink-0 md:h-full order-3">
+          {/* 3 — NodeListPanel */}
+          <div className="order-3 w-11/12 mx-auto md:w-80 md:mx-0 h-[65vh] md:h-full md:grow-0 md:shrink-0">
             <NodeListPanel
               nodeData={filteredNodeData}
               userSubscriptions={userSubscriptions}
