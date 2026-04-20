@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useAuth } from "@clerk/clerk-react";
 import type { ShortNodeData, Alert } from "./../../types/nodeTypes";
 import WildfireMap from "../WildfireMap/WildfireMap";
@@ -6,6 +6,7 @@ import NodeDetails from "../NodeDetails/NodeDetails";
 import NodeListPanel from "../NodeListPanel/NodeListPanel";
 import { useAuthContext } from "../../providers/AuthContext";
 import ShowAckedButton from "../Alerts/ShowAckedButton";
+import type { NodeFilterState } from "../NodeFilter/NodeFilter";
 
 const Dashboard: React.FC = () => {
   const [nodeData, setNodeData] = useState<ShortNodeData[]>([]);
@@ -13,6 +14,27 @@ const Dashboard: React.FC = () => {
   const [alerts, setAlerts] = useState<Alert[]>([]);
   const [showAcked, setShowAcked] = useState<boolean>(false);
   const [displayedAlerts, setDisplayedAlerts] = useState<Alert[]>([]);
+  const [filterState, setFilterState] = useState<NodeFilterState>({});
+
+  const filteredNodeData = useMemo(() => {
+    let nodes = [...nodeData];
+    if (filterState.onlySubscribed) {
+      nodes = nodes.filter((n) => userSubscriptions.includes(n.device_eui));
+    }
+    if (filterState.smokeDetected) {
+      nodes = nodes.filter((n) => n.smoke_detected);
+    }
+    if (filterState.tempAbove !== undefined) {
+      nodes = nodes.filter((n) => n.temperature_c > filterState.tempAbove!);
+    }
+    if (filterState.humidityBelow !== undefined) {
+      nodes = nodes.filter((n) => n.humidity_pct < filterState.humidityBelow!);
+    }
+    if (filterState.lowBattery) {
+      nodes = nodes.filter((n) => n.battery_level < 20);
+    }
+    return nodes;
+  }, [nodeData, userSubscriptions, filterState]);
 
   const API_URL: string =
     import.meta.env.VITE_API_URL || "http://localhost:8000";
@@ -106,7 +128,9 @@ const Dashboard: React.FC = () => {
     if (expandedNodeEuis.includes(nodeEui)) {
       const remaining = expandedNodeEuis.filter((eui) => eui !== nodeEui);
       setExpandedNodeEuis(remaining);
-      setMostRecentExpandedNodeEui(remaining.length === 1 ? remaining[0] : null);
+      setMostRecentExpandedNodeEui(
+        remaining.length === 1 ? remaining[0] : null,
+      );
     } else {
       setExpandedNodeEuis([...expandedNodeEuis, nodeEui]);
       setMostRecentExpandedNodeEui(nodeEui);
@@ -159,10 +183,6 @@ const Dashboard: React.FC = () => {
             <div className="lg:w-90 md:w-48 bg-slate-100 rounded-md p-4">
               <div className="flex items-center justify-between mb-1">
                 <h2 className="text-xl font-bold">All Alerts</h2>
-                <ShowAckedButton
-                  showAcked={showAcked}
-                  setShowAcked={setShowAcked}
-                />
               </div>
               <div className="flex items-baseline gap-2">
                 <span className="text-4xl font-bold">
@@ -183,22 +203,31 @@ const Dashboard: React.FC = () => {
                 {displayedAlerts.length === 0 ? (
                   <p className="text-gray-600">No alerts to display.</p>
                 ) : (
-                  <ul className="space-y-2">
-                    {displayedAlerts.map((alert) => (
-                      <li key={alert.id} className="border-b pb-2">
-                        <p>
-                          <strong>Node:</strong> {alert.dev_eui}
-                        </p>
-                        <p>
-                          <strong>Type:</strong> {alert.alert_type}
-                        </p>
-                        <p>{alert.message}</p>
-                        <p className="text-sm text-gray-500">
-                          {new Date(alert.created_at).toLocaleString()}
-                        </p>
-                      </li>
-                    ))}
-                  </ul>
+                  <>
+                    <div className="flex flex-row items-center justify-between mb-2">
+                      <h2 className="text-xl font-bold">Recent Alerts</h2>
+                      <ShowAckedButton
+                        showAcked={showAcked}
+                        setShowAcked={setShowAcked}
+                      />
+                    </div>
+                    <ul className="space-y-2">
+                      {displayedAlerts.map((alert) => (
+                        <li key={alert.id} className="border-b pb-2">
+                          <p>
+                            <strong>Node:</strong> {alert.dev_eui}
+                          </p>
+                          <p>
+                            <strong>Type:</strong> {alert.alert_type}
+                          </p>
+                          <p>{alert.message}</p>
+                          <p className="text-sm text-gray-500">
+                            {new Date(alert.created_at).toLocaleString()}
+                          </p>
+                        </li>
+                      ))}
+                    </ul>
+                  </>
                 )}
               </div>
             )}
@@ -206,7 +235,7 @@ const Dashboard: React.FC = () => {
 
           <div className="w-11/12 mx-auto md:mx-4 h-150 md:h-full md:flex-1 order-2">
             <WildfireMap
-              nodeData={nodeData}
+              nodeData={filteredNodeData}
               mostRecentExpandedNodeEui={mostRecentExpandedNodeEui}
               expandedNodeEuis={expandedNodeEuis}
               onMarkerClick={toggleExpandFromMap}
@@ -216,12 +245,13 @@ const Dashboard: React.FC = () => {
 
           <div className="w-11/12 mx-auto md:w-80 md:mx-0 grow min-h-0 md:grow-0 md:shrink-0 md:h-full order-3">
             <NodeListPanel
-              nodeData={nodeData}
+              nodeData={filteredNodeData}
               userSubscriptions={userSubscriptions}
               expandedNodeEuis={expandedNodeEuis}
               onCardClick={toggleExpandFromCard}
               apiBaseUrl={API_URL}
               onSubscriptionsChange={(subs) => setUserSubscriptions(subs)}
+              onFilterChange={setFilterState}
             />
           </div>
         </div>

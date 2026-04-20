@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useState } from "react";
 import NodeCardList from "./NodeCardList";
 import NodeFilter, { type NodeFilterState } from "../NodeFilter/NodeFilter";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
@@ -12,6 +12,7 @@ type NodeListPanelProps = {
   onCardClick: (nodeEui: string) => void;
   apiBaseUrl: string;
   onSubscriptionsChange: (subs: string[]) => void;
+  onFilterChange: (filter: NodeFilterState) => void;
 };
 
 const NodeListPanel: React.FC<NodeListPanelProps> = ({
@@ -21,59 +22,9 @@ const NodeListPanel: React.FC<NodeListPanelProps> = ({
   onCardClick,
   apiBaseUrl,
   onSubscriptionsChange,
+  onFilterChange,
 }) => {
-  const [filteredNodeList, setFilteredNodeList] = useState<ShortNodeData[]>([]);
   const [showFilter, setShowFilter] = useState<boolean>(false);
-  const [smokeDetected, setSmokeDetected] =
-    useState<NodeFilterState["smokeDetected"]>();
-  const [tempAbove, setTempAbove] = useState<NodeFilterState["tempAbove"]>();
-  const [humidityBelow, setHumidityBelow] =
-    useState<NodeFilterState["humidityBelow"]>();
-  const [lowBattery, setLowBattery] = useState<NodeFilterState["lowBattery"]>();
-  // Please leave; Not implemented yet, would require backend support
-  /*   const [timeSinceLastSeen, setTimeSinceLastSeen] =
-    useState<NodeFilterState["timeSinceLastSeen"]>(); */
-  const [onlySubscribed, setOnlySubscribed] = useState<boolean>(false);
-
-  const applyFilter = useCallback(
-    (nodes: ShortNodeData[]): ShortNodeData[] => {
-      let filteredNodes = [...nodes];
-      if (onlySubscribed) {
-        filteredNodes = filteredNodes.filter((node) =>
-          userSubscriptions.includes(node.device_eui),
-        );
-      }
-      if (smokeDetected) {
-        filteredNodes = filteredNodes.filter((node) => node.smoke_detected);
-      }
-      if (tempAbove !== undefined) {
-        filteredNodes = filteredNodes.filter(
-          (node) => node.temperature_c > tempAbove,
-        );
-      }
-      if (humidityBelow !== undefined) {
-        filteredNodes = filteredNodes.filter(
-          (node) => node.humidity_pct < humidityBelow,
-        );
-      }
-      if (lowBattery) {
-        filteredNodes = filteredNodes.filter((node) => node.battery_level < 20);
-      }
-      return filteredNodes;
-    },
-    [
-      smokeDetected,
-      tempAbove,
-      humidityBelow,
-      lowBattery,
-      onlySubscribed,
-      userSubscriptions,
-    ],
-  );
-
-  useEffect(() => {
-    setFilteredNodeList(applyFilter(nodeData));
-  }, [applyFilter, nodeData]);
 
   return (
     <div className="flex flex-col overflow-y-auto w-full h-full bg-slate-400 rounded-md py-2 px-4">
@@ -85,19 +36,9 @@ const NodeListPanel: React.FC<NodeListPanelProps> = ({
           onClick={() => setShowFilter((s) => !s)}
         />
       </div>
-      {showFilter && (
-        <NodeFilter
-          onChange={(filters) => {
-            setSmokeDetected(filters.smokeDetected);
-            setTempAbove(filters.tempAbove);
-            setHumidityBelow(filters.humidityBelow);
-            setLowBattery(filters.lowBattery);
-            setOnlySubscribed(!!filters.onlySubscribed);
-          }}
-        />
-      )}
+      {showFilter && <NodeFilter onChange={onFilterChange} />}
       <NodeCardList
-        nodeData={filteredNodeList}
+        nodeData={nodeData}
         expandedNodeEuis={expandedNodeEuis}
         onCardClick={onCardClick}
         apiBaseUrl={apiBaseUrl}
