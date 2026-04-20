@@ -242,7 +242,7 @@ function WildfireMap({
     );
     if (selectedNodes.length === 1) {
       const node = selectedNodes[0];
-      mapRef.current.setView([node.latitude, node.longitude], 10, {
+      mapRef.current.setView([node.latitude, node.longitude], 8, {
         animate: true,
       });
     } else if (selectedNodes.length > 1) {

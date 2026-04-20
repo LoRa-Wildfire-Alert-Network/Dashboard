@@ -205,9 +205,7 @@ const Dashboard: React.FC = () => {
 
           <div className="w-11/12 mx-auto md:mx-4 h-150 md:h-full md:flex-1 order-2">
             <WildfireMap
-              nodeData={nodeData.filter((node) =>
-                userSubscriptions.includes(node.device_eui),
-              )}
+              nodeData={nodeData}
               mostRecentExpandedNodeEui={mostRecentExpandedNodeEui}
               expandedNodeEuis={expandedNodeEuis}
               onMarkerClick={toggleExpandFromMap}
