@@ -1,6 +1,5 @@
 import sqlite3
 import time
-import pytest
 
 
 def _open(db_path: str) -> sqlite3.Connection:

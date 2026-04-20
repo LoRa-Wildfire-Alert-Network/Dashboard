@@ -1,12 +1,13 @@
 import sqlite3
 import time
 import pytest
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 
 from alerts.engine import AlertService, process_row_for_alerts, _service
 
 DEV_EUI = "AABBCCDD00000001"
 ALERT_TYPE = "FIRE_RISK"
+
 
 def _open_conn(db_path):
     conn = sqlite3.connect(db_path, check_same_thread=False)
@@ -16,8 +17,8 @@ def _open_conn(db_path):
 
 
 def _insert_alert_pref(conn, user_id, dev_eui, enabled=1,
-                        temp_over_c=None, battery_below_pct=None,
-                        smoke_detected=None, last_sent_at=None):
+                       temp_over_c=None, battery_below_pct=None,
+                       smoke_detected=None, last_sent_at=None):
     ts = 1_000_000
     conn.execute(
         """
@@ -52,7 +53,8 @@ class TestInsertAlert:
         svc = AlertService(file_db)
         with svc._db() as conn:
             conn.execute("BEGIN")
-            alert_id = svc._insert_alert(conn, DEV_EUI, ALERT_TYPE, "test msg", 1_000_000)
+            alert_id = svc._insert_alert(
+                conn, DEV_EUI, ALERT_TYPE, "test msg", 1_000_000)
             conn.commit()
         assert isinstance(alert_id, int)
         assert alert_id > 0
@@ -83,7 +85,8 @@ class TestInsertAlert:
         for i in range(2):
             with svc._db() as conn:
                 conn.execute("BEGIN")
-                aid = svc._insert_alert(conn, DEV_EUI, ALERT_TYPE, f"msg {i}", 1_000_000 + i)
+                aid = svc._insert_alert(
+                    conn, DEV_EUI, ALERT_TYPE, f"msg {i}", 1_000_000 + i)
                 conn.commit()
             ids.append(aid)
         assert ids[0] != ids[1]
@@ -165,7 +168,8 @@ class TestEnqueueMatchingUsers:
         _insert_alert_pref(conn, "test_user_123", DEV_EUI,
                            enabled=1, smoke_detected=1, last_sent_at=None)
         pref_id = conn.execute(
-            "SELECT id FROM alert_preferences WHERE user_id='test_user_123' AND dev_eui=?",
+            """SELECT id FROM alert_preferences
+            WHERE user_id='test_user_123' AND dev_eui=?""",
             (DEV_EUI,)
         ).fetchone()["id"]
         conn.close()
@@ -292,7 +296,8 @@ class TestProcessRow:
                            enabled=1, smoke_detected=1)
         now = int(time.time())
         conn.execute(
-            "INSERT INTO alerts (dev_eui, alert_type, message, created_at, acknowledged) "
+            """INSERT INTO alerts (dev_eui,
+                alert_type, message, created_at, acknowledged)"""
             "VALUES (?, 'FIRE_RISK', 'old', ?, 0)",
             (DEV_EUI, now - 10),
         )

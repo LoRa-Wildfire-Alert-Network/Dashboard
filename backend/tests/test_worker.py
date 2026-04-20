@@ -1,7 +1,5 @@
 import sqlite3
-import threading
 import time
-import pytest
 from unittest.mock import patch, MagicMock, call
 
 import alerts.worker as worker_module
@@ -12,6 +10,7 @@ from alerts.worker import (
     start_workers,
     worker_loop,
 )
+
 
 def _open_conn(db_path: str) -> sqlite3.Connection:
     conn = sqlite3.connect(db_path, check_same_thread=False)
@@ -87,7 +86,6 @@ class TestClaimOne:
         now = int(time.time())
         conn = _open_conn(file_db)
         id_old = _insert_queue_row(conn, created_at=now - 100, message="old")
-        id_new = _insert_queue_row(conn, created_at=now, message="new")
         conn.close()
 
         with _open_conn(file_db) as conn:
@@ -369,7 +367,9 @@ class TestWorkerLoop:
                 c.close()
 
         with patch.object(worker_module, "_db", patched_db), \
-                patch.object(worker_module, "_claim_one", side_effect=controlled_claim), \
+                patch.object(
+                    worker_module, "_claim_one",
+                    side_effect=controlled_claim), \
                 patch("alerts.worker.send_email_alert",
                       side_effect=RuntimeError("smtp down")), \
                 patch("alerts.worker.time.sleep", return_value=None):

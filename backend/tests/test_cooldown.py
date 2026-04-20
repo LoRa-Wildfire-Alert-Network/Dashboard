@@ -1,7 +1,4 @@
 import time
-import sqlite3
-import pytest
-
 from alerts.cooldown import is_duplicate_within_cooldown, can_send, COOLDOWN_SECONDS
 
 DEV_EUI = "AABBCCDD00000001"

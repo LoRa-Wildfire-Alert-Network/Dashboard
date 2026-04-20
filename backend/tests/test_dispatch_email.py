@@ -210,7 +210,9 @@ class TestSmtpRaises:
         monkeypatch.setattr(dispatch_email_module, "SMTP_LOGIN", "")
 
         smtp_mock = _make_smtp_mock()
-        smtp_mock.sendmail.side_effect = smtplib.SMTPRecipientsRefused({"bad@x.com": (550, b"no")})
+        smtp_mock.sendmail.side_effect = smtplib.SMTPRecipientsRefused(
+            {"bad@x.com": (550, b"no")}
+        )
 
         with patch.dict("os.environ", {"ALERT_SMTP_PORT": "465"}), \
                 patch("smtplib.SMTP_SSL", return_value=smtp_mock):
