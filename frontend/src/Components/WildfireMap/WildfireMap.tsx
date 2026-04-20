@@ -166,13 +166,16 @@ function MobileGestureHandler() {
     const onTouchStart = (e: TouchEvent) => {
       if (e.touches.length < 2) {
         map.dragging.disable();
+        container.style.touchAction = "pan-y";
       } else {
         map.dragging.enable();
+        container.style.touchAction = "none";
       }
     };
 
     const onTouchEnd = () => {
       map.dragging.enable();
+      container.style.touchAction = "none";
     };
 
     container.addEventListener("touchstart", onTouchStart, { passive: true });
@@ -288,7 +291,7 @@ function WildfireMap({
   const [initialCenterSet, setInitialCenterSet] = useState(false);
   useEffect(() => {
     if (!mapReady || !mapRef.current || initialCenterSet) return;
-    mapRef.current.setView(defaultCenter, 10);
+    mapRef.current.setView(defaultCenter, 8);
     setInitialCenterSet(true);
   }, [mapReady, defaultCenter, initialCenterSet]);
 
