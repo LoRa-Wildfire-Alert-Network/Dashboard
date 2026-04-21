@@ -158,8 +158,14 @@ class TestSmtpSsl:
         ), patch("smtplib.SMTP_SSL", return_value=smtp_mock):
             send_email_alert("recipient@example.com", "smoke detected")
 
+        import email as _email
+        from email.header import decode_header
         assert len(captured_msg) == 1
-        assert "Wildfire Alert" in captured_msg[0]
+        parsed = _email.message_from_string(captured_msg[0])
+        subject_raw, enc = decode_header(parsed["Subject"])[0]
+        subject = subject_raw.decode(enc or "utf-8") if isinstance(
+            subject_raw, bytes) else subject_raw
+        assert "Wildfire Alert" in subject
         assert "smoke detected" in captured_msg[0]
 
 
