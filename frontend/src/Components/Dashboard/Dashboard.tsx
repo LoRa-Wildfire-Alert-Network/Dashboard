@@ -203,6 +203,7 @@ const Dashboard: React.FC = () => {
                   nodeEui={mostRecentExpandedNodeEui}
                   showAcked={showAcked}
                   setShowAcked={setShowAcked}
+                  userSubscriptions={userSubscriptions}
                 />
               ) : (
                 <div className="lg:w-90 md:w-48 bg-slate-100 rounded-md p-4 overflow-y-auto md:flex-1">
@@ -230,19 +231,21 @@ const Dashboard: React.FC = () => {
                             <p className="text-sm text-gray-500">
                               {new Date(alert.created_at).toLocaleString()}
                             </p>
-                            <AlertAckButton
-                              alertId={alert.id}
-                              acknowledged={alert.acknowledged}
-                              onAckChange={(acknowledged) => {
-                                setAlerts((prevAlerts) =>
-                                  prevAlerts.map((a) =>
-                                    a.id === alert.id
-                                      ? { ...a, acknowledged }
-                                      : a,
-                                  ),
-                                );
-                              }}
-                            />
+                            {userSubscriptions.includes(alert.dev_eui) && (
+                              <AlertAckButton
+                                alertId={alert.id}
+                                acknowledged={alert.acknowledged}
+                                onAckChange={(acknowledged) => {
+                                  setAlerts((prevAlerts) =>
+                                    prevAlerts.map((a) =>
+                                      a.id === alert.id
+                                        ? { ...a, acknowledged }
+                                        : a,
+                                    ),
+                                  );
+                                }}
+                              />
+                            )}
                           </li>
                         ))}
                       </ul>

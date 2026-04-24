@@ -70,8 +70,7 @@ class RoleSettingsUpdate(BaseModel):
 
 ALLOWED_ORIGINS = os.getenv("ALLOWED_ORIGINS", "*")
 CLERK_JWT_ISSUER = os.getenv(
-    "CLERK_JWT_ISSUER",
-    "https://growing-midge-79.clerk.accounts.dev"
+    "CLERK_JWT_ISSUER", "https://growing-midge-79.clerk.accounts.dev"
 )
 with open(os.path.join(HERE, "clerk_public_key.pem")) as f:
     CLERK_JWT_PUBLIC_KEY = f.read()
@@ -95,6 +94,7 @@ async def lifespan(app: FastAPI):
 
     yield
 
+
 app = FastAPI(title="LoRa Wildfire Backend API", lifespan=lifespan)
 CLERK_SECRET_KEY = os.getenv("VITE_CLERK_PUBLISHABLE_KEY")
 
@@ -107,8 +107,11 @@ ALL_PERMISSIONS: set[str] = {
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[o.strip() for o in ALLOWED_ORIGINS.split(",")]
-    if ALLOWED_ORIGINS != "*" else ["*"],
+    allow_origins=(
+        [o.strip() for o in ALLOWED_ORIGINS.split(",")]
+        if ALLOWED_ORIGINS != "*"
+        else ["*"]
+    ),
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -177,8 +180,7 @@ def get_clerk_user_id(
     email = None
     with db() as conn:
         row = conn.execute(
-            "SELECT email FROM users WHERE auth_sub = ?",
-            (user_id,)
+            "SELECT email FROM users WHERE auth_sub = ?", (user_id,)
         ).fetchone()
         if row and row["email"]:
             email = row["email"]
@@ -267,6 +269,7 @@ def _require_perm(perm: str):
     def _check(permissions: set = Depends(get_org_permissions)) -> None:
         if perm not in permissions:
             raise HTTPException(status_code=403, detail=f"Permission denied: {perm}")
+
     return _check
 
 
@@ -339,8 +342,7 @@ def subscribe_node(
     device_eui = body.device_eui
     with db() as conn:
         node = conn.execute(
-            "SELECT device_eui FROM nodes WHERE device_eui = ?",
-            (device_eui,)
+            "SELECT device_eui FROM nodes WHERE device_eui = ?", (device_eui,)
         ).fetchone()
         if not node:
             raise HTTPException(status_code=404, detail="Node not found")
@@ -409,8 +411,7 @@ def create_alert_preference(
     with db() as conn:
         # verify node exists
         node = conn.execute(
-            "SELECT device_eui FROM nodes WHERE device_eui = ?",
-            (body.dev_eui,)
+            "SELECT device_eui FROM nodes WHERE device_eui = ?", (body.dev_eui,)
         ).fetchone()
         if not node:
             raise HTTPException(status_code=404, detail="Node not found")
@@ -487,7 +488,7 @@ def get_user_subscriptions(
     with db() as conn:
         rows = conn.execute(
             "SELECT device_eui FROM user_node_subscriptions WHERE user_id = ?",
-            (user_id,)
+            (user_id,),
         ).fetchall()
     return [r[0] for r in rows]
 
@@ -502,17 +503,23 @@ def get_alerts(
     limit: int = Query(50, ge=1, le=200),
     dev_eui: Optional[str] = Query(None),
     acknowledged: Optional[bool] = Query(None),
-    user_id: str = Depends(get_clerk_user_id),
+    # user_id: Optional[str] = Depends(get_clerk_user_id),
 ):
-    clauses: List[str] = ["s.user_id = ?"]
-    params: List[object] = [user_id]
+    clauses: List[str] = []
+    params: List[object] = []
+    # if user_id:
+    #     clauses.append("s.user_id = ?")
+    #     params.append(user_id)
     if dev_eui:
         clauses.append("a.dev_eui = ?")
         params.append(dev_eui)
     if acknowledged is not None:
         clauses.append("a.acknowledged = ?")
         params.append(1 if acknowledged else 0)
-    where = " AND ".join(clauses)
+    # join = (
+    #     "JOIN user_node_subscriptions s ON s.device_eui = a.dev_eui" if user_id else ""
+    # )
+    where = ("WHERE " + " AND ".join(clauses)) if clauses else ""
     q = f"""
         SELECT
           a.id,
@@ -523,9 +530,7 @@ def get_alerts(
           a.acknowledged,
           a.acknowledged_at
         FROM alerts a
-        JOIN user_node_subscriptions s
-          ON s.device_eui = a.dev_eui
-        WHERE {where}
+        {where}
         ORDER BY a.created_at DESC
         LIMIT ?
     """
@@ -576,8 +581,7 @@ def update_alert_preference(
 
     with db() as conn:
         existing = conn.execute(
-            "SELECT * FROM alert_preferences WHERE id = ?",
-            (pref_id,)
+            "SELECT * FROM alert_preferences WHERE id = ?", (pref_id,)
         ).fetchone()
         if not existing:
             raise HTTPException(status_code=404, detail="Preference not found")
@@ -598,8 +602,7 @@ def update_alert_preference(
         # If dev_eui is changing, verify node exists
         if "dev_eui" in body.model_fields_set and body.dev_eui is not None:
             node = conn.execute(
-                "SELECT device_eui FROM nodes WHERE device_eui = ?",
-                (body.dev_eui,)
+                "SELECT device_eui FROM nodes WHERE device_eui = ?", (body.dev_eui,)
             ).fetchone()
             if not node:
                 raise HTTPException(status_code=404, detail="Node not found")
@@ -659,7 +662,7 @@ def update_alert_preference(
             FROM alert_preferences
             WHERE id = ?
             """,
-            (pref_id,)
+            (pref_id,),
         ).fetchone()
 
     return dict(updated)
@@ -673,15 +676,11 @@ def delete_alert_preference(
 
     with db() as conn:
         existing = conn.execute(
-            "SELECT user_id FROM alert_preferences WHERE id = ?",
-            (pref_id,)
+            "SELECT user_id FROM alert_preferences WHERE id = ?", (pref_id,)
         ).fetchone()
         if not existing or existing["user_id"] != user_id:
             raise HTTPException(status_code=404, detail="Preference not found")
-        conn.execute(
-            "DELETE FROM alert_preferences WHERE id = ?",
-            (pref_id,)
-        )
+        conn.execute("DELETE FROM alert_preferences WHERE id = ?", (pref_id,))
         conn.commit()
 
 
@@ -737,8 +736,7 @@ def get_telemetry(
     _perm: None = require_permission("view_nodes"),
     device_eui: Optional[str] = None,
     t_from: Optional[str] = Query(
-        None,
-        description="ISO8601; e.g. 2025-01-01T00:00:00Z"
+        None, description="ISO8601; e.g. 2025-01-01T00:00:00Z"
     ),
     t_to: Optional[str] = Query(None, description="ISO8601; e.g. 2025-01-02T00:00:00Z"),
     limit: int = Query(500, ge=1, le=5000),
@@ -805,7 +803,7 @@ def latest_all_nodes(
     with db() as conn:
         device_euis = conn.execute(
             "SELECT device_eui FROM user_node_subscriptions WHERE user_id = ?",
-            (user_id,)
+            (user_id,),
         ).fetchall()
         device_euis = [r[0] for r in device_euis]
         if not device_euis:
@@ -908,6 +906,7 @@ def map_nodes(
 #      ORG / RBAC ENDPOINTS
 # -------------------------
 
+
 @app.get("/org/role-settings")
 def get_org_role_settings(org_id: str = Depends(require_org_admin)):
     with db() as conn:
@@ -989,12 +988,14 @@ def update_org_role_settings(
                         "Auto-unsubscribed %d user(s) in org %s "
                         "(role %s lost subscribe_nodes); "
                         "removed matching alert preferences",
-                        len(affected_user_ids), org_id, clerk_role,
+                        len(affected_user_ids),
+                        org_id,
+                        clerk_role,
                     )
             else:
                 log.warning(
-                    "Could not fetch org members to auto-unsubscribe: "
-                    "status=%s", r.status_code
+                    "Could not fetch org members to auto-unsubscribe: " "status=%s",
+                    r.status_code,
                 )
         except Exception:
             log.exception(
@@ -1057,8 +1058,11 @@ def create_org_role(
                 "(org_id, name, description, is_default, created_at) "
                 "VALUES (?, ?, ?, ?, ?)",
                 (
-                    org_id, body.name.strip(), body.description,
-                    1 if body.is_default else 0, ts,
+                    org_id,
+                    body.name.strip(),
+                    body.description,
+                    1 if body.is_default else 0,
+                    ts,
                 ),
             )
         except sqlite3.IntegrityError:
@@ -1207,7 +1211,8 @@ def list_org_members(org_id: str = Depends(require_org_admin)):
     if r.status_code != 200:
         log.warning(
             "Clerk org memberships error: status=%s body=%s",
-            r.status_code, r.text[:200],
+            r.status_code,
+            r.text[:200],
         )
         raise HTTPException(
             status_code=502,
@@ -1242,19 +1247,25 @@ def list_org_members(org_id: str = Depends(require_org_admin)):
         first = pub.get("first_name") or ""
         last = pub.get("last_name") or ""
         assigned = role_map.get(user_id)
-        result.append({
-            "user_id": user_id,
-            "email": pub.get("identifier", ""),
-            "name": f"{first} {last}".strip() or None,
-            "clerk_role": m.get("role"),
-            "assigned_role": {
-                "id": assigned["role_id"],
-                "name": assigned["role_name"],
-                "description": assigned["role_description"],
-                "is_default": bool(assigned["is_default"]),
-                "permissions": perm_map.get(user_id, []),
-            } if assigned else None,
-        })
+        result.append(
+            {
+                "user_id": user_id,
+                "email": pub.get("identifier", ""),
+                "name": f"{first} {last}".strip() or None,
+                "clerk_role": m.get("role"),
+                "assigned_role": (
+                    {
+                        "id": assigned["role_id"],
+                        "name": assigned["role_name"],
+                        "description": assigned["role_description"],
+                        "is_default": bool(assigned["is_default"]),
+                        "permissions": perm_map.get(user_id, []),
+                    }
+                    if assigned
+                    else None
+                ),
+            }
+        )
     return result
 
 
@@ -1269,12 +1280,10 @@ def assign_member_role(
     with db() as conn:
         role = conn.execute(
             "SELECT id FROM org_roles WHERE id = ? AND org_id = ?",
-            (body.role_id, org_id)
+            (body.role_id, org_id),
         ).fetchone()
         if not role:
-            raise HTTPException(
-                status_code=404, detail="Role not found in this org"
-            )
+            raise HTTPException(status_code=404, detail="Role not found in this org")
         conn.execute(
             "INSERT OR IGNORE INTO users (auth_sub, email, created_at) "
             "VALUES (?, '', ?)",

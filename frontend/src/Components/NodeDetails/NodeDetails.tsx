@@ -12,7 +12,8 @@ const NodeDetails: React.FC<{
   nodeEui: string | null;
   showAcked: boolean;
   setShowAcked: (v: boolean) => void;
-}> = ({ nodeEui, showAcked, setShowAcked }) => {
+  userSubscriptions: string[];
+}> = ({ nodeEui, showAcked, setShowAcked, userSubscriptions }) => {
   const [nodeData, setNodeData] = useState<DetailNodeData | null>(null);
   const [historicalData, setHistoricalData] = useState<ShortNodeData[]>([]);
   const [alerts, setAlerts] = useState<Alert[]>([]);
@@ -141,17 +142,19 @@ const NodeDetails: React.FC<{
                       {alert.alert_type}
                     </p>
                     <p> {alert.message}</p>
-                    <AlertAckButton
-                      alertId={alert.id}
-                      acknowledged={alert.acknowledged}
-                      onAckChange={(acknowledged) => {
-                        setAlerts((prevAlerts) =>
-                          prevAlerts.map((a) =>
-                            a.id === alert.id ? { ...a, acknowledged } : a,
-                          ),
-                        );
-                      }}
-                    />
+                    {userSubscriptions.includes(alert.dev_eui) && (
+                      <AlertAckButton
+                        alertId={alert.id}
+                        acknowledged={alert.acknowledged}
+                        onAckChange={(acknowledged) => {
+                          setAlerts((prevAlerts) =>
+                            prevAlerts.map((a) =>
+                              a.id === alert.id ? { ...a, acknowledged } : a,
+                            ),
+                          );
+                        }}
+                      />
+                    )}
                   </li>
                 ))}
               </ul>
