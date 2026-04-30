@@ -79,16 +79,13 @@ const Dashboard: React.FC = () => {
 
   const fetchAlerts = useCallback(async () => {
     try {
-      const token = await getToken();
-      const response = await fetch(`${API_URL}/alerts`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const response = await fetch(`${API_URL}/alerts`);
       const data = await response.json();
       if (Array.isArray(data)) setAlerts(data);
     } catch (error) {
       console.error("Error fetching alerts:", error);
     }
-  }, [API_URL, getToken]);
+  }, [API_URL]);
 
   useEffect(() => {
     fetchNodeData();

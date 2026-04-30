@@ -503,22 +503,17 @@ def get_alerts(
     limit: int = Query(50, ge=1, le=200),
     dev_eui: Optional[str] = Query(None),
     acknowledged: Optional[bool] = Query(None),
-    # user_id: Optional[str] = Depends(get_clerk_user_id),
 ):
     clauses: List[str] = []
     params: List[object] = []
-    # if user_id:
-    #     clauses.append("s.user_id = ?")
-    #     params.append(user_id)
+
     if dev_eui:
         clauses.append("a.dev_eui = ?")
         params.append(dev_eui)
     if acknowledged is not None:
         clauses.append("a.acknowledged = ?")
         params.append(1 if acknowledged else 0)
-    # join = (
-    #     "JOIN user_node_subscriptions s ON s.device_eui = a.dev_eui" if user_id else ""
-    # )
+
     where = ("WHERE " + " AND ".join(clauses)) if clauses else ""
     q = f"""
         SELECT
