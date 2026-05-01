@@ -79,16 +79,13 @@ const Dashboard: React.FC = () => {
 
   const fetchAlerts = useCallback(async () => {
     try {
-      const token = await getToken();
-      const response = await fetch(`${API_URL}/alerts`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const response = await fetch(`${API_URL}/alerts`);
       const data = await response.json();
       if (Array.isArray(data)) setAlerts(data);
     } catch (error) {
       console.error("Error fetching alerts:", error);
     }
-  }, [API_URL, getToken]);
+  }, [API_URL]);
 
   useEffect(() => {
     fetchNodeData();
@@ -203,6 +200,7 @@ const Dashboard: React.FC = () => {
                   nodeEui={mostRecentExpandedNodeEui}
                   showAcked={showAcked}
                   setShowAcked={setShowAcked}
+                  userSubscriptions={userSubscriptions}
                 />
               ) : (
                 <div className="lg:w-90 md:w-48 bg-slate-100 rounded-md p-4 overflow-y-auto md:flex-1">
@@ -230,19 +228,21 @@ const Dashboard: React.FC = () => {
                             <p className="text-sm text-gray-500">
                               {new Date(alert.created_at).toLocaleString()}
                             </p>
-                            <AlertAckButton
-                              alertId={alert.id}
-                              acknowledged={alert.acknowledged}
-                              onAckChange={(acknowledged) => {
-                                setAlerts((prevAlerts) =>
-                                  prevAlerts.map((a) =>
-                                    a.id === alert.id
-                                      ? { ...a, acknowledged }
-                                      : a,
-                                  ),
-                                );
-                              }}
-                            />
+                            {userSubscriptions.includes(alert.dev_eui) && (
+                              <AlertAckButton
+                                alertId={alert.id}
+                                acknowledged={alert.acknowledged}
+                                onAckChange={(acknowledged) => {
+                                  setAlerts((prevAlerts) =>
+                                    prevAlerts.map((a) =>
+                                      a.id === alert.id
+                                        ? { ...a, acknowledged }
+                                        : a,
+                                    ),
+                                  );
+                                }}
+                              />
+                            )}
                           </li>
                         ))}
                       </ul>
