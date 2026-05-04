@@ -1,9 +1,14 @@
 import os
 import time
+import hmac
+import json
+import hashlib
 import sqlite3
 import uvicorn
 import logging
 import requests
+import subprocess
+import threading
 import jwt as pyjwt
 import datetime as dt
 from dotenv import load_dotenv
@@ -1311,6 +1316,115 @@ def remove_member_role(
             (org_id, member_user_id),
         )
         conn.commit()
+
+
+GITHUB_SECRET = os.getenv("GITHUB_SECRET", "").encode()
+DEPLOY_DIR = os.path.abspath(os.path.join(HERE, ".."))
+BACKEND_DIR = HERE
+DEPLOY_LOG = "/tmp/deploy.log"
+
+
+def _dlog(msg: str):
+    ts = dt.datetime.now(dt.UTC).strftime("%Y-%m-%d %H:%M:%S")
+    with open(DEPLOY_LOG, "a") as f:
+        f.write(f"[{ts}] {msg}\n")
+
+
+def _verify_github_signature(body: bytes, signature: str) -> bool:
+    expected = "sha256=" + hmac.new(GITHUB_SECRET, body, hashlib.sha256).hexdigest()
+    return hmac.compare_digest(expected, signature)
+
+
+def _restart_backend():
+    venv_python = os.path.join(BACKEND_DIR, "venv", "bin", "python")
+    python = venv_python if os.path.exists(venv_python) else "python3"
+    try:
+        # Write a detached restart script so it survives after this process is killed.
+        script = (
+            "#!/bin/bash\n"
+            "sleep 1\n"
+            "pkill -f 'backend_api.py' || true\n"
+            "pkill -f 'data_listener.py' || true\n"
+            "sleep 2\n"
+            f"cd {BACKEND_DIR}\n"
+            f"{python} init_sqlite_db.py\n"
+            f"nohup {python} data_listener.py > nohup_listener.out 2>&1 &\n"
+            f"nohup {python} backend_api.py > nohup.out 2>&1 &\n"
+        )
+        script_path = "/tmp/_dashboard_restart.sh"
+        with open(script_path, "w") as f:
+            f.write(script)
+        os.chmod(script_path, 0o755)
+        subprocess.Popen(
+            ["bash", script_path],
+            start_new_session=True,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+        )
+        _dlog("Backend restart script launched")
+    except Exception as e:
+        _dlog(f"Backend restart failed: {e}")
+
+
+def _run_deploy():
+    _dlog(f"Deploy started — DEPLOY_DIR={DEPLOY_DIR}")
+    venv_pip = os.path.join(BACKEND_DIR, "venv", "bin", "pip")
+    pip = venv_pip if os.path.exists(venv_pip) else "pip3"
+    try:
+        result = subprocess.run(
+            f"git pull && {pip} install -r backend/requirements.txt",
+            shell=True, check=True, cwd=DEPLOY_DIR, executable="/bin/bash",
+            capture_output=True, text=True,
+        )
+        _dlog(f"git pull + pip install OK: {result.stdout.strip()}")
+    except subprocess.CalledProcessError as e:
+        _dlog(f"git pull failed: {e.stderr.strip()}")
+        return
+
+    build_env = {k: v for k, v in os.environ.items() if not k.startswith("VITE_")}
+    try:
+        subprocess.run(
+            "cd frontend && npm install && npm run build",
+            shell=True, check=True, cwd=DEPLOY_DIR, executable="/bin/bash",
+            capture_output=True, text=True, env=build_env,
+        )
+        _dlog("Frontend build completed")
+    except subprocess.CalledProcessError as e:
+        _dlog(f"Frontend build failed: {e.stderr.strip()}")
+        return
+
+    try:
+        subprocess.run(
+            "pm2 restart dashboard-frontend",
+            shell=True, check=True, executable="/bin/bash",
+            capture_output=True, text=True,
+        )
+        _dlog("pm2 restart dashboard-frontend completed")
+    except subprocess.CalledProcessError as e:
+        _dlog(f"pm2 restart failed: {e.stderr.strip()}")
+
+    _dlog("Scheduling backend restart in 3s")
+    threading.Timer(3.0, _restart_backend).start()
+
+
+@app.post("/deploy")
+async def deploy_webhook(request: Request):
+    body = await request.body()
+    signature = request.headers.get("x-hub-signature-256", "")
+    if not signature or not _verify_github_signature(body, signature):
+        raise HTTPException(status_code=403, detail="Invalid signature")
+    if request.headers.get("x-github-event") != "push":
+        return {"message": "Event ignored"}
+    try:
+        payload = json.loads(body)
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid JSON payload")
+    commits = [
+        {"id": c.get("id"), "message": c.get("message")}
+        for c in payload.get("commits", [])
+    ]
+    threading.Thread(target=_run_deploy, daemon=True).start()
+    return {"message": "Deployment triggered", "commits": commits}
 
 
 if __name__ == "__main__":
