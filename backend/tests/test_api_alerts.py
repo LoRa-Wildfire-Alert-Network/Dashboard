@@ -81,13 +81,16 @@ class TestGetAlerts:
         assert data[0]["id"] == aid
         assert data[0]["dev_eui"] == DEV_EUI
 
-    def test_does_not_return_alerts_for_unsubscribed_node(self, api_client):
+    def test_returns_alerts_for_unsubscribed_node(self, api_client):
         client, db_path = api_client
         _insert_node(db_path, OTHER_DEV_EUI)
-        _insert_alert(db_path, OTHER_DEV_EUI)
+        aid = _insert_alert(db_path, OTHER_DEV_EUI)
         resp = client.get("/alerts")
         assert resp.status_code == 200
-        assert resp.json() == []
+        data = resp.json()
+        assert len(data) == 1
+        assert data[0]["id"] == aid
+        assert data[0]["dev_eui"] == OTHER_DEV_EUI
 
     def test_filter_by_dev_eui(self, api_client):
         client, db_path = api_client
