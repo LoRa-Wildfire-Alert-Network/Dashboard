@@ -1,6 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, waitFor } from '@testing-library/react'
-import React from 'react'
 import AuthProvider from '../../providers/AuthProvider'
 import { useAuthContext } from '../../providers/AuthContext'
 
