@@ -9,7 +9,7 @@ class MockBroadcastChannel {
     this.name = name
   }
 
-  postMessage(_data: unknown) {}
+  postMessage() {}
 
   addEventListener(type: string, listener: (e: MessageEvent) => void) {
     if (!this.listeners.has(type)) this.listeners.set(type, new Set())

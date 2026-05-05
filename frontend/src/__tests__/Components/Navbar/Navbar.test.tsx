@@ -26,7 +26,7 @@ vi.mock('../../../Components/OrgSettings/OrgPermissionsPage', () => ({
 }))
 
 vi.mock('../../../lib/goto', () => ({
-  withGoto: vi.fn((_base: string) => '/'),
+  withGoto: vi.fn(() => '/'),
 }))
 
 describe('Navbar', () => {
