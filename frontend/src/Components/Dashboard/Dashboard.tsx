@@ -226,7 +226,7 @@ const Dashboard: React.FC = () => {
                             </p>
                             <p>{alert.message}</p>
                             <p className="text-sm text-gray-500">
-                              {new Date(alert.created_at).toLocaleString()}
+                              {new Date(alert.created_at * 1000).toLocaleString()}
                             </p>
                             {userSubscriptions.includes(alert.dev_eui) && (
                               <AlertAckButton
