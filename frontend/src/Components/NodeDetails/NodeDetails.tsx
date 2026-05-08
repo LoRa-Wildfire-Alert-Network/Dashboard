@@ -138,7 +138,7 @@ const NodeDetails: React.FC<{
                 {displayedAlerts.map((alert) => (
                   <li key={alert.id} className="mb-2">
                     <p className="font-semibold">
-                      [{new Date(alert.created_at).toLocaleString()}]{" "}
+                      [{new Date(alert.created_at * 1000).toLocaleString()}]{" "}
                       {alert.alert_type}
                     </p>
                     <p> {alert.message}</p>

@@ -6,6 +6,7 @@ from contextlib import contextmanager
 from .cooldown import can_send
 
 TEMP_C_THRESHOLD = 70.0  # keep for now; prefs can override
+LOW_BATTERY_PCT_THRESHOLD = 20.0
 PREF_COOLDOWN_SECONDS = int(os.getenv("ALERT_PREF_COOLDOWN_SECONDS", "300"))
 
 
@@ -56,6 +57,7 @@ class AlertService:
         temp_c: float | None,
         battery_level: float | None,
         smoke: int | None,
+        alert_type: str,
         message: str,
         now_ts: int,
     ) -> int:
@@ -118,7 +120,7 @@ class AlertService:
                 )
                 VALUES (?, ?, ?, ?, ?, 0, NULL)
                 """,
-                (r["email"], dev_eui, "FIRE_RISK", message, int(now_ts)),
+                (r["email"], dev_eui, alert_type, message, int(now_ts)),
             )
             conn.execute(
                 """
@@ -142,7 +144,15 @@ class AlertService:
         smoke = row.get("smoke_detected")
         battery_level = row.get("battery_level")
 
-        alert_type = "FIRE_RISK"
+        if smoke == 1:
+            alert_type = "SMOKE_DETECTED"
+        elif temp_c is not None and temp_c > TEMP_C_THRESHOLD:
+            alert_type = "HIGH_TEMP"
+        elif battery_level is not None and battery_level < LOW_BATTERY_PCT_THRESHOLD:
+            alert_type = "LOW_BATTERY"
+        else:
+            alert_type = "FIRE_RISK"
+
         now_ts = int(time.time())
 
         msg = (
@@ -235,6 +245,7 @@ class AlertService:
                     temp_c,
                     battery_level,
                     smoke,
+                    alert_type,
                     msg,
                     now_ts,
                 )

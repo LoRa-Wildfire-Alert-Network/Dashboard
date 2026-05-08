@@ -23,7 +23,7 @@ export type Alert = {
   dev_eui: string;
   alert_type: string;
   message: string;
-  created_at: string;
+  created_at: number;
   acknowledged: boolean;
   acknowledged_at?: number | null;
 };
