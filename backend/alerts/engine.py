@@ -143,6 +143,20 @@ class AlertService:
         temp_c = row.get("temperature_c")
         smoke = row.get("smoke_detected")
         battery_level = row.get("battery_level")
+        now_ts = int(time.time())
+
+        with self._db() as conn:
+            conn.execute(
+                """
+                UPDATE alerts
+                SET acknowledged = 1, acknowledged_at = ?
+                WHERE dev_eui = ?
+                  AND alert_type = 'NODE_OFFLINE'
+                  AND acknowledged = 0
+                """,
+                (now_ts, dev_eui),
+            )
+            conn.commit()
 
         if smoke == 1:
             alert_type = "SMOKE_DETECTED"
@@ -152,8 +166,6 @@ class AlertService:
             alert_type = "LOW_BATTERY"
         else:
             alert_type = "FIRE_RISK"
-
-        now_ts = int(time.time())
 
         msg = (
             "ALERT TRIGGERED\n"
