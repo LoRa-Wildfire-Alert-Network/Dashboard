@@ -78,7 +78,8 @@ def _check_offline_nodes(conn: sqlite3.Connection) -> int:
         try:
             conn.execute(
                 """
-                INSERT INTO alerts (dev_eui, alert_type, message, created_at, acknowledged)
+                INSERT INTO alerts (dev_eui, alert_type,
+                    message, created_at, acknowledged)
                 VALUES (?, ?, ?, ?, 0)
                 """,
                 (dev_eui, alert_type, msg, now_ts),
