@@ -147,7 +147,7 @@ class TestEnqueueMatchingUsers:
             svc._enqueue_matching_users(
                 conn, DEV_EUI,
                 temp_c=25.0, battery_level=80.0, smoke=1,
-                alert_type="FIRE_RISK", message="fire msg", now_ts=now,
+                alert_type="SMOKE_DETECTED", message="fire msg", now_ts=now,
             )
             conn.commit()
 
@@ -158,7 +158,7 @@ class TestEnqueueMatchingUsers:
 
         assert row["email"] == "test@example.com"
         assert row["dev_eui"] == DEV_EUI
-        assert row["alert_type"] == "FIRE_RISK"
+        assert row["alert_type"] == "SMOKE_DETECTED"
         assert row["message"] == "fire msg"
         assert row["created_at"] == now
         assert row["processed"] == 0
@@ -248,7 +248,7 @@ class TestProcessRow:
         with _open_conn(file_db) as conn:
             assert _count_alerts(conn, DEV_EUI) == 0
 
-    def test_fire_risk_smoke_but_no_enabled_prefs_returns_early(self, file_db):
+    def test_fire_risk_smoke_no_prefs_still_logs_alert(self, file_db):
         svc = AlertService(file_db)
         svc.process_row({
             "device_eui": DEV_EUI,
@@ -258,9 +258,9 @@ class TestProcessRow:
         })
 
         with _open_conn(file_db) as conn:
-            assert _count_alerts(conn, DEV_EUI) == 0
+            assert _count_alerts(conn, DEV_EUI) == 1
 
-    def test_fire_risk_high_temp_but_no_enabled_prefs_returns_early(self, file_db):
+    def test_fire_risk_high_temp_no_prefs_still_logs_alert(self, file_db):
         svc = AlertService(file_db)
         svc.process_row({
             "device_eui": DEV_EUI,
@@ -270,7 +270,7 @@ class TestProcessRow:
         })
 
         with _open_conn(file_db) as conn:
-            assert _count_alerts(conn, DEV_EUI) == 0
+            assert _count_alerts(conn, DEV_EUI) == 1
 
     def test_pref_triggered_smoke_inserts_alert_and_queues_user(self, file_db):
         conn = _open_conn(file_db)

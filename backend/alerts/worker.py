@@ -6,6 +6,7 @@ import logging
 from contextlib import contextmanager
 
 from .dispatch_email import send_email_alert
+from .staleness import start_staleness_checker
 from dotenv import load_dotenv
 load_dotenv()
 
@@ -178,6 +179,8 @@ def start_workers() -> None:
     for i in range(n):
         t = threading.Thread(target=worker_loop, args=(i,), daemon=True)
         t.start()
+
+    start_staleness_checker()
 
 
 def _insert_system_alert(

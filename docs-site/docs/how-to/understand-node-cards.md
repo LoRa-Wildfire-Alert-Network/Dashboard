@@ -4,9 +4,9 @@ Each node in the Node List is shown as a card. Cards can be collapsed or expande
 
 ## Card Layout
 
-- **Checkbox** — Subscribe or unsubscribe from the node
-- **Status icon** — Indicates the node's current condition
-- **Device EUI** — Unique identifier for the sensor
+- **Status icon** — indicates the node's current condition (see below)
+- **Device EUI** — unique identifier for the sensor
+- **Subscribe / Unsubscribe button** — visible when the card is expanded (requires Subscribe permission)
 
 ## Status Icons
 
@@ -25,17 +25,23 @@ Shows the status icon and Device EUI. Click the card to expand it.
 
 ## Expanded View
 
-Shows full sensor data:
+Shows full sensor data and the subscribe button:
 
-- **Temperature** — In °C
+- **Temperature** — in °C
 - **Smoke Detected?** — Yes or No
-- **Humidity** — In %
-- **Battery Level** — In %
+- **Humidity** — in %
+- **Battery Level** — in %
+- **Subscribe / Unsubscribe** button — click to toggle your subscription to this node
 
-Click the card again to collapse it.
+## Subscribing from a Card
+
+1. Click a card to expand it
+2. Click **Subscribe** to subscribe, or **Unsubscribe** to remove the subscription
+
+The Subscribe button only appears if your org role has the **Subscribe to nodes** permission. See [Subscribe to Nodes](subscribe-to-nodes.md) for details.
 
 ## Expanding and Collapsing
 
-- **From the list**: Click any node card to expand or collapse it
-- **From the map**: Click a marker to expand its card and collapse others. Click the same marker again to collapse it
-- **Node Details panel**: When you expand a card or click a marker, the left panel shows detailed current and historical data for that node
+- **From the list**: click any node card to expand or collapse it. Multiple cards can be expanded at once
+- **From the map**: clicking a marker expands that card and collapses all others. Clicking the same marker again collapses it
+- **Node Details panel**: when you expand a card or click a marker, the left panel shows current and historical data for that node
