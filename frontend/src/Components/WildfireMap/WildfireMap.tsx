@@ -1,6 +1,10 @@
 import * as L from "leaflet";
 import "leaflet/dist/leaflet.css";
-import { MapContainer, TileLayer, Marker, useMap } from "react-leaflet";
+import "leaflet.markercluster/dist/MarkerCluster.css";
+import "leaflet.markercluster/dist/MarkerCluster.Default.css";
+import "leaflet.markercluster";
+import "leaflet-gesture-handling/dist/leaflet-gesture-handling.css";
+import { MapContainer, TileLayer, useMap } from "react-leaflet";
 import { GestureHandling } from "leaflet-gesture-handling";
 import type { ShortNodeData } from "../../types/nodeTypes";
 import { useEffect, useRef, useState, useMemo } from "react";
@@ -164,6 +168,78 @@ function selectIconColor(
   }
 }
 
+// Severity order for cluster color: worst status wins
+const COLOR_PRIORITY = ["redIcon", "orangeIcon", "yellowIcon", "greenIcon"];
+const COLOR_HEX: Record<string, string> = {
+  redIcon: "#ef4444",
+  orangeIcon: "#f97316",
+  yellowIcon: "#eab308",
+  greenIcon: "#22c55e",
+};
+
+type TaggedMarker = L.Marker & { _nodeColor: string };
+
+function MarkerClusterLayer({
+  nodes,
+  mostRecentExpandedNodeEui,
+  onMarkerClick,
+}: {
+  nodes: ShortNodeData[];
+  mostRecentExpandedNodeEui: string | null;
+  onMarkerClick: (eui: string) => void;
+}) {
+  const map = useMap();
+
+  useEffect(() => {
+    const clusterGroup = L.markerClusterGroup({
+      iconCreateFunction: (cluster) => {
+        const markers = cluster.getAllChildMarkers() as TaggedMarker[];
+        const colors = markers.map((m) => m._nodeColor);
+        const worstColor =
+          COLOR_PRIORITY.find((c) => colors.includes(c)) ?? "greenIcon";
+        const hex = COLOR_HEX[worstColor];
+        const count = cluster.getChildCount();
+        return L.divIcon({
+          html: `<div style="background:${hex};width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:13px;border:2px solid rgba(255,255,255,0.85);box-shadow:0 2px 6px rgba(0,0,0,0.5)">${count}</div>`,
+          className: "",
+          iconSize: [36, 36],
+          iconAnchor: [18, 18],
+        });
+      },
+    });
+
+    nodes.forEach((node) => {
+      const colorName = selectIconColor(
+        node.smoke_detected,
+        node.battery_level,
+        node.humidity_pct,
+        node.temperature_c,
+      );
+      const icon = selectIcon(
+        node.smoke_detected,
+        node.battery_level,
+        node.device_eui,
+        node.humidity_pct,
+        node.temperature_c,
+        mostRecentExpandedNodeEui,
+      );
+      const marker = L.marker([node.latitude, node.longitude], {
+        icon,
+      }) as TaggedMarker;
+      marker._nodeColor = colorName;
+      marker.on("click", () => onMarkerClick(node.device_eui));
+      clusterGroup.addLayer(marker);
+    });
+
+    map.addLayer(clusterGroup);
+    return () => {
+      map.removeLayer(clusterGroup);
+    };
+  }, [map, nodes, mostRecentExpandedNodeEui, onMarkerClick]);
+
+  return null;
+}
+
 function MapUpdater({
   setMapBounds,
 }: {
@@ -198,7 +274,6 @@ function WildfireMap({
   onMarkerClick,
   setMapBounds,
 }: MapProps) {
-  // Default center: selected node if available, else first valid node, else Corvallis
   const validNodes = nodeData.filter(
     (n) => n.latitude != null && n.longitude != null,
   );
@@ -285,26 +360,11 @@ function WildfireMap({
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
       />
       <MapUpdater setMapBounds={setMapBounds} />
-      {validNodes.map((node: ShortNodeData, idx: number) => {
-        const markerKey = `${node.device_eui}_${idx}`;
-        return (
-          <Marker
-            key={markerKey}
-            position={[node.latitude, node.longitude]}
-            icon={selectIcon(
-              node.smoke_detected,
-              node.battery_level,
-              node.device_eui,
-              node.humidity_pct,
-              node.temperature_c,
-              mostRecentExpandedNodeEui,
-            )}
-            eventHandlers={{
-              click: () => onMarkerClick(node.device_eui),
-            }}
-          ></Marker>
-        );
-      })}
+      <MarkerClusterLayer
+        nodes={validNodes}
+        mostRecentExpandedNodeEui={mostRecentExpandedNodeEui}
+        onMarkerClick={onMarkerClick}
+      />
     </MapContainer>
   );
 }
