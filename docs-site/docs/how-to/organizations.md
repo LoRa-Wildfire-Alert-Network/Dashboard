@@ -1,69 +1,75 @@
 # Organizations
 
-Organizations let you group users and share access to the dashboard. You can create organizations, invite members, and manage who has access.
+Organizations let you group users and share access to the dashboard. You can create organizations, invite members, manage roles, and configure what each role is allowed to do.
 
 ## What Are Organizations?
 
-An organization is a team or group. Members of an organization share the same context when using the dashboard. You might create an organization for your fire department, agency, or monitoring team.
+An organization is a team or group. Members share the same context when using the dashboard. You might create one for your fire department, agency, or monitoring team.
 
 ## Create an Organization
 
-1. Click the **Organization Switcher** in the top-right corner (it shows your current organization or "Personal")
+1. Click the **Organization Switcher** in the top-right corner (shows your current org or "Personal")
 2. Select **Create organization**
 3. Enter the **organization name**
-4. Optionally upload a photo for the organization
+4. Optionally upload a photo
 5. Click **Create**
 
-You become the **admin** of the new organization and can invite members and manage settings.
+You become the **admin** of the new organization.
 
 ## Switch Between Organizations
 
-If you belong to multiple organizations:
-
 1. Click the **Organization Switcher** in the top-right corner
-2. Select the organization you want to switch to from the list
-3. You can also switch to your **Personal** account if it's enabled
+2. Select the organization you want to switch to
+3. You can also switch to your **Personal** account
 
-## Add Members to an Organization
+## Add Members
 
-Only **admins** can invite members. To add someone:
+Only **admins** can invite members:
 
 1. Click the **Organization Switcher**
-2. Select **Manage organization** (or the organization name with a settings/manage option)
+2. Select **Manage organization**
 3. Go to the **Members** tab
 4. Click **Invite member**
-5. Enter the person's **email address**
-6. Choose their **role** (e.g., Member or Admin)
-7. Click **Send invitation**
+5. Enter their **email address** and choose a **role** (Member or Admin)
+6. Click **Send invitation**
 
-The person receives an email with an invitation link. When they click it and sign in (or create an account), they join your organization.
+The person receives an email with an invitation link.
 
 ## Manage Members
 
-1. Open **Manage organization** from the Organization Switcher
-2. Go to the **Members** tab
-3. From here you can:
-   - **View** all members and their roles
-   - **Change a member's role** (e.g., from Member to Admin)
-   - **Remove a member** from the organization
+Open **Manage organization → Members** to:
+
+- View all members and their roles
+- Change a member's role
+- Remove a member from the organization
 
 ## Manage Pending Invitations
 
-1. Open **Manage organization**
-2. Go to the **Members** or **Invitations** tab
-3. You'll see pending invitations (people who haven't accepted yet)
-4. You can **revoke** an invitation if you no longer want to add that person — they won't be able to use the invitation link
+Open **Manage organization → Members** (or Invitations tab) to see pending invitations. You can **revoke** an invitation before it's accepted.
 
 ## Roles
 
-- **Admin** — Can invite and remove members, change roles, and manage organization settings. The person who creates an organization is an admin
-- **Member** — Can use the dashboard within the organization. Cannot invite or remove others
+| Role | What they can do |
+|------|-----------------|
+| **Admin** | Full access: invite/remove members, change roles, manage permissions, and all member capabilities |
+| **Member** | Capabilities controlled by the org's permission settings (see below) |
+
+## Member Permissions
+
+Admins can configure exactly what the Member role can do. To manage permissions:
+
+1. Open **Manage organization**
+2. Go to the **Permissions** tab (or equivalent settings section)
+3. Toggle the permissions for **Member**:
+   - **View nodes & telemetry** — can see sensor nodes, live data, the map, and historical readings
+   - **Subscribe to nodes** — can subscribe and unsubscribe to sensor nodes
+4. Click **Save**
+
+If a member doesn't have **View nodes & telemetry**, they'll see an "Access Restricted" message on the dashboard instead of node data.
 
 ## Leave an Organization
 
-1. Open **Manage organization**
-2. Go to the **Members** tab
-3. Find yourself in the list
-4. Click **Leave organization**
+1. Open **Manage organization → Members**
+2. Find yourself and click **Leave organization**
 
-You can't leave if you're the only admin — you'd need to promote another member to admin first, or delete the organization.
+You can't leave if you're the only admin — promote another member first, or delete the organization.
