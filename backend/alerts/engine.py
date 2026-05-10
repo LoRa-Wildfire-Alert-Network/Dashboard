@@ -143,6 +143,20 @@ class AlertService:
         temp_c = row.get("temperature_c")
         smoke = row.get("smoke_detected")
         battery_level = row.get("battery_level")
+        now_ts = int(time.time())
+
+        with self._db() as conn:
+            conn.execute(
+                """
+                UPDATE alerts
+                SET acknowledged = 1, acknowledged_at = ?
+                WHERE dev_eui = ?
+                  AND alert_type = 'NODE_OFFLINE'
+                  AND acknowledged = 0
+                """,
+                (now_ts, dev_eui),
+            )
+            conn.commit()
 
         if smoke == 1:
             alert_type = "SMOKE_DETECTED"
@@ -152,8 +166,6 @@ class AlertService:
             alert_type = "LOW_BATTERY"
         else:
             alert_type = "FIRE_RISK"
-
-        now_ts = int(time.time())
 
         msg = (
             "ALERT TRIGGERED\n"
@@ -211,25 +223,6 @@ class AlertService:
             # If neither prefs nor fallback triggers, do nothing
             if not pref_triggered and not fire_risk:
                 return
-
-            # If fallback triggered but no enabled prefs for this node, do nothing
-            if fire_risk and not pref_triggered:
-                enabled_pref_row = conn.execute(
-                    """
-                    SELECT 1
-                    FROM alert_preferences ap
-                    JOIN users u ON u.auth_sub = ap.user_id
-                    WHERE ap.enabled = 1
-                    AND ap.dev_eui = ?
-                    AND u.email IS NOT NULL
-                    LIMIT 1
-                    """,
-                    (dev_eui,),
-                ).fetchone()
-
-                has_any_enabled_pref = enabled_pref_row is not None
-                if not has_any_enabled_pref:
-                    return
 
             # Global dedupe (server-controlled -> ALERT_COOLDOWN_SECONDS in cooldown.py)
             if not can_send(conn, dev_eui, alert_type):

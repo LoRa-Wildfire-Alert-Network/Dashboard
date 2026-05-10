@@ -28,8 +28,10 @@ const AlertAckButton: React.FC<{
   return (
     <button
       onClick={handleAckToggle}
-      className={`px-3 py-1 rounded ${
-        acknowledged ? "bg-green-500 text-white" : "bg-gray-300 text-gray-700"
+      className={`mt-1 px-3 py-1 rounded text-xs font-semibold border transition-colors ${
+        acknowledged
+          ? "bg-green-500/20 text-green-400 border-green-500/40"
+          : "bg-amber-500 text-gray-900 border-amber-500 hover:bg-amber-400"
       }`}
     >
       {acknowledged ? "Acknowledged" : "Acknowledge"}

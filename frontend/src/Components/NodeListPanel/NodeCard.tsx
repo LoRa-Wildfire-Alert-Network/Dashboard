@@ -57,7 +57,7 @@ const NodeCard: React.FC<NodeCardProps> = ({
 
   return (
     <div
-      className="flex flex-row items-center justify-center bg-slate-700 text-white rounded-md my-2 p-2 hover:cursor-pointer"
+      className="flex flex-row items-center justify-center bg-gray-700 text-white rounded-md my-2 p-2 hover:bg-gray-600 hover:cursor-pointer transition-colors border border-gray-600"
       onClick={onCardClick}
     >
       {expandedNodeEuis.includes(nodeData.device_eui) ? (

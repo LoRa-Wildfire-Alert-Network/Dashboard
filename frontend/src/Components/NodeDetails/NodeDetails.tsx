@@ -98,30 +98,67 @@ const NodeDetails: React.FC<{
   }, [alerts, showAcked]);
 
   return (
-    <div className="lg:w-90 md:w-48 bg-slate-100 rounded-md p-4 overflow-y-auto max-h-[60vh] md:max-h-none md:flex-1">
-      <h2 className="text-xl font-bold mb-4">
-        Node EUI: {nodeEui ? nodeEui : "None Selected"}
+    <div className="lg:w-90 md:w-84 bg-gray-800 rounded-md p-4 overflow-y-auto max-h-[60vh] md:max-h-none md:flex-1 border border-gray-700 text-gray-200">
+      <h2 className="text-xl font-bold mb-4 text-white">
+        Node EUI:{" "}
+        <span className="text-amber-400">{nodeEui ?? "None Selected"}</span>
       </h2>
       {nodeEui && nodeData && (
         <div>
           <div>
-            <h3 className="text-lg font-bold">Current Readings:</h3>
-            <div className="ml-4">
-              <p> Temperature: {nodeData.temperature_c}°C</p>
-              <p> Humidity: {nodeData.humidity_pct}%</p>
-              <p> Battery Level: {nodeData.battery_level}%</p>
-              <p> Smoke Detected: {nodeData.smoke_detected ? "Yes" : "No"}</p>
-              <p> Latitude: {nodeData.latitude}</p>
-              <p> Longitude: {nodeData.longitude}</p>
-              <p> Altitude: {nodeData.altitude}</p>
-              <p> RSSI: {nodeData.rssi}</p>
-              <p> SNR: {nodeData.snr}</p>
-              <p> Gateway ID: {nodeData.gateway_id}</p>
+            <h3 className="text-base font-semibold text-amber-400 uppercase tracking-wide mb-2">
+              Current Readings
+            </h3>
+            <div className="ml-2 space-y-1 text-sm">
+              <p>
+                <span className="text-gray-400">Temperature:</span>{" "}
+                {nodeData.temperature_c}°C
+              </p>
+              <p>
+                <span className="text-gray-400">Humidity:</span>{" "}
+                {nodeData.humidity_pct}%
+              </p>
+              <p>
+                <span className="text-gray-400">Battery:</span>{" "}
+                {nodeData.battery_level}%
+              </p>
+              <p>
+                <span className="text-gray-400">Smoke:</span>{" "}
+                {nodeData.smoke_detected ? (
+                  <span className="text-red-400 font-semibold">Yes</span>
+                ) : (
+                  "No"
+                )}
+              </p>
+              <p>
+                <span className="text-gray-400">Latitude:</span>{" "}
+                {nodeData.latitude}
+              </p>
+              <p>
+                <span className="text-gray-400">Longitude:</span>{" "}
+                {nodeData.longitude}
+              </p>
+              <p>
+                <span className="text-gray-400">Altitude:</span>{" "}
+                {nodeData.altitude}
+              </p>
+              <p>
+                <span className="text-gray-400">RSSI:</span> {nodeData.rssi}
+              </p>
+              <p>
+                <span className="text-gray-400">SNR:</span> {nodeData.snr}
+              </p>
+              <p>
+                <span className="text-gray-400">Gateway:</span>{" "}
+                {nodeData.gateway_id}
+              </p>
             </div>
           </div>
           <div>
-            <div className="flex items-center justify-between mt-4">
-              <h3 className="text-lg font-bold">Alerts:</h3>
+            <div className="flex items-center justify-between mt-5 mb-2">
+              <h3 className="text-base font-semibold text-amber-400 uppercase tracking-wide">
+                Alerts
+              </h3>
               <ShowAckedButton
                 showAcked={showAcked}
                 setShowAcked={setShowAcked}
@@ -129,19 +166,26 @@ const NodeDetails: React.FC<{
             </div>
 
             {displayedAlerts.length === 0 ? (
-              <p className="ml-4">
+              <p className="ml-2 text-sm text-gray-500">
                 No alerts to display. Check to see if you are subscribed to this
                 node.
               </p>
             ) : (
-              <ul className="ml-4">
+              <ul className="space-y-2">
                 {displayedAlerts.map((alert) => (
-                  <li key={alert.id} className="mb-2">
-                    <p className="font-semibold">
-                      [{new Date(alert.created_at * 1000).toLocaleString()}]{" "}
+                  <li
+                    key={alert.id}
+                    className="border-l-4 border-l-amber-500 pl-3 pb-2 border-b border-gray-700"
+                  >
+                    <p className="font-semibold text-sm text-amber-300">
                       {alert.alert_type}
+                      <span className="text-gray-500 font-normal ml-2">
+                        [{new Date(alert.created_at * 1000).toLocaleString()}]
+                      </span>
                     </p>
-                    <p> {alert.message}</p>
+                    <p className="text-sm text-gray-300 whitespace-pre-wrap">
+                      {alert.message}
+                    </p>
                     {userSubscriptions.includes(alert.dev_eui) && (
                       <AlertAckButton
                         alertId={alert.id}
@@ -161,23 +205,41 @@ const NodeDetails: React.FC<{
             )}
           </div>
           <div>
-            <h3 className="text-lg font-bold mt-4">Historical Data (50):</h3>
+            <h3 className="text-base font-semibold text-amber-400 uppercase tracking-wide mt-5 mb-2">
+              Historical Data (50)
+            </h3>
             {historicalData.length === 0 ? (
-              <p className="ml-4">No historical data available.</p>
+              <p className="ml-2 text-sm text-gray-500">
+                No historical data available.
+              </p>
             ) : (
-              <ul className="ml-4">
+              <ul className="space-y-2">
                 {historicalData.map((data, index) => (
-                  <li key={index} className="mb-2">
-                    <p className="font-semibold">
-                      Timestamp:{" "}
+                  <li
+                    key={index}
+                    className="border-b border-gray-700 pb-2 text-sm"
+                  >
+                    <p className="text-gray-400 font-medium">
                       {data.timestamp
                         ? new Date(data.timestamp).toLocaleString()
                         : "N/A"}
                     </p>
-                    <p> Temperature: {data.temperature_c}°C</p>
-                    <p> Humidity: {data.humidity_pct}%</p>
-                    <p> Battery Level: {data.battery_level}%</p>
-                    <p> Smoke Detected: {data.smoke_detected ? "Yes" : "No"}</p>
+                    <p>
+                      <span className="text-gray-400">Temp:</span>{" "}
+                      {data.temperature_c}°C &nbsp;
+                      <span className="text-gray-400">Humidity:</span>{" "}
+                      {data.humidity_pct}% &nbsp;
+                      <span className="text-gray-400">Battery:</span>{" "}
+                      {data.battery_level}%
+                    </p>
+                    <p>
+                      <span className="text-gray-400">Smoke:</span>{" "}
+                      {data.smoke_detected ? (
+                        <span className="text-red-400">Yes</span>
+                      ) : (
+                        "No"
+                      )}
+                    </p>
                   </li>
                 ))}
               </ul>
