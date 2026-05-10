@@ -225,7 +225,8 @@ class TestStartWorkers:
 
     def test_starts_one_worker_by_default(self):
         with patch.dict("os.environ", {"ALERT_WORKERS": "1"}), \
-                patch("alerts.worker.threading.Thread") as MockThread:
+                patch("alerts.worker.threading.Thread") as MockThread, \
+                patch("alerts.worker.start_staleness_checker"):
             mock_t = MagicMock()
             MockThread.return_value = mock_t
             start_workers()
@@ -237,7 +238,8 @@ class TestStartWorkers:
 
     def test_starts_three_workers(self):
         with patch.dict("os.environ", {"ALERT_WORKERS": "3"}), \
-                patch("alerts.worker.threading.Thread") as MockThread:
+                patch("alerts.worker.threading.Thread") as MockThread, \
+                patch("alerts.worker.start_staleness_checker"):
             mock_t = MagicMock()
             MockThread.return_value = mock_t
             start_workers()
@@ -250,7 +252,8 @@ class TestStartWorkers:
 
     def test_zero_workers_clamped_to_one(self):
         with patch.dict("os.environ", {"ALERT_WORKERS": "0"}), \
-                patch("alerts.worker.threading.Thread") as MockThread:
+                patch("alerts.worker.threading.Thread") as MockThread, \
+                patch("alerts.worker.start_staleness_checker"):
             mock_t = MagicMock()
             MockThread.return_value = mock_t
             start_workers()
@@ -259,7 +262,8 @@ class TestStartWorkers:
 
     def test_negative_workers_clamped_to_one(self):
         with patch.dict("os.environ", {"ALERT_WORKERS": "-5"}), \
-                patch("alerts.worker.threading.Thread") as MockThread:
+                patch("alerts.worker.threading.Thread") as MockThread, \
+                patch("alerts.worker.start_staleness_checker"):
             mock_t = MagicMock()
             MockThread.return_value = mock_t
             start_workers()

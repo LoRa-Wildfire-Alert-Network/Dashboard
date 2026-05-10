@@ -100,7 +100,7 @@ class TestEnqueueMatchingUsers:
             count = svc._enqueue_matching_users(
                 conn, DEV_EUI,
                 temp_c=30.0, battery_level=80.0, smoke=0,
-                message="test", now_ts=1_000_000,
+                alert_type="SMOKE_DETECTED", message="test", now_ts=1_000_000,
             )
         assert count == 0
 
@@ -115,7 +115,7 @@ class TestEnqueueMatchingUsers:
             count = svc._enqueue_matching_users(
                 conn, DEV_EUI,
                 temp_c=25.0, battery_level=80.0, smoke=1,
-                message="smoke msg", now_ts=1_000_000,
+                alert_type="SMOKE_DETECTED", message="smoke msg", now_ts=1_000_000,
             )
             conn.commit()
         assert count == 1
@@ -131,7 +131,7 @@ class TestEnqueueMatchingUsers:
             count = svc._enqueue_matching_users(
                 conn, DEV_EUI,
                 temp_c=25.0, battery_level=80.0, smoke=0,
-                message="no smoke", now_ts=1_000_000,
+                alert_type="SMOKE_DETECTED", message="no smoke", now_ts=1_000_000,
             )
         assert count == 0
 
@@ -147,7 +147,7 @@ class TestEnqueueMatchingUsers:
             svc._enqueue_matching_users(
                 conn, DEV_EUI,
                 temp_c=25.0, battery_level=80.0, smoke=1,
-                message="fire msg", now_ts=now,
+                alert_type="SMOKE_DETECTED", message="fire msg", now_ts=now,
             )
             conn.commit()
 
@@ -158,7 +158,7 @@ class TestEnqueueMatchingUsers:
 
         assert row["email"] == "test@example.com"
         assert row["dev_eui"] == DEV_EUI
-        assert row["alert_type"] == "FIRE_RISK"
+        assert row["alert_type"] == "SMOKE_DETECTED"
         assert row["message"] == "fire msg"
         assert row["created_at"] == now
         assert row["processed"] == 0
@@ -180,7 +180,7 @@ class TestEnqueueMatchingUsers:
             svc._enqueue_matching_users(
                 conn, DEV_EUI,
                 temp_c=25.0, battery_level=80.0, smoke=1,
-                message="update pref", now_ts=now,
+                alert_type="SMOKE_DETECTED", message="update pref", now_ts=now,
             )
             conn.commit()
 
@@ -203,7 +203,7 @@ class TestEnqueueMatchingUsers:
             count = svc._enqueue_matching_users(
                 conn, DEV_EUI,
                 temp_c=25.0, battery_level=80.0, smoke=1,
-                message="disabled", now_ts=1_000_000,
+                alert_type="SMOKE_DETECTED", message="disabled", now_ts=1_000_000,
             )
         assert count == 0
 
@@ -222,7 +222,7 @@ class TestEnqueueMatchingUsers:
             count = svc._enqueue_matching_users(
                 conn, DEV_EUI,
                 temp_c=25.0, battery_level=80.0, smoke=1,
-                message="cooldown active", now_ts=now,
+                alert_type="SMOKE_DETECTED", message="cooldown active", now_ts=now,
             )
         assert count == 0
 
@@ -298,7 +298,7 @@ class TestProcessRow:
         conn.execute(
             """INSERT INTO alerts (dev_eui,
                 alert_type, message, created_at, acknowledged)"""
-            "VALUES (?, 'FIRE_RISK', 'old', ?, 0)",
+            "VALUES (?, 'SMOKE_DETECTED', 'old', ?, 0)",
             (DEV_EUI, now - 10),
         )
         conn.commit()
