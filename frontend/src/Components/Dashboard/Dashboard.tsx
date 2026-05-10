@@ -9,6 +9,22 @@ import ShowAckedButton from "../Alerts/ShowAckedButton";
 import type { NodeFilterState } from "../NodeFilter/NodeFilter";
 import AlertAckButton from "../Alerts/AlertAckButton";
 
+function alertBorderColor(alertType: string): string {
+  switch (alertType) {
+    case "SMOKE_DETECTED":
+    case "FIRE_RISK":
+      return "border-l-red-500";
+    case "HIGH_TEMP":
+      return "border-l-orange-400";
+    case "LOW_BATTERY":
+      return "border-l-yellow-400";
+    case "NODE_OFFLINE":
+      return "border-l-gray-500";
+    default:
+      return "border-l-amber-500";
+  }
+}
+
 const Dashboard: React.FC = () => {
   const [nodeData, setNodeData] = useState<ShortNodeData[]>([]);
   const [userSubscriptions, setUserSubscriptions] = useState<string[]>([]);
@@ -157,13 +173,15 @@ const Dashboard: React.FC = () => {
 
   if (!hasPermission("view_nodes")) {
     return (
-      <div className="bg-slate-300 h-[calc(100vh-4rem)] flex items-center justify-center">
+      <div className="bg-gray-900 h-[calc(100vh-4rem)] flex items-center justify-center">
         <div className="text-center">
-          <p className="text-xl font-semibold mb-2">Access Restricted</p>
-          <p className="text-slate-600">
+          <p className="text-xl font-semibold mb-2 text-white">
+            Access Restricted
+          </p>
+          <p className="text-gray-400">
             Your role does not have permission to view nodes and telemetry.
           </p>
-          <p className="text-slate-500 text-sm mt-2">
+          <p className="text-gray-500 text-sm mt-2">
             Contact your org admin to request access.
           </p>
         </div>
@@ -175,21 +193,21 @@ const Dashboard: React.FC = () => {
 
   return (
     <>
-      <div className="bg-slate-300 overflow-auto md:overflow-hidden md:h-[calc(100vh-4rem)]">
+      <div className="bg-gray-900 overflow-auto md:overflow-hidden md:h-[calc(100vh-4rem)]">
         <div className="flex flex-col md:flex-row md:space-x-4 w-full md:h-full p-4 gap-4 md:gap-0">
           {/* Left column: transparent wrapper on mobile (children get individual order),
               flex-col on desktop to stack alert count above NodeDetails */}
           <div className="contents md:flex md:flex-col md:gap-2 md:w-auto md:mx-0 md:h-full">
             {/* 1 — Alert count */}
-            <div className="order-1 w-11/12 mx-auto md:w-auto md:mx-0 lg:w-90 bg-slate-100 rounded-md p-4">
+            <div className="order-1 w-11/12 mx-auto md:w-72 md:mx-0 lg:w-90 bg-gray-800 rounded-md p-4 border border-gray-700">
               <div className="flex items-center justify-between mb-1">
-                <h2 className="text-xl font-bold">All Alerts</h2>
+                <h2 className="text-xl font-bold text-white">All Alerts</h2>
               </div>
               <div className="flex items-baseline gap-2">
-                <span className="text-4xl font-bold">
+                <span className="text-4xl font-bold text-amber-400">
                   {unacknowledgedCount}
                 </span>
-                <span className="text-slate-500 text-sm">unacknowledged</span>
+                <span className="text-gray-400 text-sm">unacknowledged</span>
               </div>
             </div>
 
@@ -203,13 +221,15 @@ const Dashboard: React.FC = () => {
                   userSubscriptions={userSubscriptions}
                 />
               ) : (
-                <div className="lg:w-90 md:w-48 bg-slate-100 rounded-md p-4 overflow-y-auto md:flex-1">
+                <div className="lg:w-90 md:w-auto bg-gray-800 rounded-md p-4 overflow-y-auto md:flex-1 border border-gray-700">
                   {displayedAlerts.length === 0 ? (
-                    <p className="text-gray-600">No alerts to display.</p>
+                    <p className="text-gray-500">No alerts to display.</p>
                   ) : (
                     <>
                       <div className="flex flex-row items-center justify-between mb-2">
-                        <h2 className="text-xl font-bold">Recent Alerts</h2>
+                        <h2 className="text-xl font-bold text-white">
+                          Recent Alerts
+                        </h2>
                         <ShowAckedButton
                           showAcked={showAcked}
                           setShowAcked={setShowAcked}
@@ -217,16 +237,25 @@ const Dashboard: React.FC = () => {
                       </div>
                       <ul className="space-y-2">
                         {displayedAlerts.map((alert) => (
-                          <li key={alert.id} className="border-b pb-2">
-                            <p>
-                              <strong>Node:</strong> {alert.dev_eui}
+                          <li
+                            key={alert.id}
+                            className={`border-l-4 pl-3 pb-2 border-b border-gray-700 ${alertBorderColor(alert.alert_type)}`}
+                          >
+                            <p className="text-gray-200">
+                              <strong className="text-gray-400">Node:</strong>{" "}
+                              {alert.dev_eui}
                             </p>
-                            <p>
-                              <strong>Type:</strong> {alert.alert_type}
+                            <p className="text-gray-200">
+                              <strong className="text-gray-400">Type:</strong>{" "}
+                              {alert.alert_type}
                             </p>
-                            <p>{alert.message}</p>
-                            <p className="text-sm text-gray-500">
-                              {new Date(alert.created_at * 1000).toLocaleString()}
+                            <p className="text-gray-300 text-sm whitespace-pre-wrap">
+                              {alert.message}
+                            </p>
+                            <p className="text-xs text-gray-500">
+                              {new Date(
+                                alert.created_at * 1000,
+                              ).toLocaleString()}
                             </p>
                             {userSubscriptions.includes(alert.dev_eui) && (
                               <AlertAckButton

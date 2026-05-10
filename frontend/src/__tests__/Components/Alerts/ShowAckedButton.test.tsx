@@ -33,12 +33,12 @@ describe('ShowAckedButton', () => {
   it('applies active styles when showAcked is true', () => {
     render(<ShowAckedButton showAcked={true} setShowAcked={vi.fn()} />)
     const btn = screen.getByRole('button')
-    expect(btn.className).toContain('bg-slate-600')
+    expect(btn.className).toContain('bg-amber-600')
   })
 
   it('applies inactive styles when showAcked is false', () => {
     render(<ShowAckedButton showAcked={false} setShowAcked={vi.fn()} />)
     const btn = screen.getByRole('button')
-    expect(btn.className).toContain('bg-white')
+    expect(btn.className).toContain('bg-gray-700')
   })
 })

@@ -33,9 +33,9 @@ describe('AlertAckButton', () => {
     expect(screen.getByRole('button').className).toContain('bg-green-500')
   })
 
-  it('applies gray styles when not acknowledged', () => {
+  it('applies amber styles when not acknowledged', () => {
     render(<AlertAckButton alertId={1} acknowledged={false} onAckChange={vi.fn()} />)
-    expect(screen.getByRole('button').className).toContain('bg-gray-300')
+    expect(screen.getByRole('button').className).toContain('bg-amber-500')
   })
 
   it('calls onAckChange(true) when acknowledging a pending alert', async () => {
