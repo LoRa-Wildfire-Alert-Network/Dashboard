@@ -105,8 +105,8 @@ const CardLongData: React.FC<NodeCardProps> = ({
               disabled={loading}
               className={`inline-flex items-center w-5/6 gap-2 px-3 py-1 rounded-md text-xs font-semibold border transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed ${
                 isSubscribed
-                  ? "bg-slate-500 text-white border-slate-600 shadow-inner"
-                  : "bg-white text-slate-500 border-slate-300 hover:border-slate-500 hover:text-slate-700"
+                  ? "bg-amber-500/20 text-amber-300 border-amber-500/50"
+                  : "bg-gray-800 text-gray-400 border-gray-600 hover:border-amber-500 hover:text-amber-400"
               }`}
             >
               <span

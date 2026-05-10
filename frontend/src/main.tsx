@@ -83,6 +83,7 @@ if (!PUBLISHABLE_KEY) {
     <StrictMode>
       <ClerkProvider
         publishableKey={PUBLISHABLE_KEY}
+        afterSignOutUrl="/"
         appearance={{
           layout: {
             unsafe_disableDevelopmentModeWarnings: true,

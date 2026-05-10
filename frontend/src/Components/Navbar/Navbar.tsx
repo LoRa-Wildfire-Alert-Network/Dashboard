@@ -7,7 +7,6 @@ import {
   UserButton,
   OrganizationSwitcher,
 } from "@clerk/clerk-react";
-import { withGoto } from "../../lib/goto";
 import OrgPermissionsPage from "../OrgSettings/OrgPermissionsPage";
 import { useAuthContext } from "../../providers/AuthContext";
 
@@ -25,7 +24,7 @@ const Navbar = () => {
 
   return (
     <div className="relative">
-      <div className="flex justify-between items-center w-full h-16 bg-slate-600">
+      <div className="flex justify-between items-center w-full h-16 bg-gray-900 border-b border-gray-700">
         {/* Left: hamburger on mobile, docs on md+ */}
         <div className="flex items-center gap-6 p-4">
           <button
@@ -41,24 +40,24 @@ const Navbar = () => {
             href={DOCS_URL}
             target={DOCS_URL.startsWith("http") ? "_blank" : undefined}
             rel={DOCS_URL.startsWith("http") ? "noopener noreferrer" : undefined}
-            className="hidden md:inline text-white/90 text-base hover:text-white hover:underline"
+            className="hidden md:inline text-gray-400 text-base hover:text-amber-400 transition-colors"
           >
             Docs
           </a>
         </div>
 
         {/* Center: title */}
-        <p className="text-white text-lg font-semibold">LoRa Dashboard</p>
+        <p className="text-amber-400 text-lg font-bold tracking-wide">LoRa Dashboard</p>
 
         {/* Right: user actions */}
         <div className="flex items-center gap-4 p-4">
           <div className="hidden md:flex items-center gap-4">
             <SignedOut>
               <SignInButton mode="modal">
-                <button className="text-white text-lg font-semibold hover:underline hover:cursor-pointer">Sign In</button>
+                <button className="text-gray-300 text-base font-medium hover:text-amber-400 transition-colors hover:cursor-pointer">Sign In</button>
               </SignInButton>
               <SignUpButton mode="modal">
-                <button className="text-white text-lg font-semibold hover:underline hover:cursor-pointer">Sign Up</button>
+                <button className="px-3 py-1.5 bg-amber-500 text-gray-900 text-base font-semibold rounded hover:bg-amber-400 transition-colors hover:cursor-pointer">Sign Up</button>
               </SignUpButton>
             </SignedOut>
             <SignedIn>
@@ -84,14 +83,14 @@ const Navbar = () => {
             </SignedIn>
           </div>
           <SignedIn>
-            <UserButton afterSignOutUrl={withGoto("/")} />
+            <UserButton />
           </SignedIn>
         </div>
       </div>
 
       {/* Mobile dropdown */}
       {mobileMenuOpen && (
-        <div className="md:hidden absolute left-0 right-0 bg-slate-700 text-white z-40">
+        <div className="md:hidden absolute left-0 right-0 bg-gray-800 border-b border-gray-700 text-white z-40">
           <div className="flex flex-col p-4 gap-3">
             <SignedIn>
               <div className="flex items-center">
@@ -120,7 +119,7 @@ const Navbar = () => {
               href={DOCS_URL}
               target={DOCS_URL.startsWith("http") ? "_blank" : undefined}
               rel={DOCS_URL.startsWith("http") ? "noopener noreferrer" : undefined}
-              className="text-base hover:underline"
+              className="text-base text-gray-400 hover:text-amber-400 transition-colors"
               onClick={() => setMobileMenuOpen(false)}
             >
               Docs

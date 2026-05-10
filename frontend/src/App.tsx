@@ -13,12 +13,12 @@ function App() {
         <Dashboard />
       </SignedIn>
       <SignedOut>
-        <div className="bg-slate-300 h-[calc(100vh-4rem)] flex items-center justify-center">
+        <div className="bg-gray-900 h-[calc(100vh-4rem)] flex items-center justify-center">
           <div className="text-center">
-            <h1 className="text-2xl font-semibold mb-4">
+            <h1 className="text-2xl font-semibold mb-4 text-white">
               Welcome to LoRa Wildfire Dashboard
             </h1>
-            <p className="text-lg mb-4">
+            <p className="text-lg mb-4 text-gray-400">
               Please sign in to access the dashboard
             </p>
           </div>

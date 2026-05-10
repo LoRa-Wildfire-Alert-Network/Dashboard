@@ -55,31 +55,31 @@ const NodeFilter = ({ onChange }: NodeFilterProps) => {
   }, [onChange, smokeDetected, tempAbove, humidityBelow, lowBattery, onlySubscribed]);
 
   return (
-    <div className="flex flex-col bg-white p-4 rounded shadow-lg">
-      <h2 className="text-lg font-bold mb-2">Filter Options</h2>
-      <label className="flex items-center mb-2 ml-4">
+    <div className="flex flex-col bg-gray-900 p-4 rounded border border-gray-700 mb-2">
+      <h2 className="text-base font-semibold text-amber-400 uppercase tracking-wide mb-3">Filter Options</h2>
+      <label className="flex items-center mb-2 ml-2 text-gray-300 text-sm">
         <input
           type="checkbox"
-          className="mr-2"
+          className="mr-2 accent-amber-500"
           onChange={() => setOnlySubscribed(!onlySubscribed)}
           checked={!!onlySubscribed}
         />
         Only show subscribed nodes
       </label>
-      <h3 className="text-lg font-bold mb-2">Alerts</h3>
-      <label className="flex items-center mb-2 ml-4">
+      <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Alerts</h3>
+      <label className="flex items-center mb-2 ml-2 text-gray-300 text-sm">
         <input
           type="checkbox"
-          className="mr-2"
+          className="mr-2 accent-amber-500"
           onChange={() => setSmokeDetected(!smokeDetected)}
           checked={!!smokeDetected}
         />
         Smoke Detected
       </label>
-      <label className="flex items-center mb-2 ml-4">
+      <label className="flex items-center mb-2 ml-2 text-gray-300 text-sm">
         <input
           type="checkbox"
-          className="mr-2"
+          className="mr-2 accent-amber-500"
           onChange={() => {
             setShowTempAboveInput(!showTempAboveInput);
             setTempAbove(undefined);
@@ -89,11 +89,11 @@ const NodeFilter = ({ onChange }: NodeFilterProps) => {
         Temp above
       </label>
       {showTempAboveInput && (
-        <label className="flex items-center mb-2 ml-8">
+        <label className="flex items-center mb-2 ml-6 text-gray-300 text-sm">
           <input
             type="text"
             value={tempAbove ?? ""}
-            className="mr-2 w-20 outline-none border border-gray-300 rounded px-2 py-1"
+            className="mr-2 w-20 outline-none border border-gray-600 bg-gray-700 text-white rounded px-2 py-1 text-sm"
             onChange={(e) =>
               setTempAbove(
                 e.target.value === "" ? undefined : Number(e.target.value),
@@ -103,10 +103,10 @@ const NodeFilter = ({ onChange }: NodeFilterProps) => {
           &deg;C
         </label>
       )}
-      <label className="flex items-center mb-2 ml-4">
+      <label className="flex items-center mb-2 ml-2 text-gray-300 text-sm">
         <input
           type="checkbox"
-          className="mr-2"
+          className="mr-2 accent-amber-500"
           onChange={() => {
             setShowHumidityBelowInput(!showHumidityBelowInput);
             setHumidityBelow(undefined);
@@ -116,11 +116,11 @@ const NodeFilter = ({ onChange }: NodeFilterProps) => {
         Humidity below
       </label>
       {showHumidityBelowInput && (
-        <label className="flex items-center mb-2 ml-8">
+        <label className="flex items-center mb-2 ml-6 text-gray-300 text-sm">
           <input
             type="text"
             value={humidityBelow ?? ""}
-            className="mr-2 w-20 outline-none border border-gray-300 rounded px-2 py-1"
+            className="mr-2 w-20 outline-none border border-gray-600 bg-gray-700 text-white rounded px-2 py-1 text-sm"
             onChange={(e) =>
               setHumidityBelow(
                 e.target.value === "" ? undefined : Number(e.target.value),
@@ -130,11 +130,11 @@ const NodeFilter = ({ onChange }: NodeFilterProps) => {
           %
         </label>
       )}
-      <h3 className="text-lg font-bold mb-2">Node Health</h3>
-      <label className="flex items-center mb-2 ml-4">
+      <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 mt-1">Node Health</h3>
+      <label className="flex items-center mb-1 ml-2 text-gray-300 text-sm">
         <input
           type="checkbox"
-          className="mr-2"
+          className="mr-2 accent-amber-500"
           onChange={() => setLowBattery(!lowBattery)}
           checked={!!lowBattery}
         />

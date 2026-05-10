@@ -27,12 +27,12 @@ const NodeListPanel: React.FC<NodeListPanelProps> = ({
   const [showFilter, setShowFilter] = useState<boolean>(false);
 
   return (
-    <div className="flex flex-col overflow-y-auto w-full h-full bg-slate-400 rounded-md py-2 px-4">
+    <div className="flex flex-col overflow-y-auto w-full h-full bg-gray-800 rounded-md py-2 px-4 border border-gray-700">
       <div className="flex flex-row items-center justify-between mb-4">
-        <h1 className="text-xl font-bold">Node List</h1>
+        <h1 className="text-xl font-bold text-white">Node List</h1>
         <FontAwesomeIcon
           icon={fas.faFilter}
-          className="text-black mr-2 hover:cursor-pointer"
+          className="text-gray-400 mr-2 hover:text-amber-400 hover:cursor-pointer transition-colors"
           onClick={() => setShowFilter((s) => !s)}
         />
       </div>
