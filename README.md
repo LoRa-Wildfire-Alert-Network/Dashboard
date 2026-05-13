@@ -1,15 +1,5 @@
 # LoRa Wildfire Alert Network Dashboard
 
-> [!WARNING]
-> 🚨 **CODE FREEZE effective May 14, 2026.** 
-> As we approach final submission, main will be locked effective May 14, 2026.
-> - No direct pushes to main after this date
-> - All outstanding PRs must be merged before May 14
-> - If you have changes in progress, get them in before the deadline
-> _(With the exception of security/bug patches & infrastructure related updates (e.g. CI/CD, webhooks, CORS, etc.)_
-
----------
-
 A real-time monitoring dashboard for LoRa-based wildfire detection sensor nodes. This system collects telemetry data from distributed sensor nodes and displays it on an interactive map with detailed node information.
 
 ## Features
