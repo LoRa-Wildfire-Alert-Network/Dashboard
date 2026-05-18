@@ -20,10 +20,12 @@ function decideIndicator(
   if (smoke_detected) {
     return <FontAwesomeIcon icon={fas.faFire} className={`text-red-500 m-2`} />;
   } else if (humidity_pct < 15 || temperature_c > 35) {
-    <FontAwesomeIcon
-      icon={fas.faTriangleExclamation}
-      className={`text-orange-500 m-2`}
-    />;
+    return (
+      <FontAwesomeIcon
+        icon={fas.faTriangleExclamation}
+        className={`text-orange-500 m-2`}
+      />
+    );
   } else if (battery_level < 20) {
     return (
       <FontAwesomeIcon icon={fas.faMobile} className={`text-yellow-300 m-2`} />
