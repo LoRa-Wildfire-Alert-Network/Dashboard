@@ -7,6 +7,23 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
+## [0.2.1] - 2026-05-26
+
+### Fixed
+
+- **NodeCard double icon error** — when two alert conditions were simultaneously true, no icon would render; fixed in both `CardLongData` and `CardShortData`
+
+### Security
+
+- `idna` 3.11 → 3.15 (backend)
+- `webpack-dev-server` 5.2.3 → 5.2.4 (docs-site)
+- `qs` 6.14.2 → 6.15.2 (docs-site)
+- `express` 4.22.1 → 4.22.2 (docs-site)
+- `brace-expansion` 1.1.12 → 1.1.15 (frontend)
+- `brace-expansion` 2.0.2 → 2.1.1 (frontend)
+- `js-cookie` 3.0.5 → 3.0.7 (frontend)
+- `@clerk/shared` 3.47.5 → 3.47.6 (frontend)
+
 ## [0.2.0] - 2026-05-12
 
 ### Added
@@ -107,7 +124,8 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 - React + Vite frontend
 - Vite proxy for docs in development
 
-[Unreleased]: https://github.com/LoRa-Wildfire-Alert-Network/Dashboard/compare/v0.2.0...HEAD
+[Unreleased]: https://github.com/LoRa-Wildfire-Alert-Network/Dashboard/compare/v0.2.1...HEAD
+[0.2.1]: https://github.com/LoRa-Wildfire-Alert-Network/Dashboard/compare/v0.2.0...v0.2.1
 [0.2.0]: https://github.com/LoRa-Wildfire-Alert-Network/Dashboard/compare/v0.1.1-alpha...v0.2.0
 [0.1.1-alpha]: https://github.com/LoRa-Wildfire-Alert-Network/Dashboard/compare/v0.1.0-alpha...v0.1.1-alpha
 [0.1.0-alpha]: https://github.com/LoRa-Wildfire-Alert-Network/Dashboard/releases/tag/v0.1.0-alpha
